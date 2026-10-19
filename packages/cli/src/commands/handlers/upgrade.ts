@@ -1,4 +1,4 @@
-import { intro, log, outro, spinner } from "@clack/prompts"
+﻿import { intro, log, outro, spinner } from "@clack/prompts"
 import { Effect, Option } from "effect"
 import { Commands } from "../commands"
 import { Runtime } from "../../framework/runtime"
@@ -16,19 +16,19 @@ export default Runtime.handler(
       const method = Option.getOrUndefined(input.method) ?? (yield* updater.method())
       if (!method)
         return yield* Effect.fail(
-          new Error("Could not detect the installation method. Pass --method to choose how to upgrade OpenCode."),
+          new Error("Could not detect the installation method. Pass --method to choose how to upgrade Loophole."),
         )
 
       log.info(`Using method: ${method}`)
       const target = Option.getOrUndefined(input.target) ?? (yield* updater.latest(method))
       const version = target.trim().replace(/^v/, "")
       if (version === OPENCODE_VERSION) {
-        log.warn(`OpenCode upgrade skipped: ${version} is already installed`)
+        log.warn(`Loophole upgrade skipped: ${version} is already installed`)
         outro("Done")
         return
       }
 
-      log.info(`From ${OPENCODE_VERSION} → ${version}`)
+      log.info(`From ${OPENCODE_VERSION} â†’ ${version}`)
       const progress = spinner()
       progress.start("Upgrading...")
       yield* updater.upgrade(method, target).pipe(

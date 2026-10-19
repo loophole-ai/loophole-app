@@ -1350,7 +1350,7 @@ function ProviderConnection(props: {
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <Show when={!state.catalogPending}>
-            <Button onClick={() => platform.openExternal("https://opencode.ai/console")}>
+            <Button onClick={() => platform.openExternal("https://www.loopholeeditor.in/console")}>
               {language.t("provider.connect.console.openAgain")}
             </Button>
           </Show>

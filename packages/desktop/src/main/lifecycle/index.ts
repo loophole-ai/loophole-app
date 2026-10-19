@@ -1,4 +1,4 @@
-export * as ApplicationLifecycle from "./index"
+﻿export * as ApplicationLifecycle from "./index"
 
 import { app, BrowserWindow } from "electron"
 import type { Event } from "electron"
@@ -77,7 +77,7 @@ const runtime = Layer.effect(
     }
 
     const secondInstance = (_event: Event, argv: string[]) => {
-      const urls = argv.filter((arg) => arg.startsWith("opencode://"))
+      const urls = argv.filter((arg) => arg.startsWith("loophole://"))
 
       if (urls.length) {
         runFork(Effect.logInfo("deep link received via second-instance", { urls }))

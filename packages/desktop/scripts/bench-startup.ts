@@ -883,7 +883,7 @@ function summarize(list: Sample[]) {
 function bundledCli(exe: string) {
   const resources = process.platform === "darwin" ? join(dirname(exe), "..", "Resources") : join(dirname(exe), "resources")
 
-  return join(resources, process.platform === "win32" ? "opencode-cli.exe" : "opencode-cli")
+  return join(resources, process.platform === "win32" ? "loophole-cli.exe" : "loophole-cli")
 }
 
 async function warmService() {
@@ -891,7 +891,7 @@ async function warmService() {
   const clis = builds.map((build) => bundledCli(build.exe))
 
   const identity = (cli: string) => {
-    const version = join(dirname(cli), "opencode-cli.version")
+    const version = join(dirname(cli), "loophole-cli.version")
 
     return existsSync(version) ? readFileSync(version, "utf8").trim() : String(statSync(cli).size)
   }

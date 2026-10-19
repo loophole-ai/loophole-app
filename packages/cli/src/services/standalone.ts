@@ -1,4 +1,4 @@
-import { CrossSpawnSpawner } from "@opencode/util/cross-spawn-spawner"
+﻿import { CrossSpawnSpawner } from "@opencode/util/cross-spawn-spawner"
 import { LayerNode } from "@opencode/util/effect/layer-node"
 import { Deferred, Effect, Schema, Stream } from "effect"
 import { ChildProcess, ChildProcessSpawner } from "effect/process"
@@ -50,7 +50,7 @@ const makeEndpoint = Effect.fn("cli.standalone.endpoint")(
     const ready = yield* Effect.tryPromise(() => decodeReady(output))
     return {
       url: ready.url,
-      auth: { type: "basic" as const, username: "opencode", password },
+      auth: { type: "basic" as const, username: "loophole", password },
       pid: proc.pid,
       exited: proc.exitCode,
     }

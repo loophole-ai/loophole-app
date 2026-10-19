@@ -1,4 +1,4 @@
-export * as RemoteTunnel from "./remote-tunnel"
+﻿export * as RemoteTunnel from "./remote-tunnel"
 
 import type { OpenTunnelError } from "@opentunnel/client/effect"
 import { Cause, Effect, Schedule } from "effect"
@@ -39,7 +39,7 @@ export const run = Effect.fnUntraced(function* (input: {
     Effect.catchCause((cause) =>
       Cause.hasInterruptsOnly(cause)
         ? Effect.failCause(cause)
-        : Effect.logError("remote access tunnel stopped; run `opencode service set remote true` to retry", { cause }),
+        : Effect.logError("remote access tunnel stopped; run `loophole service set remote true` to retry", { cause }),
     ),
   )
 })

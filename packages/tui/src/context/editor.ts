@@ -1,4 +1,4 @@
-import { onCleanup, onMount } from "solid-js"
+﻿import { onCleanup, onMount } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Option, Schema, SchemaGetter } from "effect"
 import { isRecord } from "../util/record"
@@ -225,7 +225,7 @@ export const { use: useEditorContext, provider: EditorContextProvider } = create
         request("initialize", {
           protocolVersion: MCP_PROTOCOL_VERSION,
           capabilities: {},
-          clientInfo: { name: "opencode", version: "0.0.0" },
+          clientInfo: { name: "loophole", version: "0.0.0" },
         })
       })
 

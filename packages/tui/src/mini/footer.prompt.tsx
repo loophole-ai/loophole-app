@@ -1,4 +1,4 @@
-// Prompt composer and its state machine for direct interactive mode.
+﻿// Prompt composer and its state machine for direct interactive mode.
 //
 // createPromptState() wires keymap command layers, history navigation, and
 // `@` autocomplete for files, subagents, and project references.
@@ -276,7 +276,7 @@ export function RunPromptBody(props: {
       <box
         border={["left"]}
         borderColor={props.rail()}
-        customBorderChars={{ ...EmptyBorder, vertical: props.mono ? "|" : "┃" }}
+        customBorderChars={{ ...EmptyBorder, vertical: props.mono ? "|" : "â”ƒ" }}
         paddingLeft={1}
         paddingRight={2}
         onSizeChange={props.onSizeChange}
@@ -351,7 +351,7 @@ export function createPromptState(input: PromptInput): PromptState {
   const [shell, setShell] = createSignal(false)
   const placeholder = createMemo(() => {
     if (shell()) {
-      return new StyledText([fg(input.theme().muted)('Run a command… "git status"')])
+      return new StyledText([fg(input.theme().muted)('Run a commandâ€¦ "git status"')])
     }
 
     if (!input.state().first) {
@@ -359,7 +359,7 @@ export function createPromptState(input: PromptInput): PromptState {
     }
 
     return new StyledText([
-      fg(input.theme().muted)(`Ask anything, / for commands, @ for context${input.mono() ? "..." : "…"}`),
+      fg(input.theme().muted)(`Ask anything, / for commands, @ for context${input.mono() ? "..." : "â€¦"}`),
     ])
   })
 
@@ -534,7 +534,7 @@ export function createPromptState(input: PromptInput): PromptState {
         description: "compact older session context to free space",
       } satisfies SlashOption,
       ...EXIT_COMMANDS.map(
-        (name) => ({ kind: "slash", name, display: `/${name}`, description: "close OpenCode" }) satisfies SlashOption,
+        (name) => ({ kind: "slash", name, display: `/${name}`, description: "close Loophole" }) satisfies SlashOption,
       ),
     ]
     const hidden = new Set(builtins.map((item) => item.name))

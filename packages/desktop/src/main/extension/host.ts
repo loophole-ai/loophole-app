@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron"
+﻿import { app, BrowserWindow } from "electron"
 import { builtins } from "@opencode/gui-extensions/main"
 import type { BridgeLayout, BridgeMenubarItem } from "@opencode/gui-extensions/sdk/bridge"
 import {
@@ -244,7 +244,7 @@ export function createHost(input: {
     if (!endpoint) return undefined
 
     const authorization = endpoint.password
-      ? `Basic ${Buffer.from(`${endpoint.username ?? "opencode"}:${endpoint.password}`).toString("base64")}`
+      ? `Basic ${Buffer.from(`${endpoint.username ?? "loophole"}:${endpoint.password}`).toString("base64")}`
       : SidecarCredentials.authorization(sidecar, endpoint.url)
 
     return {

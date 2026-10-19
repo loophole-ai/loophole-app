@@ -1,4 +1,4 @@
-import { existsSync } from "fs"
+﻿import { existsSync } from "fs"
 import path from "path"
 import { render, useRenderer, useTerminalDimensions } from "@opentui/solid"
 import { registerOpencodeSpinner } from "./component/register-spinner"
@@ -607,18 +607,18 @@ function App() {
     if (!terminalTitleEnabled()) return
 
     if (route.data.type === "home") {
-      renderer.setTerminalTitle("OpenCode")
+      renderer.setTerminalTitle("Loophole")
       return
     }
 
     if (route.data.type === "session") {
       const title = session?.title
       if (!title || isFallbackTitle(title)) {
-        renderer.setTerminalTitle("OpenCode")
+        renderer.setTerminalTitle("Loophole")
         return
       }
 
-      renderer.setTerminalTitle(`OC | ${title.length > 40 ? title.slice(0, 37) + "…" : title}`)
+      renderer.setTerminalTitle(`OC | ${title.length > 40 ? title.slice(0, 37) + "â€¦" : title}`)
       return
     }
 
@@ -1020,7 +1020,7 @@ function App() {
         ? [
             {
               name: "opencode.update",
-              title: "Update OpenCode",
+              title: "Update Loophole",
               slash: { name: "update" },
               run: () => updater.open?.("manual"),
               category: "System",
@@ -1046,7 +1046,7 @@ function App() {
                 const restart = client.restart
                 if (!restart) return
                 dialog.clear()
-                toast.show({ variant: "info", message: "Restarting service…", duration: 30000 })
+                toast.show({ variant: "info", message: "Restarting serviceâ€¦", duration: 30000 })
                 // restart resolves once the replacement service is healthy; the
                 // event stream reattaches through the reconnect loop.
                 await restart()
@@ -1063,7 +1063,7 @@ function App() {
         slash: { name: "reload" },
         run: async () => {
           dialog.clear()
-          toast.show({ variant: "info", message: "Reloading configuration…", duration: 30000 })
+          toast.show({ variant: "info", message: "Reloading configurationâ€¦", duration: 30000 })
           await client.api.location
             .reload()
             .then(() => {

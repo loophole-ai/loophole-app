@@ -1,4 +1,4 @@
-import { app, BrowserWindow, nativeImage, nativeTheme } from "electron"
+﻿import { app, BrowserWindow, nativeImage, nativeTheme } from "electron"
 import type { Path } from "effect"
 import { type TitlebarTheme } from "../../shared/ipc-contract"
 import { WindowFullscreenChanged, WindowPinchZoomChanged, WindowZoomChanged } from "../../shared/ipc-rpc/events"
@@ -22,7 +22,7 @@ export function windowAppearance(path: Path.Path, paths: DesktopPaths.Resolved) 
   const mode = tone()
 
   return {
-    title: "OpenCode",
+    title: "Loophole",
     icon: iconPath(path, paths),
     backgroundColor: backgroundColor ?? storedBackgroundColor(),
     ...(process.platform === "darwin"

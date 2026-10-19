@@ -1,4 +1,4 @@
-import { confirm, intro, log, outro, spinner } from "@clack/prompts"
+﻿import { confirm, intro, log, outro, spinner } from "@clack/prompts"
 import { Service } from "@opencode/client/effect/service"
 import { Global } from "@opencode/util/global"
 import { Effect, FileSystem, Schedule } from "effect"
@@ -14,7 +14,7 @@ import { errorMessage } from "../../util/error"
 export default Runtime.handler(
   Commands.commands.uninstall,
   Effect.fn("cli.uninstall")(function* (input) {
-    intro("Uninstall OpenCode")
+    intro("Uninstall Loophole")
     const fs = yield* FileSystem.FileSystem
     const global = yield* Global.Service
     const updater = yield* Updater.Service
@@ -29,7 +29,7 @@ export default Runtime.handler(
     const shell = method === "curl" ? yield* shellConfigs(global.home) : []
 
     log.info(`Installation method: ${method ?? "unknown"}`)
-    log.message("The following global files will be removed (shared by OpenCode versions and channels):")
+    log.message("The following global files will be removed (shared by Loophole versions and channels):")
     if (yield* fs.exists(global.cache)) log.info(`  Cache: ${global.cache}`)
     services.forEach((name) =>
       log.info(`  Stop background service and persistent terminals: ${path.join(global.state, name)}`),
@@ -70,7 +70,7 @@ export default Runtime.handler(
       )
     }
 
-    // Links that keep an older OpenCode replaceable may still run; move them so the cache can go.
+    // Links that keep an older Loophole replaceable may still run; move them so the cache can go.
     if (process.platform === "win32") yield* RetainedImage.relocate(global.cache, global.tmp)
     const errors: string[] = []
     progress.start("Removing Cache...")

@@ -1,4 +1,4 @@
-export * as ServerProcess from "./server-process"
+﻿export * as ServerProcess from "./server-process"
 
 import { NodeServices } from "@effect/platform-node"
 import { Service } from "@opencode/client/effect/service"
@@ -173,7 +173,7 @@ const processEffect = Effect.fnUntraced(function* (options: Options) {
             return yield* Effect.fail(
               new Error(
                 `Managed service port ${port} on ${hostname} is already in use by another process. ` +
-                  "Configure another port with `opencode service set port <port>` and start the service again.",
+                  "Configure another port with `loophole service set port <port>` and start the service again.",
                 { cause: error },
               ),
             )

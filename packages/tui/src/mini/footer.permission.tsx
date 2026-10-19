@@ -1,11 +1,11 @@
-// Permission UI body for the direct-mode footer.
+﻿// Permission UI body for the direct-mode footer.
 //
 // Renders inside the footer when the reducer pushes a FooterView of type
 // "permission". Uses a three-stage state machine (permission.shared.ts):
 //
-//   permission → shows the request with Allow once / Always / Reject buttons
-//   always     → confirmation step before granting permanent access
-//   reject     → text field for the rejection message
+//   permission â†’ shows the request with Allow once / Always / Reject buttons
+//   always     â†’ confirmation step before granting permanent access
+//   reject     â†’ text field for the rejection message
 //
 // Keyboard: left/right to select, enter to confirm, esc to reject.
 // The diff view (when available) uses the same diff component as scrollback
@@ -110,7 +110,7 @@ export function RejectField(props: {
       minHeight={1}
       maxHeight={3}
       wrapMode="word"
-      placeholder="Tell OpenCode what to do differently"
+      placeholder="Tell Loophole what to do differently"
       placeholderColor={props.theme.muted}
       textColor={props.theme.formfieldText}
       focusedTextColor={props.theme.formfieldFocusedText}
@@ -171,7 +171,7 @@ export function RunPermissionBody(props: {
   const hint = () =>
     compact() && width() < 56
       ? "pgup/pgdn scroll"
-      : `${props.mono ? "left/right" : "⇆"} select  enter confirm  esc ${stage() === "always" ? "cancel" : "reject"}`
+      : `${props.mono ? "left/right" : "â‡†"} select  enter confirm  esc ${stage() === "always" ? "cancel" : "reject"}`
   const inlineControls = () => controlsWidth() + stringWidth(hint()) + 1 <= width() - (compact() ? 0 : 5)
   const title = createMemo(() => {
     if (stage() === "always") {
@@ -318,11 +318,11 @@ export function RunPermissionBody(props: {
         flexShrink={0}
       >
         <text height={1} fg={props.theme.text} wrapMode="none" truncate>
-          <span style={{ fg: props.theme.permission }}>{props.mono ? "! " : "△ "}</span>
+          <span style={{ fg: props.theme.permission }}>{props.mono ? "! " : "â–³ "}</span>
           {title()}
         </text>
         <Show when={!compact() && stage() === "reject"}>
-          <text fg={props.theme.muted}>Tell OpenCode what to do differently</text>
+          <text fg={props.theme.muted}>Tell Loophole what to do differently</text>
         </Show>
       </box>
 
@@ -361,7 +361,7 @@ export function RunPermissionBody(props: {
                 when={!busy()}
                 fallback={
                   <text fg={props.theme.running} height={1} wrapMode="none" truncate flexShrink={0}>
-                    {compact() ? "Waiting…" : "Waiting for permission event…"}
+                    {compact() ? "Waitingâ€¦" : "Waiting for permission eventâ€¦"}
                   </text>
                 }
               >
@@ -534,7 +534,7 @@ export function RunPermissionBody(props: {
             when={!busy()}
             fallback={
               <text fg={props.theme.running} height={1} wrapMode="none" truncate flexShrink={0}>
-                {compact() ? "Waiting…" : "Waiting for permission event…"}
+                {compact() ? "Waitingâ€¦" : "Waiting for permission eventâ€¦"}
               </text>
             }
           >
@@ -543,7 +543,7 @@ export function RunPermissionBody(props: {
                 when={compact() && width() < 56}
                 fallback={
                   <>
-                    {props.mono ? "left/right" : "⇆"}
+                    {props.mono ? "left/right" : "â‡†"}
                     <span style={{ fg: props.theme.muted }}>{" select  "}</span>
                     enter<span style={{ fg: props.theme.muted }}>{" confirm  "}</span>
                     esc<span style={{ fg: props.theme.muted }}> {stage() === "always" ? "cancel" : "reject"}</span>

@@ -1,4 +1,4 @@
-import {
+﻿import {
   agent,
   RequestError,
   type AgentHandlerContext,
@@ -55,7 +55,7 @@ export const connect = Effect.fnUntraced(function* (client: OpenCodeClient, stre
       )
       return (ctx: HandlerContext<Params>) => run(handler(ctx))
     }
-  const app = agent({ name: "opencode" })
+  const app = agent({ name: "loophole" })
   const request = <Method extends AgentRequestMethod>(
     method: Method,
     make: (name: string) => AgentRequestHandlersByMethod[Method],

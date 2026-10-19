@@ -1,12 +1,12 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "@opencode/cli",
+  "name": "@loophole-ai/cli",
   "version": "2.0.32",
   "type": "module",
   "license": "MIT",
   "bin": {
-    "opencode": "./bin/opencode.cjs",
-    "opencode2": "./bin/opencode2.cjs"
+    "loophole": "./bin/loophole.cjs",
+    "loophole2": "./bin/loophole2.cjs"
   },
   "files": [
     "bin"
@@ -28,9 +28,9 @@
     "@clack/core": "1.0.0-alpha.1",
     "@clack/prompts": "1.0.0-alpha.1",
     "@effect/platform-node": "catalog:",
+    "@opencode-ai/pty": "0.2.0",
     "@opencode/client": "workspace:*",
     "@opencode/plugin": "workspace:*",
-    "@opencode-ai/pty": "0.2.0",
     "@opencode/schema": "workspace:*",
     "@opencode/server": "workspace:*",
     "@opencode/tui": "workspace:*",

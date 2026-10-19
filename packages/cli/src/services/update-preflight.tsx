@@ -1,4 +1,4 @@
-/** @jsxImportSource @opentui/solid */
+﻿/** @jsxImportSource @opentui/solid */
 // Split-footer status shown while a freshly launched CLI replaces a
 // version-mismatched background service before the TUI attaches.
 import { createCliRenderer, RGBA, TextAttributes, type CliRenderer } from "@opentui/core"
@@ -22,7 +22,7 @@ import {
   untrack,
 } from "solid-js"
 
-const stages = ["Keeping your session safe", "Starting the new background service", "Loading OpenCode"] as const
+const stages = ["Keeping your session safe", "Starting the new background service", "Loading Loophole"] as const
 const stageFloor = 480
 const transitionDuration = 420
 const completionHold = 650
@@ -325,7 +325,7 @@ function UpdateFooter(props: {
   const statusSweep = createSweep()
   const runningHeader = () =>
     phrase(
-      ["OpenCode", colors.muted, true],
+      ["Loophole", colors.muted, true],
       ["is updating", colors.muted],
       ...(props.from
         ? ([
@@ -337,14 +337,14 @@ function UpdateFooter(props: {
       [OPENCODE_VERSION, colors.accent],
     )
   const completedHeader = phrase(
-    ["OpenCode", colors.muted, true],
+    ["Loophole", colors.muted, true],
     ["updated to", colors.muted],
     [OPENCODE_VERSION, colors.accent],
   )
-  const pausedHeader = phrase(["OpenCode", colors.muted, true], ["update paused", colors.muted])
+  const pausedHeader = phrase(["Loophole", colors.muted, true], ["update paused", colors.muted])
   const outcomeStatus = () =>
     props.outcome() === "success"
-      ? [...styled("✓", colors.success), ...styled(" Ready", colors.text)]
+      ? [...styled("âœ“", colors.success), ...styled(" Ready", colors.text)]
       : [...styled("!", colors.error), ...styled(" " + props.failure(), colors.text)]
   let previousStage: string = stages[0]
   createEffect(
@@ -393,7 +393,7 @@ function UpdateFooter(props: {
       const color =
         index >= filled ? colors.muted : shade(railRamp, Math.max(0, 1 - Math.abs(index - center) / glowRadius) ** 2)
       return {
-        char: success || index < filled ? "━" : "·",
+        char: success || index < filled ? "â”" : "Â·",
         color: success ? blend(color, colors.accent, completion) : color,
       }
     })

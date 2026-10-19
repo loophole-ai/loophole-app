@@ -1,4 +1,4 @@
-import { CliRenderEvents, TextAttributes, type Renderable } from "@opentui/core"
+﻿import { CliRenderEvents, TextAttributes, type Renderable } from "@opentui/core"
 import { TimeToFirstDraw, useRenderer, useTerminalDimensions } from "@opentui/solid"
 import { open } from "node:fs/promises"
 import { tmpdir } from "node:os"
@@ -177,7 +177,7 @@ export function DevToolsBar() {
           return events.slice(-100)
         })().catch(() => client.connection.internal.history())
       : Promise.resolve([]))
-    const file = path.join(tmpdir(), `opencode-debug-${crypto.randomUUID()}.json`)
+    const file = path.join(tmpdir(), `loophole-debug-${crypto.randomUUID()}.json`)
     const output =
       JSON.stringify(
         {
@@ -360,7 +360,7 @@ export function DevToolsBar() {
           <PanelBox>
             <PanelTitle>Tools</PanelTitle>
             <Action onClick={() => void dump()} disabled={dumping()} hoverBackground>
-              {dumping() ? "Writing debug snapshot…" : "Write debug snapshot"}
+              {dumping() ? "Writing debug snapshotâ€¦" : "Write debug snapshot"}
             </Action>
             <Show when={dumpPath()}>
               {(file) => (
@@ -579,15 +579,15 @@ export function runtimeStatus(samples: readonly Readonly<{ delay: number; time: 
 }
 
 export function statusIcon(status: RuntimeStatus) {
-  if (status === "high") return "●"
-  if (status === "medium") return "⦿"
-  return "○"
+  if (status === "high") return "â—"
+  if (status === "medium") return "â¦¿"
+  return "â—‹"
 }
 
 export function connectionIndicator(status: "connected" | "connecting" | "reconnecting", attempt: number) {
-  if (status === "connected") return { state: "connected" as const, icon: "✓" }
-  if (status === "reconnecting" && attempt >= 3) return { state: "disconnected" as const, icon: "×" }
-  return { state: "reconnecting" as const, icon: "↻" }
+  if (status === "connected") return { state: "connected" as const, icon: "âœ“" }
+  if (status === "reconnecting" && attempt >= 3) return { state: "disconnected" as const, icon: "Ã—" }
+  return { state: "reconnecting" as const, icon: "â†»" }
 }
 
 export function brailleGraph(values: readonly number[], width = graphWidth) {

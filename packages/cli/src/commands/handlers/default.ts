@@ -1,4 +1,4 @@
-import { LayerNode } from "@opencode/util/effect/layer-node"
+﻿import { LayerNode } from "@opencode/util/effect/layer-node"
 import { Global } from "@opencode/util/global"
 import { run } from "@opencode/tui"
 import { Commands } from "../commands"
@@ -47,7 +47,7 @@ export default Runtime.handler(Commands, (input) =>
       },
     }).pipe(
       Effect.tapError(() =>
-        Effect.promise(() => preflight.fail("OpenCode update could not start the new background service")),
+        Effect.promise(() => preflight.fail("Loophole update could not start the new background service")),
       ),
     )
     const session = Option.getOrUndefined(input.session)

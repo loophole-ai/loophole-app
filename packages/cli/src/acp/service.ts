@@ -1,4 +1,4 @@
-import type { OpenCodeClient } from "@opencode/client/effect"
+﻿import type { OpenCodeClient } from "@opencode/client/effect"
 import { AbsolutePath } from "@opencode/schema/schema"
 import { Session } from "@opencode/schema/session"
 import { FSUtil } from "@opencode/util/fs-util"
@@ -45,7 +45,7 @@ import { ACPReplay } from "./replay"
 import type { ACPSessions, Attached, SupportedMcpServer } from "./sessions"
 import type { ACPTurn } from "./turn"
 
-const AuthMethodID = "opencode-login"
+const AuthMethodID = "loophole-login"
 
 export interface Interface {
   readonly initialize: (input: InitializeRequest) => Effect.Effect<InitializeResponse>
@@ -106,14 +106,14 @@ export function make(input: {
     initialize: Effect.fnUntraced(function* (params) {
       yield* Ref.set(input.capabilities, ACPCapabilities.parse(params.clientCapabilities))
       const authMethod: AuthMethod = {
-        description: "Run `opencode auth login` in the terminal",
-        name: "Login with opencode",
+        description: "Run `loophole auth login` in the terminal",
+        name: "Login with Loophole",
         id: AuthMethodID,
         ...(params.clientCapabilities?.auth?.terminal ? { type: "terminal" as const, args: ["--login"] } : {}),
       }
       if (params.clientCapabilities?._meta?.["terminal-auth"] === true) {
         authMethod._meta = {
-          "terminal-auth": { command: "opencode", args: ["auth", "login"], label: "OpenCode Login" },
+          "terminal-auth": { command: "loophole", args: ["auth", "login"], label: "Loophole Login" },
         }
       }
       return {
@@ -126,7 +126,7 @@ export function make(input: {
           _meta: { [ACPCapabilities.ChildSessionUpdates]: true },
         },
         authMethods: [authMethod],
-        agentInfo: { name: "OpenCode", version: OPENCODE_VERSION },
+        agentInfo: { name: "Loophole", version: OPENCODE_VERSION },
       }
     }),
     authenticate: Effect.fnUntraced(function* (params) {

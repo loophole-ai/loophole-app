@@ -1,4 +1,4 @@
-import { Global } from "@opencode/util/global"
+﻿import { Global } from "@opencode/util/global"
 import { AppProcess } from "@opencode/util/process"
 import { EffectFlock } from "@opencode/util/effect-flock"
 import { OPENCODE_ARTIFACT, OPENCODE_CHANNEL, OPENCODE_LOCAL, OPENCODE_VERSION } from "../version"
@@ -46,7 +46,7 @@ const decodeVpPackages = Schema.decodeUnknownOption(
 )
 
 const installNames: Record<Method, string> = {
-  curl: "The OpenCode installer",
+  curl: "The Loophole installer",
   npm: "npm",
   pnpm: "pnpm",
   bun: "Bun",
@@ -56,7 +56,7 @@ const installNames: Record<Method, string> = {
   winget: "WinGet",
 }
 
-const wingetPackage = "Anomaly.OpenCode"
+const wingetPackage = "LoopholeAI.Loophole"
 const wingetArgs = [
   "--id",
   wingetPackage,
@@ -76,7 +76,7 @@ function conciseDetail(input: string) {
     .filter((line) => line.trim().length > 0)
   const tail = lines.slice(-12).join("\n")
   const clipped = tail.length > 2_000
-  const detail = clipped ? `…${tail.slice(-1_999)}` : tail
+  const detail = clipped ? `â€¦${tail.slice(-1_999)}` : tail
   if (!detail) return
   if (lines.length <= 12 && !clipped) return detail
   return `${detail}\n\nOutput shortened to the last 12 lines.`
@@ -150,16 +150,16 @@ const make = Effect.gen(function* () {
       .readFileString(path.join(directory, "package.json"))
       .pipe(Effect.flatMap((text) => Effect.try(() => JSON.parse(text))))
     // Source invocations run inside Bun or Node, which may themselves be npm packages.
-    if (!/^@opencode(?:-ai)?\/cli(?:-node)?$/.test(manifest.name)) return
+    if (!/^@loophole-ai\/cli(?:-node)?$/.test(manifest.name)) return
     if (Object.values(manifest.bin ?? {}).some((bin) => path.resolve(directory, bin) === executable))
       return manifest.name
   }).pipe(Effect.orElseSucceed(() => undefined))
-  // "opencode" is Homebrew Core's formula; the others are published to anomalyco/tap.
-  const installedFormula = ["opencode", "opencode-beta", "opencode-v2"].find((name) =>
+  // Homebrew formulae published for this fork.
+  const installedFormula = ["loophole", "loophole-beta"].find((name) =>
     executable.includes(`${path.sep}Cellar${path.sep}${name}${path.sep}`),
   )
   // WinGet extracts portable packages into a directory named after the package identifier.
-  const installedWinget = /[\\/]winget[\\/]packages[\\/]anomaly\.opencode_/i.test(executable)
+  const installedWinget = /[\\/]winget[\\/]packages[\\/]loophole-ai\.loophole_/i.test(executable)
 
   const readPolicy = Effect.fnUntraced(function* () {
     const values = yield* Effect.forEach(["config.json", "opencode.json", "opencode.jsonc"], (name) =>
@@ -189,9 +189,9 @@ const make = Effect.gen(function* () {
 
   const curlPath = path.resolve(
     global.home,
-    ".opencode",
+    ".loophole",
     "bin",
-    process.platform === "win32" ? "opencode.exe" : "opencode",
+    process.platform === "win32" ? "loophole.exe" : "loophole",
   )
   const curlBinary = yield* fs.realPath(curlPath).pipe(Effect.orElseSucceed(() => curlPath))
 
@@ -204,9 +204,9 @@ const make = Effect.gen(function* () {
     if (bash && (yield* fs.exists(bash).pipe(Effect.orElseSucceed(() => false)))) return bash
     return yield* Effect.fail(
       new UpgradeError({
-        title: "Git Bash is required to update OpenCode",
-        detail: "The OpenCode installer runs with Git Bash on Windows, and it was not found.",
-        retry: "Install Git for Windows or set OPENCODE_GIT_BASH_PATH, then run opencode upgrade again.",
+        title: "Git Bash is required to update Loophole",
+        detail: "The Loophole installer runs with Git Bash on Windows, and it was not found.",
+        retry: "Install Git for Windows or set OPENCODE_GIT_BASH_PATH, then run loophole upgrade again.",
       }),
     )
   })
@@ -275,13 +275,13 @@ const make = Effect.gen(function* () {
   const release = Effect.fnUntraced(function* (method?: Method) {
     const distribution = method === "brew" ? "homebrew" : "npm"
     // Homebrew Core builds its formula on its own schedule, so the tap release does not describe it.
-    const core = method === "brew" && installedFormula === "opencode"
+    const core = method === "brew" && installedFormula === "loophole"
     const response = yield* Effect.tryPromise({
       try: (signal) =>
         fetch(
           core
-            ? "https://formulae.brew.sh/api/formula/opencode.json"
-            : `https://opencode.ai/update/api/${encodeURIComponent(channel)}/${encodeURIComponent(OPENCODE_ARTIFACT)}/${distribution}?current=${encodeURIComponent(OPENCODE_VERSION)}`,
+            ? "https://formulae.brew.sh/api/formula/loophole.json"
+            : `https://github.com/loophole-ai/loophole-app/releases/latest/download?channel=${encodeURIComponent(channel)}&artifact=${encodeURIComponent(OPENCODE_ARTIFACT)}&distribution=${encodeURIComponent(distribution)}&current=${encodeURIComponent(OPENCODE_VERSION)}`,
           {
             signal: AbortSignal.any([signal, AbortSignal.timeout(10_000)]),
           },
@@ -289,9 +289,9 @@ const make = Effect.gen(function* () {
       catch: (cause) =>
         new UpgradeError(
           {
-            title: "Could not check for OpenCode updates",
+            title: "Could not check for Loophole updates",
             detail: errorDetail(cause),
-            retry: "Check your network, then run opencode upgrade again.",
+            retry: "Check your network, then run loophole upgrade again.",
           },
           { cause },
         ),
@@ -299,7 +299,7 @@ const make = Effect.gen(function* () {
     if (!response.ok)
       return yield* Effect.fail(
         new UpgradeError({
-          title: "Could not check for OpenCode updates",
+          title: "Could not check for Loophole updates",
           detail: `The update service returned HTTP ${response.status}.`,
           retry: "Try again in a few minutes.",
         }),
@@ -310,7 +310,7 @@ const make = Effect.gen(function* () {
         catch: (cause) =>
           new UpgradeError(
             {
-              title: "Could not read the OpenCode update information",
+              title: "Could not read the Loophole update information",
               detail: errorDetail(cause),
               retry: "Try again in a few minutes.",
             },
@@ -318,11 +318,11 @@ const make = Effect.gen(function* () {
           ),
       })
     const version = core ? data.versions?.stable : data.version
-    const packageName = core ? "opencode" : data.metadata?.package
+    const packageName = core ? "loophole" : data.metadata?.package
     if (!version || !packageName)
       return yield* Effect.fail(
         new UpgradeError({
-          title: "Could not read the OpenCode update information",
+          title: "Could not read the Loophole update information",
           detail: "The update service returned incomplete release information.",
           retry: "Try again in a few minutes.",
         }),
@@ -335,10 +335,10 @@ const make = Effect.gen(function* () {
     const failure = (detail: string, cause?: unknown) =>
       new UpgradeError(
         {
-          title: "Could not check for OpenCode updates",
+          title: "Could not check for Loophole updates",
           detail,
           command: ["winget", "search", ...wingetArgs].join(" "),
-          retry: "Fix the issue above, then run opencode upgrade again.",
+          retry: "Fix the issue above, then run loophole upgrade again.",
         },
         cause === undefined ? undefined : { cause },
       )
@@ -398,10 +398,10 @@ const make = Effect.gen(function* () {
     const failure = (detail: string, cause?: unknown) =>
       new UpgradeError(
         {
-          title: input.title ?? `${installNames[input.method]} could not install OpenCode`,
+          title: input.title ?? `${installNames[input.method]} could not install Loophole`,
           detail,
           command: (input.displayCommand ?? input.command).join(" "),
-          retry: input.retry ?? "Fix the issue above, then run opencode upgrade again.",
+          retry: input.retry ?? "Fix the issue above, then run loophole upgrade again.",
         },
         cause === undefined ? undefined : { cause },
       )
@@ -428,8 +428,8 @@ const make = Effect.gen(function* () {
     const packageName =
       method === "winget"
         ? wingetPackage
-        : method === "brew" && installedFormula === "opencode"
-          ? "opencode"
+        : method === "brew" && installedFormula === "loophole"
+          ? "loophole"
           : (yield* release(method)).package
     const target = `${packageName}@${version}`
     if (installedPackage && packageName !== installedPackage && (method === "pnpm" || method === "yarn")) {
@@ -456,7 +456,7 @@ const make = Effect.gen(function* () {
     }
     yield* Effect.scoped(
       Effect.gen(function* () {
-        // Other OpenCode processes may be installing at the same time. Wait longer than the
+        // Other Loophole processes may be installing at the same time. Wait longer than the
         // slowest install (curl runs two 5-minute commands).
         yield* flock.acquire("cli-upgrade", undefined, { timeoutMs: Duration.toMillis("15 minutes") })
         if (method === "bun") {
@@ -479,18 +479,18 @@ const make = Effect.gen(function* () {
           const installer = path.join(directory, "install")
           yield* runUpgrade({
             method,
-            command: ["curl", "-fsSL", "-o", installer, "https://opencode.ai/v2/install"],
-            displayCommand: ["curl", "-fsSL", "https://opencode.ai/v2/install"],
-            title: "Could not download the OpenCode installer",
-            retry: "Check your network, then run opencode upgrade again.",
+            command: ["curl", "-fsSL", "-o", installer, "https://raw.githubusercontent.com/loophole-ai/loophole-app/main/script/install.ts"],
+            displayCommand: ["curl", "-fsSL", "https://raw.githubusercontent.com/loophole-ai/loophole-app/main/script/install.ts"],
+            title: "Could not download the Loophole installer",
+            retry: "Check your network, then run loophole upgrade again.",
           })
           return yield* retaining(
             method,
             runUpgrade({
               method,
               command: [bash, installer, "--version", version, "--no-modify-path"],
-              displayCommand: ["opencode", "upgrade", version, "--method", "curl"],
-              title: "The OpenCode installer failed",
+              displayCommand: ["loophole", "upgrade", version, "--method", "curl"],
+              title: "The Loophole installer failed",
             }),
           )
         }
@@ -519,9 +519,9 @@ const make = Effect.gen(function* () {
           ? cause
           : new UpgradeError(
               {
-                title: "Could not prepare the OpenCode upgrade",
+                title: "Could not prepare the Loophole upgrade",
                 detail: errorDetail(cause),
-                retry: "Fix the issue above, then run opencode upgrade again.",
+                retry: "Fix the issue above, then run loophole upgrade again.",
               },
               { cause },
             ),
@@ -556,7 +556,7 @@ const make = Effect.gen(function* () {
       yield* Effect.logInfo("update check done", { action: "up-to-date" })
       return undefined
     }
-    yield* Effect.logInfo("OpenCode update available", { current, latest: version, action: next })
+    yield* Effect.logInfo("Loophole update available", { current, latest: version, action: next })
     return { policy, version }
   })
 
@@ -569,7 +569,7 @@ const make = Effect.gen(function* () {
     const current = yield* Ref.get(installedVersion)
     yield* upgrade(detected, version)
     yield* Ref.set(installedVersion, version)
-    yield* Effect.logInfo("updated OpenCode", { from: current, to: version, method: detected })
+    yield* Effect.logInfo("updated Loophole", { from: current, to: version, method: detected })
     return true
   })
 
@@ -586,7 +586,7 @@ const make = Effect.gen(function* () {
     if (OPENCODE_LOCAL)
       return {
         type: "unavailable" as const,
-        message: "This build runs from a source checkout. Use an installed OpenCode release to check for updates.",
+        message: "This build runs from a source checkout. Use an installed Loophole release to check for updates.",
       }
     const detected = yield* method()
     if (!detected)

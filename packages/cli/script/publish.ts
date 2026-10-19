@@ -84,7 +84,7 @@ async function publishDistribution(input: {
 
   await Promise.all(
     Object.entries(binaries).map(([name, version]) =>
-      publish(`${input.root}/${name.replace("@opencode/", "")}`, name, version),
+      publish(`${input.root}/${name.replace("@loophole-ai/", "")}`, name, version),
     ),
   )
   await publish(`${input.root}/${input.name}`, input.name, version)
@@ -93,7 +93,7 @@ async function publishDistribution(input: {
     files: await Promise.all(
       Object.keys(binaries).map((name) =>
         archive(
-          path.join(input.root, name.replace("@opencode/", ""), "bin"),
+          path.join(input.root, name.replace("@loophole-ai/", ""), "bin"),
           name.slice(input.packagePrefix.length),
           input.binary,
           input.root,
@@ -105,7 +105,7 @@ async function publishDistribution(input: {
   const artifact = {
     channel: Script.channel,
     name: input.artifact,
-    distribution: "opencode",
+    distribution: "loophole",
     version,
     metadata: { files },
   }
@@ -126,19 +126,19 @@ async function publishDistribution(input: {
 await publishDistribution({
   root,
   name: pkg.name,
-  command: "opencode",
-  legacyCommand: "opencode2",
-  binary: "opencode",
-  packagePrefix: "@opencode/cli-",
+  command: "loophole",
+  legacyCommand: "loophole2",
+  binary: "loophole",
+  packagePrefix: "@loophole-ai/cli-",
   artifact: "cli",
 })
 if (Script.channel !== "latest" && existsSync(path.join(root, "node"))) {
   await publishDistribution({
     root: path.join(root, "node"),
-    name: "@opencode/cli-node",
-    command: "opencode2-node",
-    binary: "opencode2-node",
-    packagePrefix: "@opencode/cli-node-",
+    name: "@loophole-ai/cli-node",
+    command: "loophole2-node",
+    binary: "loophole2-node",
+    packagePrefix: "@loophole-ai/cli-node-",
     artifact: "cli-node",
   })
 }

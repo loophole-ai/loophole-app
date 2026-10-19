@@ -1,4 +1,4 @@
-import { TextAttributes } from "@opentui/core"
+﻿import { TextAttributes } from "@opentui/core"
 import { useTerminalDimensions } from "@opentui/solid"
 import { createMemo, createResource, createSignal, For, Show } from "solid-js"
 import { renderUnicodeCompact } from "uqr"
@@ -68,7 +68,7 @@ export function DialogPair() {
           </box>
           <Show when={value.loopback}>
             <text fg={theme.text.muted} wrapMode="word">
-              Run `opencode service set hostname 0.0.0.0` to access the service remotely.
+              Run `loophole service set hostname 0.0.0.0` to access the service remotely.
             </text>
           </Show>
         </box>
@@ -91,7 +91,7 @@ export function DialogPair() {
       <Show
         when={loadError()}
         fallback={
-          <Show when={info()} fallback={<text fg={theme.text.muted}>Loading server information…</text>}>
+          <Show when={info()} fallback={<text fg={theme.text.muted}>Loading server informationâ€¦</text>}>
             <Show
               when={dimensions().height >= 36}
               fallback={

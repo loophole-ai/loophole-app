@@ -1,4 +1,4 @@
-import { EmbeddedTerminalRenderable, type RGBA } from "@opentui/core"
+﻿import { EmbeddedTerminalRenderable, type RGBA } from "@opentui/core"
 import { rgbToOklch, type ResolvedThemeTokens } from "@opencode/theme/tui"
 import { extend, useRenderer } from "@opentui/solid"
 import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js"
@@ -240,7 +240,7 @@ export function TerminalPane(props: {
       }
       if (message.type !== "attached") return
       if (!("inputProtocol" in message) || message.inputProtocol !== 1) {
-        setFailure("Persistent terminal server is out of date; restart OpenCode")
+        setFailure("Persistent terminal server is out of date; restart Loophole")
         next.close()
         return
       }

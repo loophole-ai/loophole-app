@@ -1,4 +1,4 @@
-import { ClientError, OpenCode, type SessionStatsInfo } from "@opencode/client"
+﻿import { ClientError, OpenCode, type SessionStatsInfo } from "@opencode/client"
 import { Service } from "@opencode/client/effect/service"
 import { TokenUsage } from "@opencode/schema/token-usage"
 import { activityCalendar } from "@opencode/util/activity-calendar"
@@ -103,7 +103,7 @@ export function renderStats(stats: SessionStatsInfo, options: RenderOptions) {
     stats.subagents > 0 ? metricCount(stats.subagents, "subagent", options.color) : undefined,
   ]
     .filter((value) => value !== undefined)
-    .join(" · ")
+    .join(" Â· ")
   const toolSummary = !toolTotals
     ? "tool stats unavailable"
     : toolRate === undefined
@@ -111,16 +111,16 @@ export function renderStats(stats: SessionStatsInfo, options: RenderOptions) {
       : `${style(formatPercent(toolRate), primary, options.color)} tool success`
   const details = options.models || options.tools || options.cost
   const empty = stats.sessions === 0 && stats.prompts === 0 && stats.steps === 0
-  const heading = `${style("opencode stats", primary, options.color)} ${style(`· ${options.label} · ${options.scope}`, "2", options.color)}`
+  const heading = `${style("loophole stats", primary, options.color)} ${style(`Â· ${options.label} Â· ${options.scope}`, "2", options.color)}`
   const lines = details
-    ? [style(`${options.label} · ${options.scope}`, "2", options.color)]
+    ? [style(`${options.label} Â· ${options.scope}`, "2", options.color)]
     : empty
       ? [
           heading,
           "",
           style("no activity in this range", "2", options.color),
           "",
-          style("opencode.ai", "2", options.color),
+          style("loophole.ai", "2", options.color),
         ]
       : [
           heading,
@@ -128,10 +128,10 @@ export function renderStats(stats: SessionStatsInfo, options: RenderOptions) {
           ...renderActivity(stats.activity, stats.range.from, stats.range.to, options.color, options.width),
           "",
           sessionLine,
-          `${metricCount(stats.prompts, "prompt", options.color)} · ${metricCount(stats.steps, "step", options.color)} · ${metricCount(totalTokens, "token", options.color)}`,
-          `${toolSummary} · ${metricCount(stats.activeDays, "active day", options.color)} · best streak ${style(stats.streak.toString(), primary, options.color)} day${stats.streak === 1 ? "" : "s"}`,
+          `${metricCount(stats.prompts, "prompt", options.color)} Â· ${metricCount(stats.steps, "step", options.color)} Â· ${metricCount(totalTokens, "token", options.color)}`,
+          `${toolSummary} Â· ${metricCount(stats.activeDays, "active day", options.color)} Â· best streak ${style(stats.streak.toString(), primary, options.color)} day${stats.streak === 1 ? "" : "s"}`,
           "",
-          style("opencode.ai", "2", options.color),
+          style("loophole.ai", "2", options.color),
         ]
 
   if (options.cost) lines.push(...(lines.length > 0 ? [""] : []), ...renderCost(stats))
@@ -179,7 +179,7 @@ function renderActivity(
   const weekdays = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
   return [
     style(
-      calendar.clipped ? `activity · last ${calendar.weeks.length} weeks` : "activity",
+      calendar.clipped ? `activity Â· last ${calendar.weeks.length} weeks` : "activity",
       `1;${colors.primary}`,
       color,
     ),
@@ -220,7 +220,7 @@ function renderModels(stats: SessionStatsInfo, limit: number, width: number) {
           `${item.model.providerID}/${item.model.id}${item.model.variant ? `#${item.model.variant}` : ""}`,
           width,
         ),
-        `  ${formatNumber(TokenUsage.total(item.tokens))} tokens · ${formatNumber(item.steps)} steps · $${item.cost.toFixed(2)}`,
+        `  ${formatNumber(TokenUsage.total(item.tokens))} tokens Â· ${formatNumber(item.steps)} steps Â· $${item.cost.toFixed(2)}`,
       ]),
       ...(more > 0 ? ["", `+${more.toLocaleString("en-US")} more model${more === 1 ? "" : "s"}`] : []),
     ]
@@ -251,11 +251,11 @@ function renderTools(stats: SessionStatsInfo, limit: number, width: number) {
         const terminal = tool.succeeded + tool.failed
         return [
           truncate(tool.name, width),
-          `  ${formatNumber(tool.calls)} calls · ${terminal === 0 ? "-" : formatPercent((tool.failed / terminal) * 100)} error · ${tool.durationP50 === undefined ? "-" : formatDuration(tool.durationP50)} p50`,
+          `  ${formatNumber(tool.calls)} calls Â· ${terminal === 0 ? "-" : formatPercent((tool.failed / terminal) * 100)} error Â· ${tool.durationP50 === undefined ? "-" : formatDuration(tool.durationP50)} p50`,
         ]
       }),
       "",
-      `${formatNumber(stats.tools.totals.succeeded + stats.tools.totals.failed)} finished calls · ${formatNumber(stats.tools.totals.unfinished)} unfinished`,
+      `${formatNumber(stats.tools.totals.succeeded + stats.tools.totals.failed)} finished calls Â· ${formatNumber(stats.tools.totals.unfinished)} unfinished`,
       ...(more > 0 ? [`+${more.toLocaleString("en-US")} more tool${more === 1 ? "" : "s"}`] : []),
     ]
   return [
@@ -271,7 +271,7 @@ function renderTools(stats: SessionStatsInfo, limit: number, width: number) {
       )
     }),
     "",
-    `${formatNumber(stats.tools.totals.succeeded + stats.tools.totals.failed)} finished calls · ${formatNumber(stats.tools.totals.unfinished)} unfinished`,
+    `${formatNumber(stats.tools.totals.succeeded + stats.tools.totals.failed)} finished calls Â· ${formatNumber(stats.tools.totals.unfinished)} unfinished`,
     ...(more > 0 ? [`+${more.toLocaleString("en-US")} more tool${more === 1 ? "" : "s"}`] : []),
   ]
 }
@@ -289,7 +289,7 @@ function tableRow(label: string, second: string, third: string, fourth: string) 
 }
 
 function truncate(value: string, width: number) {
-  return value.length <= width ? value : value.slice(0, width - 1) + "…"
+  return value.length <= width ? value : value.slice(0, width - 1) + "â€¦"
 }
 
 function formatNumber(value: number) {
@@ -321,7 +321,7 @@ function style(value: string, code: string, color: boolean) {
 }
 
 function paintActivity(level: number, color: boolean) {
-  const glyph = ["·", "░", "▒", "▓", "█"][level]
+  const glyph = ["Â·", "â–‘", "â–’", "â–“", "â–ˆ"][level]
   if (!color) return glyph
   if (level === 0) return `\x1b[2m${glyph}\x1b[22m`
   return `\x1b[${colors.activity[level - 1]}m${glyph}\x1b[39m`

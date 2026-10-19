@@ -4,9 +4,9 @@ const arg = process.argv[2]
 
 const channel = arg === "dev" || arg === "beta" || arg === "prod" ? arg : resolveChannel()
 
-const appId = channel === "prod" ? "ai.opencode.desktop" : `ai.opencode.desktop.${channel}`
+const appId = channel === "prod" ? "ai.loophole.desktop" : `ai.loophole.desktop.${channel}`
 
-const productName = channel === "prod" ? "OpenCode" : `OpenCode ${channel.charAt(0).toUpperCase() + channel.slice(1)}`
+const productName = channel === "prod" ? "Loophole" : `Loophole ${channel.charAt(0).toUpperCase() + channel.slice(1)}`
 
 const summary = `Open source AI coding agent${channel !== "prod" ? ` (${channel})` : ""}`
 
@@ -21,12 +21,12 @@ const xml = `<?xml version="1.0" encoding="UTF-8"?>
   <summary>${summary}</summary>
 
   <developer id="ly.anoma">
-    <name>Anomaly Innovations Inc.</name>
+    <name>Loophole</name>
   </developer>
 
   <description>
     <p>
-      OpenCode is an open source agent that helps you write and run code with any AI model.
+      Loophole is an open source agent that helps you write and run code with any AI model. It is a fork of OpenCode.
     </p>
   </description>
 
@@ -34,9 +34,9 @@ const xml = `<?xml version="1.0" encoding="UTF-8"?>
 
   <content_rating type="oars-1.1" />
 
-  <url type="bugtracker">https://github.com/anomalyco/opencode/issues</url>
-  <url type="homepage">https://opencode.ai</url>
-  <url type="vcs-browser">https://github.com/anomalyco/opencode</url>
+  <url type="bugtracker">https://github.com/loophole-ai/loophole-app/issues</url>
+  <url type="homepage">https://github.com/loophole-ai/loophole-app</url>
+  <url type="vcs-browser">https://github.com/loophole-ai/loophole-app</url>
 
   <screenshots>
     <screenshot type="default">

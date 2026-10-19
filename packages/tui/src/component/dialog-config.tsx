@@ -1,4 +1,4 @@
-import { createMemo, createSignal } from "solid-js"
+﻿import { createMemo, createSignal } from "solid-js"
 import { useConfig, useNewDesigns } from "../config"
 import { useThemes } from "../context/theme"
 import { DialogSelect } from "../ui/dialog-select"
@@ -23,7 +23,7 @@ export const settings: Setting[] = [
     title: "Theme",
     category: "Appearance",
     path: ["theme", "name"],
-    default: "opencode",
+    default: "loophole",
     keywords: ["color scheme", "colors"],
   },
   {
@@ -402,7 +402,7 @@ export function DialogConfig(props: { current?: string }) {
       filterThreshold={0.7}
       onMove={(option) => setSelected(option.value)}
       onSelect={(option) => void change(1, option.value)}
-      footerHints={newDesigns() ? [] : [{ title: "change", label: "←/→" }]}
+      footerHints={newDesigns() ? [] : [{ title: "change", label: "â†/â†’" }]}
       bindings={[
         {
           bind: "left",

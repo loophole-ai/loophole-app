@@ -1,4 +1,4 @@
-import { createEffect, createMemo, createResource, createSignal, For, Match, onCleanup, Show, Switch } from "solid-js"
+﻿import { createEffect, createMemo, createResource, createSignal, For, Match, onCleanup, Show, Switch } from "solid-js"
 import { Keymap } from "../context/keymap"
 import { useNewDesigns } from "../config"
 import { useTheme } from "../context/theme"
@@ -92,7 +92,7 @@ export function DialogUpdate(props: {
         <DialogHeader
           title={
             state().type === "installing"
-              ? "Updating OpenCode"
+              ? "Updating Loophole"
               : state().type === "available" || state().type === "failed"
                 ? "Update available"
                 : "Update"
@@ -133,16 +133,16 @@ export function DialogUpdate(props: {
         {(current) => (
           <Switch>
             <Match when={current.type === "checking"}>
-              <Spinner shimmer={theme.text.base}>Checking for updates…</Spinner>
+              <Spinner shimmer={theme.text.base}>Checking for updatesâ€¦</Spinner>
             </Match>
             <Match when={current.type === "available"}>
               <text fg={theme.text.muted}>
-                An update is available. After installing, you'll be prompted to restart OpenCode.
+                An update is available. After installing, you'll be prompted to restart Loophole.
               </text>
             </Match>
             <Match when={current.type === "installing"}>
               <Spinner shimmer={theme.text.base}>
-                {current.type === "installing" ? `Installing OpenCode ${current.version}…` : ""}
+                {current.type === "installing" ? `Installing OpenCode ${current.version}â€¦` : ""}
               </Spinner>
             </Match>
             <Match when={current.type === "installed"}>
@@ -151,7 +151,7 @@ export function DialogUpdate(props: {
               </text>
             </Match>
             <Match when={current.type === "current"}>
-              <text fg={theme.text.muted}>OpenCode is already up to date.</text>
+              <text fg={theme.text.muted}>Loophole is already up to date.</text>
             </Match>
             <Match when={current.type === "unavailable"}>
               <text fg={theme.text.muted} wrapMode="word">

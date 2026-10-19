@@ -1,4 +1,4 @@
-export * as DesktopLogging from "./logging"
+﻿export * as DesktopLogging from "./logging"
 
 import log from "electron-log/main.js"
 import { app, crashReporter, netLog, shell } from "electron"
@@ -259,7 +259,7 @@ function serverLogRoots(path: Path.Path) {
   const xdgData = process.env.XDG_DATA_HOME || path.join(homedir(), ".local", "share")
 
   return [
-    ...new Set([path.join(xdgData, "opencode", "log"), path.join(app.getPath("userData"), "opencode", "log")]),
+    ...new Set([path.join(xdgData, "loophole", "log"), path.join(app.getPath("userData"), "loophole", "log")]),
   ]
 }
 

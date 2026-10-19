@@ -37,7 +37,9 @@ function fail(message: string) {
 
 /** The default registration file. */
 export function fallback() {
-  return join(process.env["XDG_STATE_HOME"] ?? join(homedir(), ".local", "state"), "opencode", "service.json")
+  // Must match the app name in @opencode/util/global, or a client that passes no explicit file watches
+  // another install's registration: this fork writes under "loophole", never "opencode".
+  return join(process.env["XDG_STATE_HOME"] ?? join(homedir(), ".local", "state"), "loophole", "service.json")
 }
 
 /** Whether two registrations describe the same service instance. */
@@ -49,7 +51,7 @@ export function same(left: Info, right: Info) {
 export async function probeResult(info: Info, timeout = defaultEnsureTiming.requestTimeout) {
   const endpoint = {
     url: info.url,
-    auth: info.password === undefined ? undefined : { type: "basic", username: "opencode", password: info.password },
+    auth: info.password === undefined ? undefined : { type: "basic", username: "loophole", password: info.password },
   } satisfies Endpoint
   const signal = AbortSignal.timeout(timeout)
   const result = await fetch(new URL("/api/info", info.url), { headers: headers(endpoint), signal })

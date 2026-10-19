@@ -1,5 +1,8 @@
-import { app } from "electron"
+﻿import { app } from "electron"
+import { homedir } from "node:os"
+import { join } from "node:path"
 import { Context, Effect, FileSystem, Layer, Path } from "effect"
+import { CHANNEL } from "../constants"
 import { BackgroundServiceState } from "./background-service-state"
 import { cleanStages } from "./cli-stages"
 import { DesktopCli } from "./desktop-cli"
@@ -31,7 +34,6 @@ export const layer = Layer.effect(
 
 const connect = Effect.fn("BackgroundService.connect")(function* (mode: "initial" | "reconnect") {
   yield* Effect.logInfo("starting v2 background service")
-  const path = yield* Path.Path
   const desktopCli = yield* DesktopCli.Service
   const runFork = Effect.runForkWith(yield* Effect.context<FileSystem.FileSystem | Path.Path>())
   const isolated = !app.isPackaged && process.env.OPENCODE_DESKTOP_ISOLATED_SERVER === "1"
@@ -40,13 +42,18 @@ const connect = Effect.fn("BackgroundService.connect")(function* (mode: "initial
 
   if (isolated) process.env.XDG_STATE_HOME = app.getPath("userData")
   const client = yield* Effect.promise(() => import("@opencode/client/service"))
+  // The CLI names its registration file after its channel, and a compiled binary reads that channel
+  // from the binary itself, so both sides have to settle on one. Pinning it here also covers the dev
+  // path, where the CLI is run from source and would otherwise take a different channel than the
+  // bundled build, leaving ensure() waiting on a file the sidecar never writes.
+  process.env.OPENCODE_CHANNEL = CHANNEL
+  const home = join(homedir(), ".local", "state")
+  const state = isolated ? app.getPath("userData") : (process.env.XDG_STATE_HOME ?? home)
+  const file = join(state, "loophole", CHANNEL === "dev" || CHANNEL === "beta" ? "service.json" : `service-${CHANNEL}.json`)
 
   const ensure = () =>
     client.Service.ensure({
-      file:
-        isolated && process.env.OPENCODE_DESKTOP_SERVER_CHANNEL === "local"
-          ? path.join(app.getPath("userData"), "opencode", "service-local.json")
-          : undefined,
+      file,
       version,
       // A fixed port makes a second contender fail to bind and back off; port 0 never collides, so two
       // services could boot against the same database.

@@ -24,7 +24,7 @@ export interface Interface {
   readonly install: Effect.Effect<string, Error>
 }
 
-export class Service extends Context.Service<Service, Interface>()("opencode/desktop/DesktopCli") {}
+export class Service extends Context.Service<Service, Interface>()("loophole/desktop/DesktopCli") {}
 
 export const layer = Layer.effect(
   Service,
@@ -43,7 +43,7 @@ export const layer = Layer.effect(
       const home = app.getPath("home")
       yield* runInstaller(cli.binary, home)
 
-      return path.join(home, ".opencode", "bin", "opencode")
+      return path.join(home, ".loophole", "bin", "loophole")
     })
 
     return Service.of({ resolve, install })
@@ -101,7 +101,7 @@ const bundledVersion = Effect.fn("DesktopCli.bundledVersion")(function* (bundled
   // async read waits behind everything else the main thread is doing at that moment.
   const shipped = yield* Effect.sync(() => {
     try {
-      return readFileSync(path.join(path.dirname(bundled), "opencode-cli.version"), "utf8").trim()
+      return readFileSync(path.join(path.dirname(bundled), "loophole-cli.version"), "utf8").trim()
     } catch {
       return ""
     }
@@ -209,9 +209,9 @@ const runInstaller = Effect.fn("DesktopCli.installForUser")(function* (binary: s
 })
 
 function executableName() {
-  return process.platform === "win32" ? "opencode-cli.exe" : "opencode-cli"
+  return process.platform === "win32" ? "loophole-cli.exe" : "loophole-cli"
 }
 
 function developmentExecutableName() {
-  return process.platform === "win32" ? "opencode-cli-dev.exe" : "opencode-cli-dev"
+  return process.platform === "win32" ? "loophole-cli-dev.exe" : "loophole-cli-dev"
 }

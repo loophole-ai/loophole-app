@@ -107,7 +107,7 @@ export const SettingsAppearance: Component = () => {
               description={
                 <>
                   {language.t("settings.general.row.theme.description")}{" "}
-                  <ExternalLink class="settings-link" href="https://opencode.ai/docs/themes/">
+                  <ExternalLink class="settings-link" href="https://www.loopholeeditor.in/docs/themes/">
                     {language.t("common.learnMore")}
                   </ExternalLink>
                 </>

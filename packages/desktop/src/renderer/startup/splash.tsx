@@ -1,4 +1,3 @@
-import { Splash } from "@opencode/ui/logo"
 import { Wordmark } from "@opencode/ui/wordmark"
 import type { Platform } from "@opencode/app/desktop"
 import { onCleanup, onMount, Show } from "solid-js"
@@ -58,7 +57,10 @@ export function LoadingSplash(props: {
             "bg-v2-background-bg-base": !props.deep,
           }}
         >
-          <Splash class="w-16 h-20 opacity-50 animate-pulse" />
+          <div
+          class="loophole-mark h-24 w-24 animate-pulse"
+          style={{ "background-color": "var(--v2-text-text-muted)" }}
+        />
         </div>
       }
     >

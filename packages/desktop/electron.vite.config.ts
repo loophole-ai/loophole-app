@@ -39,7 +39,7 @@ const sentry =
 const initialGraph = new Set<string>()
 
 const initialChunk: Plugin = {
-  name: "opencode-desktop:initial-chunk",
+  name: "loophole-desktop:initial-chunk",
   renderStart() {
     const entries = [...this.getModuleIds()].filter((id) => this.getModuleInfo(id)?.isEntry)
     initialGraph.clear()

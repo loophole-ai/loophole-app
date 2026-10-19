@@ -1,4 +1,4 @@
-import { Service, type Endpoint } from "@opencode/client/effect/service"
+﻿import { Service, type Endpoint } from "@opencode/client/effect/service"
 import { ClientError, OpenCode, type OpenCodeClient } from "@opencode/client/promise"
 import type { MiniFrontendInput } from "@opencode/tui/mini"
 import { setTimeout } from "node:timers/promises"
@@ -180,7 +180,7 @@ export async function resolveMiniTarget<A>(input: {
 }
 
 export function validateMiniTerminal() {
-  if (!process.stdout.isTTY) fail("opencode mini requires a TTY stdout")
+  if (!process.stdout.isTTY) fail("loophole mini requires a TTY stdout")
 }
 
 /** @internal Exported for testing. */

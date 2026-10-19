@@ -1,10 +1,10 @@
-// Lifecycle management for the split-footer renderer.
+﻿// Lifecycle management for the split-footer renderer.
 //
 // Creates the OpenTUI CliRenderer in split-footer mode, resolves the theme
 // from the terminal palette, writes the entry splash to scrollback, and
 // constructs the RunFooter. Returns a Lifecycle handle whose close() writes
 // the exit splash and tears everything down in the right order:
-// footer.close → footer.destroy → renderer shutdown.
+// footer.close â†’ footer.destroy â†’ renderer shutdown.
 //
 // Also wires SIGINT so Ctrl-c clears a live prompt draft first, then falls
 // back to the usual two-press exit sequence through RunFooter.requestExit().
@@ -174,8 +174,8 @@ export async function createRuntimeLifecycle(input: LifecycleInput): Promise<Lif
   if (mono) renderer.on(CliRenderEvents.EXTERNAL_OUTPUT, monoSnapshot)
   const setTitle = (title?: string) => {
     if (input.host.platform !== "linux") return
-    if (!title || isFallbackTitle(title)) return renderer.setTerminalTitle("OpenCode")
-    renderer.setTerminalTitle(`OC | ${title.length > 40 ? title.slice(0, 37) + "…" : title}`)
+    if (!title || isFallbackTitle(title)) return renderer.setTerminalTitle("Loophole")
+    renderer.setTerminalTitle(`OC | ${title.length > 40 ? title.slice(0, 37) + "â€¦" : title}`)
   }
   setTitle(input.sessionTitle)
   const theme = await resolveRunTheme(renderer, tuiConfig.theme, mono)

@@ -1,17 +1,18 @@
 {
-  "name": "@opencode/desktop",
+  "name": "@loophole-ai/desktop",
   "private": true,
-  "version": "2.0.32",
+  "version": "1.0.0",
   "type": "module",
   "license": "MIT",
-  "homepage": "https://opencode.ai",
+  "homepage": "https://github.com/loophole-ai/loophole-app",
   "author": {
-    "name": "OpenCode",
-    "email": "hello@opencode.ai"
+    "name": "Loophole",
+    "email": "hello@loophole.ai"
   },
   "scripts": {
     "typecheck": "tsgo -b",
     "test": "bun test --timeout 30000",
+    "install-electron": "node ./node_modules/electron/install.js",
     "dev": "bun ./scripts/dev.ts",
     "migration": "bun ./scripts/migration.ts",
     "prebuild": "bun ./scripts/prebuild.ts",

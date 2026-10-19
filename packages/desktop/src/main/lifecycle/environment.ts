@@ -1,4 +1,4 @@
-import http from "node:http"
+﻿import http from "node:http"
 import { getCACertificates, setDefaultCACertificates } from "node:tls"
 import { app } from "electron"
 import { Effect, Path } from "effect"
@@ -38,7 +38,7 @@ export const prepareDesktop = Effect.gen(function* () {
   const paths = yield* DesktopPaths.resolve
 
   if (app.isPackaged || process.env.OPENCODE_DESKTOP_DISABLE_PROTOCOL_REGISTRATION !== "1")
-    app.setAsDefaultProtocolClient("opencode")
+    app.setAsDefaultProtocolClient("loophole")
   const runFork = Effect.runForkWith(yield* Effect.context())
   setProtocolReporter((level, message, data) =>
     runFork(scoped("protocol", level === "error" ? Effect.logError(message, data) : Effect.logWarning(message, data))),

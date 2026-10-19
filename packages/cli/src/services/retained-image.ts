@@ -1,4 +1,4 @@
-export * as RetainedImage from "./retained-image"
+﻿export * as RetainedImage from "./retained-image"
 
 import { Effect, FileSystem } from "effect"
 import { randomBytes } from "node:crypto"
@@ -61,7 +61,7 @@ export function installed(home: string) {
   return (
     executable.split(path.sep).includes("node_modules") ||
     /[\\/]winget[\\/]packages[\\/]/i.test(executable) ||
-    executable === path.resolve(home, ".opencode", "bin", "opencode.exe")
+    executable === path.resolve(home, ".loophole", "bin", "loophole.exe")
   )
 }
 

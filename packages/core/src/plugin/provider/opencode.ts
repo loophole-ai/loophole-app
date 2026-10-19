@@ -344,15 +344,8 @@ export const OpencodePlugin = define<HttpClient.HttpClient | Bus.Service | Manag
           })
       }
 
-      const item = providers.get(Provider.ID.opencode)
-      if (!item) return
-      const hasKey = Boolean(process.env.OPENCODE_API_KEY || snapshot.connection || item.provider.settings?.apiKey)
-      providers.update(item.provider.id, (provider) => {
-        if (!hasKey) {
-          provider.activation = "enabled"
-          provider.settings = { ...provider.settings, apiKey: "public" }
-        }
-      })
+      // This fork does not ship a hosted free tier: the opencode provider stays disconnected
+      // until the user supplies their own key, so no models are force-enabled with a public key.
     })
     yield* ctx.model.transform((models) => {
       const item = models.provider.get(Provider.ID.opencode)
