@@ -3,7 +3,7 @@
   "name": "@loophole-ai/cli",
   "version": "2.0.32",
   "type": "module",
-  "license": "MIT",
+  "license": "AGPL-3.0",
   "bin": {
     "loophole": "./bin/loophole.cjs",
     "loophole2": "./bin/loophole2.cjs"

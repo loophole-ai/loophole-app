@@ -201,8 +201,8 @@ export default { path: file, version: ${JSON.stringify(opencodePty.version)}, sh
       {
         name: `@loophole-ai/${name}`,
         version: Script.version,
-        license: "MIT",
-        repository: { type: "git", url: "git+https://github.com/anomalyco/opencode.git" },
+        license: "AGPL-3.0",
+        repository: { type: "git", url: "git+https://github.com/loophole-ai/loophole-app.git" },
         os: [item.os],
         cpu: [item.arch],
       },
