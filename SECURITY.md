@@ -10,13 +10,13 @@ submit one that will be an automatic ban from the project.
 
 ### Overview
 
-OpenCode is an AI-powered coding assistant that runs locally on your machine. It provides an agent system with access to powerful tools including shell execution, file operations, and web access.
+Loophole is an AI-powered coding assistant that runs locally on your machine. It provides an agent system with access to powerful tools including shell execution, file operations, and web access.
 
 ### No Sandbox
 
-OpenCode does **not** sandbox the agent. The permission system exists as a UX feature to help users stay aware of what actions the agent is taking - it prompts for confirmation before executing commands, writing files, etc. However, it is not designed to provide security isolation.
+Loophole does **not** sandbox the agent. The permission system exists as a UX feature to help users stay aware of what actions the agent is taking - it prompts for confirmation before executing commands, writing files, etc. However, it is not designed to provide security isolation.
 
-If you need true isolation, run OpenCode inside a Docker container or VM.
+If you need true isolation, run Loophole inside a Docker container or VM.
 
 ### Server Mode
 
@@ -36,12 +36,31 @@ Server mode is opt-in only. When enabled, set `OPENCODE_SERVER_PASSWORD` to requ
 
 # Reporting Security Issues
 
-We appreciate your efforts to responsibly disclose your findings, and will make every effort to acknowledge your contributions.
+**Please do not report security vulnerabilities through public GitHub issues.**
 
-To report a security issue, please use the GitHub Security Advisory ["Report a Vulnerability"](https://github.com/anomalyco/opencode/security/advisories/new) tab.
+If you discover a security vulnerability in Loophole, please report it privately by:
 
-The team will send a response indicating the next steps in handling your report. After the initial reply to your report, the security team will keep you informed of the progress towards a fix and full announcement, and may ask for additional information or guidance.
+1. Sending an email to: security@loophole.ai
+2. Including details about the vulnerability
+3. Providing steps to reproduce (if applicable)
+4. Waiting for confirmation before publicly disclosing
+
+You can also use the GitHub Security Advisory
+["Report a Vulnerability"](https://github.com/loophole-ai/loophole-app/security/advisories/new)
+tab.
+
+We will review your report and work with you to address the issue. We aim to respond within 48 hours.
+
+## Responsible Disclosure
+
+We appreciate responsible security disclosures and will work with researchers to:
+
+- Acknowledge the report
+- Investigate and validate the vulnerability
+- Develop and test a fix
+- Release a security update
+- Credit the reporter (if desired)
 
 ## Escalation
 
-If you do not receive an acknowledgement of your report within 6 business days, you may send an email to security@anoma.ly
+If you do not receive an acknowledgement of your report within 6 business days, you may send a follow-up email to security@loophole.ai.
