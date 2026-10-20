@@ -228,7 +228,7 @@ export function getConfig() {
         protocols: { name: "Loophole Beta", schemes: ["loophole"] },
         publish: {
           provider: "generic",
-          url: "https://github.com/loophole-ai/loophole-app/releases/latest/download",
+          url: "https://github.com/loophole-ai/desktop/releases/latest/download",
           channel: "latest",
         },
         deb: { fpm: [metainfoFpm(appId)] },
@@ -244,7 +244,7 @@ export function getConfig() {
         protocols: { name: "Loophole", schemes: ["loophole"] },
         publish: {
           provider: "generic",
-          url: "https://github.com/loophole-ai/loophole-app/releases/latest/download",
+          url: "https://github.com/loophole-ai/desktop/releases/latest/download",
           channel: "latest",
         },
         deb: { fpm: [metainfoFpm(appId)] },
