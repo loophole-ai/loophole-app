@@ -1,4 +1,4 @@
-﻿import { createEffect, createMemo, createResource, createSignal, For, Match, onCleanup, Show, Switch } from "solid-js"
+import { createEffect, createMemo, createResource, createSignal, For, Match, onCleanup, Show, Switch } from "solid-js"
 import { Keymap } from "../context/keymap"
 import { useNewDesigns } from "../config"
 import { useTheme } from "../context/theme"
@@ -133,7 +133,7 @@ export function DialogUpdate(props: {
         {(current) => (
           <Switch>
             <Match when={current.type === "checking"}>
-              <Spinner shimmer={theme.text.base}>Checking for updatesâ€¦</Spinner>
+              <Spinner shimmer={theme.text.base}>Checking for updates…</Spinner>
             </Match>
             <Match when={current.type === "available"}>
               <text fg={theme.text.muted}>
@@ -142,7 +142,7 @@ export function DialogUpdate(props: {
             </Match>
             <Match when={current.type === "installing"}>
               <Spinner shimmer={theme.text.base}>
-                {current.type === "installing" ? `Installing OpenCode ${current.version}â€¦` : ""}
+                {current.type === "installing" ? `Installing OpenCode ${current.version}…` : ""}
               </Spinner>
             </Match>
             <Match when={current.type === "installed"}>

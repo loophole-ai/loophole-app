@@ -1,4 +1,4 @@
-﻿import { TextAttributes } from "@opentui/core"
+import { TextAttributes } from "@opentui/core"
 import { useTerminalDimensions } from "@opentui/solid"
 import { createMemo, createResource, createSignal, For, Show } from "solid-js"
 import { renderUnicodeCompact } from "uqr"
@@ -91,7 +91,7 @@ export function DialogPair() {
       <Show
         when={loadError()}
         fallback={
-          <Show when={info()} fallback={<text fg={theme.text.muted}>Loading server informationâ€¦</text>}>
+          <Show when={info()} fallback={<text fg={theme.text.muted}>Loading server information…</text>}>
             <Show
               when={dimensions().height >= 36}
               fallback={

@@ -49,7 +49,14 @@ const connect = Effect.fn("BackgroundService.connect")(function* (mode: "initial
   process.env.OPENCODE_CHANNEL = CHANNEL
   const home = join(homedir(), ".local", "state")
   const state = isolated ? app.getPath("userData") : (process.env.XDG_STATE_HOME ?? home)
-  const file = join(state, "loophole", CHANNEL === "dev" || CHANNEL === "beta" ? "service.json" : `service-${CHANNEL}.json`)
+  const file =
+    process.env.OPENCODE_DESKTOP_SERVER_CHANNEL === "local"
+      ? join(state, "loophole", "service-local.json")
+      : join(
+          state,
+          "loophole",
+          CHANNEL === "dev" || CHANNEL === "beta" ? "service.json" : `service-${CHANNEL}.json`,
+        )
 
   const ensure = () =>
     client.Service.ensure({

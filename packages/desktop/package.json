@@ -1,7 +1,7 @@
 {
   "name": "@loophole-ai/desktop",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "license": "AGPL-3.0",
   "homepage": "https://github.com/loophole-ai/loophole-app",
@@ -10,7 +10,7 @@
     "email": "hello@loophole.ai"
   },
   "scripts": {
-    "typecheck": "tsgo -b",
+    "typecheck": "tsc -b",
     "test": "bun test --timeout 30000",
     "install-electron": "node ./node_modules/electron/install.js",
     "dev": "bun ./scripts/dev.ts",
@@ -46,17 +46,17 @@
     "@solidjs/router": "catalog:",
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
-    "@typescript/native-preview": "catalog:",
+    "@typescript/native": "catalog:",
     "app-builder-lib": "26.15.7",
     "drizzle-kit": "catalog:",
     "drizzle-orm": "catalog:",
     "effect": "catalog:",
-    "electron": "44.4.5",
+    "electron": "44.9.1",
     "electron-builder": "26.15.7",
     "electron-vite": "6.0.0-beta.1",
     "magic-string": "0.30.21",
     "solid-js": "catalog:",
-    "typescript": "~5.6.2",
+    "typescript": "catalog:",
     "vite": "8.2.2"
   },
   "optionalDependencies": {

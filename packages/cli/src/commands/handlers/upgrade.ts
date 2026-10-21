@@ -1,4 +1,4 @@
-﻿import { intro, log, outro, spinner } from "@clack/prompts"
+import { intro, log, outro, spinner } from "@clack/prompts"
 import { Effect, Option } from "effect"
 import { Commands } from "../commands"
 import { Runtime } from "../../framework/runtime"
@@ -28,7 +28,7 @@ export default Runtime.handler(
         return
       }
 
-      log.info(`From ${OPENCODE_VERSION} â†’ ${version}`)
+      log.info(`From ${OPENCODE_VERSION} → ${version}`)
       const progress = spinner()
       progress.start("Upgrading...")
       yield* updater.upgrade(method, target).pipe(
