@@ -1,10 +1,10 @@
-﻿// Lifecycle management for the split-footer renderer.
+// Lifecycle management for the split-footer renderer.
 //
 // Creates the OpenTUI CliRenderer in split-footer mode, resolves the theme
 // from the terminal palette, writes the entry splash to scrollback, and
 // constructs the RunFooter. Returns a Lifecycle handle whose close() writes
 // the exit splash and tears everything down in the right order:
-// footer.close â†’ footer.destroy â†’ renderer shutdown.
+// footer.close → footer.destroy → renderer shutdown.
 //
 // Also wires SIGINT so Ctrl-c clears a live prompt draft first, then falls
 // back to the usual two-press exit sequence through RunFooter.requestExit().
@@ -17,6 +17,7 @@ import {
   type ScrollbackWriter,
 } from "@opentui/core"
 import { isFallbackTitle } from "@opencode/util/session-title-fallback"
+import { setTerminalTitle } from "../util/renderer"
 import { monoSnapshot } from "./mono"
 import { entrySplash, exitSplash } from "./splash"
 import { resolveRunTheme } from "./theme"
@@ -93,10 +94,12 @@ export type Lifecycle = {
 
 // Gracefully tears down the renderer. Order matters: switch external output
 // back to passthrough before leaving split-footer mode, so pending stdout
-// doesn't get captured into the now-dead scrollback pipeline.
-function shutdown(renderer: CliRenderer): void {
+// doesn't get captured into the now-dead scrollback pipeline. closed rejects
+// when the terminal is gone or the final flush times out; nothing is left to
+// restore.
+async function shutdown(renderer: CliRenderer): Promise<void> {
   if (renderer.isDestroyed) {
-    return
+    return renderer.closed.catch(() => {})
   }
 
   if (renderer.externalOutputMode === "capture-stdout") {
@@ -110,6 +113,7 @@ function shutdown(renderer: CliRenderer): void {
   if (!renderer.isDestroyed) {
     renderer.destroy()
   }
+  await renderer.closed.catch(() => {})
 }
 
 function splashTitle(title: string | undefined, history: RunPrompt[]) {
@@ -174,8 +178,8 @@ export async function createRuntimeLifecycle(input: LifecycleInput): Promise<Lif
   if (mono) renderer.on(CliRenderEvents.EXTERNAL_OUTPUT, monoSnapshot)
   const setTitle = (title?: string) => {
     if (input.host.platform !== "linux") return
-    if (!title || isFallbackTitle(title)) return renderer.setTerminalTitle("Loophole")
-    renderer.setTerminalTitle(`OC | ${title.length > 40 ? title.slice(0, 37) + "â€¦" : title}`)
+    if (!title || isFallbackTitle(title)) return setTerminalTitle(renderer, "Loophole")
+    setTerminalTitle(renderer, `OC | ${title.length > 40 ? title.slice(0, 37) + "…" : title}`)
   }
   setTitle(input.sessionTitle)
   const theme = await resolveRunTheme(renderer, tuiConfig.theme, mono)
@@ -334,8 +338,8 @@ export async function createRuntimeLifecycle(input: LifecycleInput): Promise<Lif
       footer.close()
       await footer.idle().catch(() => {})
       footer.destroy()
-      if (input.host.platform === "linux") renderer.setTerminalTitle("")
-      shutdown(renderer)
+      if (input.host.platform === "linux") setTerminalTitle(renderer, "")
+      await shutdown(renderer)
       if (!wroteExit) {
         input.host.stdout.write("\n")
       }

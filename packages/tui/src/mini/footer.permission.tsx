@@ -1,18 +1,18 @@
-﻿// Permission UI body for the direct-mode footer.
+// Permission UI body for the direct-mode footer.
 //
 // Renders inside the footer when the reducer pushes a FooterView of type
 // "permission". Uses a three-stage state machine (permission.shared.ts):
 //
-//   permission â†’ shows the request with Allow once / Always / Reject buttons
-//   always     â†’ confirmation step before granting permanent access
-//   reject     â†’ text field for the rejection message
+//   permission → shows the request with Allow once / Always / Reject buttons
+//   always     → confirmation step before granting permanent access
+//   reject     → text field for the rejection message
 //
 // Keyboard: left/right to select, enter to confirm, esc to reject.
 // The diff view (when available) uses the same diff component as scrollback
 // tool snapshots.
 /** @jsxImportSource @opentui/solid */
-import { TextAttributes, type ScrollBoxRenderable, type TextareaRenderable } from "@opentui/core"
-import { useKeyboard, useTerminalDimensions } from "@opentui/solid"
+import { TextAttributes, measureEditText, type ScrollBoxRenderable, type TextareaRenderable } from "@opentui/core"
+import { useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/solid"
 import { For, Match, Show, Switch, createEffect, createMemo, createSignal } from "solid-js"
 import {
   createPermissionBodyState,
@@ -84,6 +84,7 @@ export function RejectField(props: {
   onConfirm: () => void
   onCancel: () => void
 }) {
+  const renderer = useRenderer()
   let area: TextareaRenderable | undefined
 
   createEffect(() => {
@@ -93,7 +94,7 @@ export function RejectField(props: {
 
     if (area.plainText !== props.text) {
       area.setText(props.text)
-      area.cursorOffset = props.text.length
+      area.cursorOffset = measureEditText(props.text, { widthMethod: renderer.widthMethod })
     }
 
     queueMicrotask(() => {
@@ -171,7 +172,7 @@ export function RunPermissionBody(props: {
   const hint = () =>
     compact() && width() < 56
       ? "pgup/pgdn scroll"
-      : `${props.mono ? "left/right" : "â‡†"} select  enter confirm  esc ${stage() === "always" ? "cancel" : "reject"}`
+      : `${props.mono ? "left/right" : "⇆"} select  enter confirm  esc ${stage() === "always" ? "cancel" : "reject"}`
   const inlineControls = () => controlsWidth() + stringWidth(hint()) + 1 <= width() - (compact() ? 0 : 5)
   const title = createMemo(() => {
     if (stage() === "always") {
@@ -318,7 +319,7 @@ export function RunPermissionBody(props: {
         flexShrink={0}
       >
         <text height={1} fg={props.theme.text} wrapMode="none" truncate>
-          <span style={{ fg: props.theme.permission }}>{props.mono ? "! " : "â–³ "}</span>
+          <span style={{ fg: props.theme.permission }}>{props.mono ? "! " : "△ "}</span>
           {title()}
         </text>
         <Show when={!compact() && stage() === "reject"}>
@@ -361,7 +362,7 @@ export function RunPermissionBody(props: {
                 when={!busy()}
                 fallback={
                   <text fg={props.theme.running} height={1} wrapMode="none" truncate flexShrink={0}>
-                    {compact() ? "Waitingâ€¦" : "Waiting for permission eventâ€¦"}
+                    {compact() ? "Waiting…" : "Waiting for permission event…"}
                   </text>
                 }
               >
@@ -534,7 +535,7 @@ export function RunPermissionBody(props: {
             when={!busy()}
             fallback={
               <text fg={props.theme.running} height={1} wrapMode="none" truncate flexShrink={0}>
-                {compact() ? "Waitingâ€¦" : "Waiting for permission eventâ€¦"}
+                {compact() ? "Waiting…" : "Waiting for permission event…"}
               </text>
             }
           >
@@ -543,7 +544,7 @@ export function RunPermissionBody(props: {
                 when={compact() && width() < 56}
                 fallback={
                   <>
-                    {props.mono ? "left/right" : "â‡†"}
+                    {props.mono ? "left/right" : "⇆"}
                     <span style={{ fg: props.theme.muted }}>{" select  "}</span>
                     enter<span style={{ fg: props.theme.muted }}>{" confirm  "}</span>
                     esc<span style={{ fg: props.theme.muted }}> {stage() === "always" ? "cancel" : "reject"}</span>

@@ -1,4 +1,4 @@
-﻿import { Global } from "@opencode/util/global"
+import { Global } from "@opencode/util/global"
 import { AppProcess } from "@opencode/util/process"
 import { EffectFlock } from "@opencode/util/effect-flock"
 import { OPENCODE_ARTIFACT, OPENCODE_CHANNEL, OPENCODE_LOCAL, OPENCODE_VERSION } from "../version"
@@ -76,7 +76,7 @@ function conciseDetail(input: string) {
     .filter((line) => line.trim().length > 0)
   const tail = lines.slice(-12).join("\n")
   const clipped = tail.length > 2_000
-  const detail = clipped ? `â€¦${tail.slice(-1_999)}` : tail
+  const detail = clipped ? `…${tail.slice(-1_999)}` : tail
   if (!detail) return
   if (lines.length <= 12 && !clipped) return detail
   return `${detail}\n\nOutput shortened to the last 12 lines.`

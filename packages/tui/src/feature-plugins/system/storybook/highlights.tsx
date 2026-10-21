@@ -1,4 +1,4 @@
-﻿import type { Plugin } from "@opencode/plugin/tui"
+import type { Plugin } from "@opencode/plugin/tui"
 import { useTerminalDimensions } from "@opentui/solid"
 import { onMount } from "solid-js"
 import { DialogHighlights } from "../../../component/dialog-highlights"
@@ -17,7 +17,7 @@ const items = [
   },
   {
     title: "Installable Web App",
-    body: "Use Chrome or Edgeâ€™s Install button to install the Loophole web app, including when it runs behind an authenticating proxy.",
+    body: "Use Chrome or Edge’s Install button to install the Loophole web app, including when it runs behind an authenticating proxy.",
   },
   {
     title: "Clear Session Failures",

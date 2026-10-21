@@ -1,11 +1,12 @@
-import { Effect, type Redacted, Schema } from "effect"
+import { Clock, Effect, Redacted, Schema } from "effect"
 import { HttpClientRequest } from "effect/http"
 import { RequestExecutor } from "../route/executor.js"
-import { AIError, HttpContext, InvalidProviderOutputError, InvalidRequestError } from "../schema/index.js"
+import { AIError, InvalidProviderOutputError, InvalidRequestError } from "../schema/index.js"
 import { encodeJson } from "../utils/json.js"
 
 const OPENAI_BASE_URL = "https://api.openai.com/v1"
 const XAI_BASE_URL = "https://api.x.ai/v1"
+const GOOGLE_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 
 export type RealtimeTransportInput =
   | { readonly type: "webrtc"; readonly sdp: string; readonly dcid?: number }
@@ -28,6 +29,7 @@ const engines = [
   { family: "gpt-live", id: "openai-live", provider: "openai" },
   { family: "gpt-realtime", id: "openai-realtime", provider: "openai" },
   { family: "grok-voice", id: "xai-realtime", provider: "xai" },
+  { family: "gemini-3.8-live", id: "gemini-live", provider: "google" },
 ] as const
 
 // Matches the bare family name (`gpt-realtime`) and its versions (`gpt-realtime-2.1`, `gpt-realtime-mini`).
@@ -54,7 +56,10 @@ export const connect = Effect.fn("Realtime.connect")(function* (input: RealtimeC
     }
     case "openai-realtime": {
       if (input.transport.type === "websocket")
-        return yield* clientSecret(resolved.id, OPENAI_BASE_URL, input.model, input.apiKey, session)
+        return yield* clientSecret(resolved.id, OPENAI_BASE_URL, input.model, input.apiKey, {
+          expires_after: { anchor: "created_at", seconds: 60 },
+          session,
+        })
       const form = new FormData()
       form.append("sdp", input.transport.sdp)
       form.append("session", encodeJson(session))
@@ -71,7 +76,34 @@ export const connect = Effect.fn("Realtime.connect")(function* (input: RealtimeC
     case "xai-realtime": {
       if (input.transport.type !== "websocket")
         return yield* invalidRequest("xAI Grok Voice only supports WebSocket transport")
-      return yield* clientSecret(resolved.id, XAI_BASE_URL, input.model, input.apiKey)
+      return yield* clientSecret(resolved.id, XAI_BASE_URL, input.model, input.apiKey, {
+        expires_after: { seconds: 60 },
+      })
+    }
+    case "gemini-live": {
+      if (input.transport.type !== "websocket")
+        return yield* invalidRequest("Google Gemini Live only supports WebSocket transport")
+      const now = yield* Clock.currentTimeMillis
+      const expiresAt = now + 60_000
+      const data = yield* post(
+        resolved.id,
+        `${GOOGLE_BASE_URL}/auth_tokens`,
+        input.apiKey,
+        {
+          uses: 1,
+          expireTime: new Date(now + 30 * 60_000).toISOString(),
+          newSessionExpireTime: new Date(expiresAt).toISOString(),
+          bidiGenerateContentSetup: { ...input.session, model: `models/${input.model}` },
+        },
+        AuthTokenResponse,
+        "x-goog-api-key",
+      )
+      return {
+        type: "websocket" as const,
+        url: "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained",
+        token: data.name,
+        expiresAt: Math.floor(expiresAt / 1000),
+      }
     }
   }
 })
@@ -88,12 +120,18 @@ const LiveSessionResponse = Schema.fromJsonString(
 )
 
 // xAI's ephemeral-token docs (https://docs.x.ai/developers/model-capabilities/audio/ephemeral-tokens)
-// document the request body (`{ expires_after: { seconds } }`) but not the response payload; we assume
+// document the request body (`{ expires_after: { seconds } }`, no `anchor` or `session`) but not the response payload; we assume
 // it mirrors OpenAI's `{ value, expires_at }` response shape.
 const ClientSecretResponse = Schema.fromJsonString(
   Schema.Struct({
     value: Schema.String,
     expires_at: Schema.Number,
+  }),
+)
+
+const AuthTokenResponse = Schema.fromJsonString(
+  Schema.Struct({
+    name: Schema.String,
   }),
 )
 
@@ -105,18 +143,21 @@ const post = <A>(
   apiKey: Redacted.Redacted,
   body: Record<string, unknown> | FormData,
   response: Schema.Codec<A, string>,
+  authHeader?: string,
 ) =>
   Effect.gen(function* () {
     const executor = yield* RequestExecutor.Service
     const res = yield* executor.execute(
       HttpClientRequest.post(url).pipe(
-        HttpClientRequest.bearerToken(apiKey),
+        authHeader
+          ? HttpClientRequest.setHeader(authHeader, Redacted.value(apiKey))
+          : HttpClientRequest.bearerToken(apiKey),
         body instanceof FormData
           ? HttpClientRequest.bodyFormData(body)
           : HttpClientRequest.bodyText(encodeJson(body), "application/json"),
       ),
     )
-    const http = new HttpContext({ url: res.request.url, status: res.status, headers: res.headers })
+    const http = RequestExecutor.responseHttp(res)
     const fail = (message: string, cause?: unknown, raw?: string) =>
       new AIError({ reason: new InvalidProviderOutputError({ route, message, body: raw, http, cause }) })
     const text = yield* res.text.pipe(Effect.mapError((cause) => fail(`Failed to read ${route} response`, cause)))
@@ -130,15 +171,9 @@ const clientSecret = (
   baseURL: string,
   model: string,
   apiKey: Redacted.Redacted,
-  session?: Record<string, unknown>,
+  body: Record<string, unknown>,
 ) =>
-  post(
-    route,
-    `${baseURL}/realtime/client_secrets`,
-    apiKey,
-    { expires_after: { seconds: 60 }, session },
-    ClientSecretResponse,
-  ).pipe(
+  post(route, `${baseURL}/realtime/client_secrets`, apiKey, body, ClientSecretResponse).pipe(
     Effect.map(
       (data): RealtimeTransport => ({
         type: "websocket",

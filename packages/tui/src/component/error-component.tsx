@@ -1,4 +1,4 @@
-﻿import { TextAttributes, type ScrollBoxRenderable } from "@opentui/core"
+import { TextAttributes, type ScrollBoxRenderable } from "@opentui/core"
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid"
 import { createSignal, For, Show } from "solid-js"
 import { getScrollAcceleration } from "../util/scroll"
@@ -55,7 +55,7 @@ export function ErrorComponent(props: { error: Error; reset: () => void; mode?: 
   const actions = [
     {
       key: "c",
-      label: () => ({ idle: "Copy report", copied: "âœ“ Copied", failed: "Copy failed" })[copyState()],
+      label: () => ({ idle: "Copy report", copied: "✓ Copied", failed: "Copy failed" })[copyState()],
       copy: true,
       onUse: copyReport,
     },
@@ -186,7 +186,7 @@ export function ErrorComponent(props: { error: Error; reset: () => void; mode?: 
           borderColor={colors.borderSubtle}
           title=" Stack trace "
           titleColor={colors.muted}
-          bottomTitle=" â†‘â†“ scroll "
+          bottomTitle=" ↑↓ scroll "
           bottomTitleAlignment="right"
           paddingLeft={1}
           paddingRight={1}
@@ -205,7 +205,7 @@ export function ErrorComponent(props: { error: Error; reset: () => void; mode?: 
           <box flexDirection="column" alignItems="center" flexShrink={0}>
             <text fg={colors.muted}>
               {copyState() === "copied"
-                ? "Report copied â€” paste it into a new GitHub issue."
+                ? "Report copied — paste it into a new GitHub issue."
                 : copyState() === "failed"
                   ? "Clipboard write failed. Try again or report the crash manually."
                   : "Copy the report and open a GitHub issue to help us fix this."}
@@ -237,7 +237,7 @@ function buildIssueURL(message: string, stack: string, version: string) {
   // clipped trace is obvious. searchParams.set handles encoding without throwing,
   // so measuring url.toString() is both correct and safe on any input.
   const MAX_URL_LENGTH = 6000
-  const marker = "\nâ€¦ (truncated)"
+  const marker = "\n… (truncated)"
   const head = `The Loophole TUI crashed with an unexpected error.\n\n**Error:** ${message}\n\n**Stack trace:**\n`
   const setBody = (body: string) => url.searchParams.set("description", head + "```\n" + body + "\n```")
 
