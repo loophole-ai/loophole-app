@@ -19,7 +19,7 @@ if (!semver.satisfies(process.versions.bun, expectedBunVersionRange)) {
 
 // Release version for this fork. Kept as a constant rather than derived from the branch or the
 // published @opencode/cli version, which would otherwise label every build `0.0.0-<branch>-<run>`.
-const LOOPHOLE_PREVIEW_VERSION = "1.0.5"
+const LOOPHOLE_PREVIEW_VERSION = "1.0.6"
 
 const env = {
   OPENCODE_CHANNEL: process.env["OPENCODE_CHANNEL"],
