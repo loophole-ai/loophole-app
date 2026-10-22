@@ -2,6 +2,7 @@ export * as ServerProcess from "./process"
 
 import { NodeHttpServer } from "@effect/platform-node"
 import { Bus } from "@opencode/core/bus"
+import { Telemetry } from "@opencode/core/telemetry"
 import { SessionRestart } from "@opencode/core/session/execution/restart"
 import { InstallationEvent } from "@opencode/schema/installation-event"
 import { hasPtyConnectTicketURL } from "@opencode/protocol/groups/pty"
@@ -112,6 +113,10 @@ export const start = Effect.fn("ServerProcess.start")(function* <E, R>(
     yield* Ref.set(application, Option.some(Context.get(context, HttpRouter.HttpRouter).asHttpEffect()))
     yield* status.ready
     const bus = Context.get(context, Bus.Service)
+    yield* Telemetry.start(bus, { version: options.app?.version ?? "unknown" }).pipe(
+      Effect.provideService(Scope.Scope, applicationScope),
+      Effect.forkScoped,
+    )
     return {
       address: bound.http.address,
       shutdown: shutdown.await,

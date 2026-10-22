@@ -1,0 +1,208 @@
+export * as Telemetry from "./telemetry.js"
+
+import { randomUUID } from "node:crypto"
+import fs from "node:fs"
+import os from "node:os"
+import path from "node:path"
+import { Effect, Schedule, Stream } from "effect"
+import type { Event } from "@opencode/schema/event"
+import { SessionEvent } from "@opencode/schema/session-event"
+import { Global } from "@opencode/util/global"
+import { Bus } from "./bus.js"
+
+const POSTHOG_ENDPOINT = "https://us.i.posthog.com/batch"
+const ID_FILE = "telemetry.json"
+
+// Public (write-only) analytics project key. POSTHOG_KEY env overrides it.
+const BUNDLED_POSTHOG_KEY = ""
+
+const disabled = () => {
+  const value = (process.env.LOOPHOLE_TELEMETRY_DISABLE ?? "").trim().toLowerCase()
+  return value === "1" || value === "true"
+}
+
+const telemetryKey = () => process.env.POSTHOG_KEY || BUNDLED_POSTHOG_KEY
+
+type Device = { readonly id: string; readonly created: boolean }
+
+const readOrCreateDeviceID = Effect.tryPromise({
+  try: async (): Promise<Device> => {
+    const file = path.join(Global.Path.data, ID_FILE)
+    let stored: string | undefined
+    try {
+      const parsed = JSON.parse(await fs.promises.readFile(file, "utf8")) as { id?: unknown }
+      if (typeof parsed.id === "string" && parsed.id.length > 0) stored = parsed.id
+    } catch {
+      stored = undefined
+    }
+    if (stored) return { id: stored, created: false }
+    const id = randomUUID()
+    await fs.promises.writeFile(file, JSON.stringify({ id }), "utf8").catch(() => undefined)
+    return { id, created: true }
+  },
+  catch: () => undefined,
+})
+
+type BatchEvent = {
+  readonly distinct_id: string
+  readonly event: string
+  readonly properties: Record<string, unknown>
+  readonly timestamp: string
+}
+
+const post = (key: string, batch: ReadonlyArray<BatchEvent>) =>
+  Effect.tryPromise({
+    try: () =>
+      fetch(POSTHOG_ENDPOINT, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ api_key: key, batch }),
+      }).then((response) => (response.ok ? response.text() : undefined)),
+    catch: () => undefined,
+  }).pipe(Effect.asVoid, Effect.ignore)
+
+type Usage = {
+  requests: number
+  input: number
+  output: number
+  reasoning: number
+  cacheRead: number
+  cacheWrite: number
+  costUSD: number
+}
+
+export const start = Effect.fn("Telemetry.start")(function* (
+  bus: Bus.Interface,
+  info: { readonly version: string },
+) {
+  if (disabled()) return
+
+  const key = telemetryKey()
+  if (!key) return
+
+  const device = yield* readOrCreateDeviceID
+  if (!device) return
+
+  const base = {
+    version: info.version,
+    os: os.platform(),
+    arch: os.arch(),
+    channel: process.env.OPENCODE_CHANNEL ?? "prod",
+  }
+
+  let queue: Array<BatchEvent> = []
+  const record = (event: string, properties: Record<string, unknown>) => {
+    queue.push({
+      distinct_id: device.id,
+      event,
+      properties: { ...base, ...properties },
+      timestamp: new Date().toISOString(),
+    })
+  }
+
+  if (device.created) record("installed", {})
+
+  const pendingStarts = new Map<
+    string,
+    { readonly provider: string; readonly model: string; readonly agent: string }
+  >()
+  const usage = new Map<
+    string,
+    Usage & { readonly provider: string; readonly model: string; readonly agent: string }
+  >()
+
+  const addUsage = (
+    entry: { readonly provider: string; readonly model: string; readonly agent: string },
+    tokens: {
+      readonly input: number
+      readonly output: number
+      readonly reasoning: number
+      readonly cache: { readonly read: number; readonly write: number }
+    },
+    cost: number,
+  ) => {
+    const usageKey = `${entry.provider}/${entry.model}/${entry.agent}`
+    const current =
+      usage.get(usageKey) ??
+      { ...entry, requests: 0, input: 0, output: 0, reasoning: 0, cacheRead: 0, cacheWrite: 0, costUSD: 0 }
+    usage.set(usageKey, {
+      provider: entry.provider,
+      model: entry.model,
+      agent: entry.agent,
+      requests: current.requests + 1,
+      input: current.input + tokens.input,
+      output: current.output + tokens.output,
+      reasoning: current.reasoning + tokens.reasoning,
+      cacheRead: current.cacheRead + tokens.cache.read,
+      cacheWrite: current.cacheWrite + tokens.cache.write,
+      costUSD: current.costUSD + cost,
+    })
+  }
+
+  const flush = Effect.suspend(() => {
+    for (const entry of usage.values()) {
+      record("engine_usage", {
+        provider: entry.provider,
+        model: entry.model,
+        agent: entry.agent,
+        requests: entry.requests,
+        tokens_input: entry.input,
+        tokens_output: entry.output,
+        tokens_reasoning: entry.reasoning,
+        tokens_cache_read: entry.cacheRead,
+        tokens_cache_write: entry.cacheWrite,
+        cost_usd: Math.round(entry.costUSD * 1e6) / 1e6,
+      })
+    }
+    usage.clear()
+    const batch: Array<BatchEvent> = queue
+    queue = []
+    if (batch.length === 0) return Effect.void
+    return post(key, batch)
+  })
+
+  record("app_started", {})
+
+  yield* Effect.addFinalizer(() => flush)
+
+  const consumer = (payload: Event.Payload): Effect.Effect<void> =>
+    Effect.suspend(() => {
+      if (payload.type === "session.step.started") {
+        const originKey = `${payload.data.sessionID}:${payload.data.assistantMessageID}`
+        pendingStarts.set(originKey, {
+          provider: payload.data.model.providerID,
+          model: payload.data.model.id,
+          agent: payload.data.agent,
+        })
+        return Effect.void
+      }
+      if (payload.type === "session.step.ended") {
+        const originKey = `${payload.data.sessionID}:${payload.data.assistantMessageID}`
+        const origin = pendingStarts.get(originKey) ?? { provider: "unknown", model: "unknown", agent: "unknown" }
+        pendingStarts.delete(originKey)
+        const tokens = payload.data.tokens
+        addUsage(
+          origin,
+          {
+            input: Number(tokens.input) || 0,
+            output: Number(tokens.output) || 0,
+            reasoning: Number(tokens.reasoning) || 0,
+            cache: {
+              read: Number(tokens.cache.read) || 0,
+              write: Number(tokens.cache.write) || 0,
+            },
+          },
+          Number(payload.data.cost) || 0,
+        )
+      }
+      return Effect.void
+    })
+
+  yield* bus.subscribe([SessionEvent.Step.Started, SessionEvent.Step.Ended]).pipe(
+    Stream.runForEach(consumer),
+    Effect.ignore,
+    Effect.forkScoped({ startImmediately: true }),
+  )
+
+  yield* flush.pipe(Effect.repeat(Schedule.spaced("30 seconds")), Effect.forkScoped({ startImmediately: true }))
+})
