@@ -29,7 +29,7 @@ export function Logo() {
         <For each={go.right.slice(1)}>
           {(line) => <box flexDirection="row">{renderLine(line, theme.text.base, true)}</box>}
         </For>
-      ) : dimensions().width < 44 || dimensions().height < 16 ? (
+      ) : dimensions().width < 44 ? (
         renderArt(logo.narrow, theme.text.muted, false)
       ) : (
         renderArt(logo.wide, theme.text.muted, false)
