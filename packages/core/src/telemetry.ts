@@ -14,7 +14,7 @@ const POSTHOG_ENDPOINT = "https://us.i.posthog.com/batch"
 const ID_FILE = "telemetry.json"
 
 // Public (write-only) analytics project key. POSTHOG_KEY env overrides it.
-const BUNDLED_POSTHOG_KEY = ""
+const BUNDLED_POSTHOG_KEY = "phc_oTDpdDZgxMUvGmfGoJMEKhazigTNMFeqSFb8zmH698wy"
 
 const disabled = () => {
   const value = (process.env.LOOPHOLE_TELEMETRY_DISABLE ?? "").trim().toLowerCase()
