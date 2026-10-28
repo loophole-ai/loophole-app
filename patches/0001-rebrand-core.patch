@@ -10,6 +10,206 @@ index 477fdab9d8..165cf0053c 100644
  UPCOMING_CHANGELOG.md
  RELEASE_REVIEW.md
  logs/
+diff --git a/packages/app/component-tests/new-session-wordmark.spec.ts b/packages/app/component-tests/new-session-wordmark.spec.ts
+index e068db191d..e269351b42 100644
+--- a/packages/app/component-tests/new-session-wordmark.spec.ts
++++ b/packages/app/component-tests/new-session-wordmark.spec.ts
+@@ -1,103 +1,96 @@
+-import type { Page } from "@playwright/test"
+ import { expect, story } from "../../stories/playwright/story"
+ 
+-// A cell of the "c" in the wordmark (column 40, row 2 of the 78×14 pin grid).
+-const PIN = { x: 40.5 / 78, y: 2.5 / 14 }
+-
+-// An empty cell above the "o", clear of every pin, side and shadow at rest.
+-const EMPTY = { x: 5.5 / 78, y: 0.5 / 14 }
+-
+-story("draws the wordmark as pins and stops animating once settled", async ({ mount, page }) => {
+-  await page.emulateMedia({ reducedMotion: "no-preference" })
+-  await mount("app-new-session-wordmark--pin-board")
+-
+-  const empty = await pinPixel(page, EMPTY)
+-  await expect.poll(() => pinPixel(page)).not.toEqual(empty)
+-  await expect.poll(() => requestedFrames(page)).toBe(0)
+-})
+-
+-story("knocks pins out from the panel but never from the composer", async ({ mount, page }) => {
+-  await page.emulateMedia({ reducedMotion: "no-preference" })
+-  await mount("app-new-session-wordmark--pin-board")
+-  await expect.poll(() => requestedFrames(page)).toBe(0)
+-  const before = await pinPixel(page)
+-
+-  await page.locator('[data-component="composer"]').click()
+-  await nextFrames(page, 2)
+-  expect(await pinPixel(page)).toEqual(before)
+-
+-  const box = (await page.locator('[data-slot="wordmark-box"]').boundingBox())!
+-  await page.mouse.click(box.x + box.width * PIN.x, box.y + box.height * PIN.y)
+-  await expect.poll(() => pinPixel(page)).not.toEqual(before)
+-})
+-
+-story("shows a static pin board with reduced motion", async ({ mount, page }) => {
+-  await page.emulateMedia({ reducedMotion: "reduce" })
+-  await mount("app-new-session-wordmark--pin-board")
+-  const empty = await pinPixel(page, EMPTY)
+-  await expect.poll(() => pinPixel(page)).not.toEqual(empty)
+-  await expect.poll(() => requestedFrames(page)).toBe(0)
+-  const before = await pinPixel(page)
+-
+-  const box = (await page.locator('[data-slot="wordmark-box"]').boundingBox())!
+-  await page.mouse.click(box.x + box.width * PIN.x, box.y + box.height * PIN.y)
+-  await nextFrames(page, 2)
+-  expect(await pinPixel(page)).toEqual(before)
+-  expect(await requestedFrames(page)).toBe(0)
+-})
+-
+-// Reads the on-screen pixel at a grid cell. The board may be drawn with WebGL, whose canvas cannot be read
+-// back once presented, so the pixel comes from a screenshot decoded in the page.
+-async function pinPixel(page: Page, cell = PIN) {
+-  const box = (await page.locator('[data-slot="wordmark-box"]').boundingBox())!
+-
+-  const shot = await page.screenshot({
+-    clip: { x: box.x + box.width * cell.x, y: box.y + box.height * cell.y, width: 1, height: 1 },
++for (const theme of ["light", "dark"]) {
++  for (const direction of ["ltr", "rtl"]) {
++    story(`shimmers once over the visible wordmark (${theme}, ${direction})`, async ({ mount, page }, testInfo) => {
++      await page.emulateMedia({ reducedMotion: "no-preference" })
++      const component = await mount("app-new-session-wordmark--reveal", { globals: { theme, direction } })
++      const logo = component.locator('[data-component="new-session-wordmark"]')
++      const reveal = logo.locator('[data-slot="wordmark-reveal"]')
++      const shimmer = logo.locator(".wordmark-shimmer")
++      const base = logo.locator("svg").first()
++      await expect(base).toHaveCSS("opacity", "0.16")
++      await expect(shimmer).toHaveCSS("animation-iteration-count", "1")
++      await expect(logo.locator("g[mask]")).toHaveCount(0)
++      await expect(shimmer).toHaveCSS("color", "rgb(255, 255, 255)")
++      await expect(shimmer).toHaveCSS("mix-blend-mode", "screen")
++      await expect(base.locator("path").nth(1)).toHaveAttribute("fill", "currentColor")
++      await expect(base.locator("path").nth(7)).toHaveCSS(
++        "fill",
++        await base.locator("path").nth(1).evaluate((element) => getComputedStyle(element).fill),
++      )
++      await expect(base.locator('path[fill="currentColor"]')).toHaveCount(8)
++
++      await logo.evaluate((element) => {
++        element.getAnimations({ subtree: true }).forEach((animation) => {
++          animation.pause()
++          animation.currentTime = 0
++        })
++      })
++      await expect(reveal).toHaveCSS("opacity", "1")
++      await expect(reveal).toHaveCSS("animation-name", "none")
++      await expect(shimmer).toHaveCSS("mask-position", "100% 0px")
++
++      await logo.evaluate((element) => {
++        element.getAnimations({ subtree: true }).forEach((animation) => (animation.currentTime = 400))
++      })
++      await expect(shimmer).toHaveCSS("mask-position", "50% 0px")
++      await expect(shimmer).toHaveCSS("opacity", theme === "dark" ? "0.0672" : "0.45")
++      const swept = await logo.screenshot({ path: testInfo.outputPath("wordmark-shimmer.png") })
++
++      await logo.evaluate((element) => {
++        element.getAnimations({ subtree: true }).forEach((animation) => animation.finish())
++      })
++      await expect(reveal).toHaveCSS("opacity", "1")
++      await expect(shimmer).toHaveCSS("opacity", "0")
++      await expect(shimmer).toHaveCSS("mask-position", "0% 0px")
++      const settled = await logo.screenshot({ path: testInfo.outputPath("wordmark-settled.png") })
++
++      const brightness = await page.evaluate(
++        async (screenshots) => {
++          const pixels = await Promise.all(
++            screenshots.map(async (screenshot) => {
++              const image = new Image()
++              image.src = `data:image/png;base64,${screenshot}`
++              await image.decode()
++              const canvas = new OffscreenCanvas(image.width, image.height)
++              const context = canvas.getContext("2d")
++
++              if (!context) throw new Error("Cannot read screenshot pixels")
++              context.drawImage(image, 0, 0)
++
++              return context.getImageData(0, 0, image.width, image.height).data
++            }),
++          )
++
++          return {
++            min: pixels[0].reduce(
++              (min, value, index) => (index % 4 === 3 ? min : Math.min(min, value - pixels[1][index])),
++              0,
++            ),
++            max: pixels[0].reduce(
++              (max, value, index) => (index % 4 === 3 ? max : Math.max(max, value - pixels[1][index])),
++              0,
++            ),
++          }
++        },
++        [swept.toString("base64"), settled.toString("base64")],
++      )
++
++      expect(brightness.min).toBeGreaterThanOrEqual(0)
++      expect(brightness.max).toBeGreaterThanOrEqual(5)
++    })
++  }
++
++  story(`shows a static wordmark with reduced motion (${theme})`, async ({ mount, page }) => {
++    await page.emulateMedia({ reducedMotion: "reduce" })
++    await page.setViewportSize({ width: 360, height: 640 })
++    const component = await mount("app-new-session-wordmark--reveal", { globals: { theme } })
++    const logo = component.locator('[data-component="new-session-wordmark"]')
++    await expect(logo.locator("svg").first()).toHaveCSS("opacity", "0.16")
++    await expect(logo.locator('[data-slot="wordmark-reveal"]')).toHaveCSS("opacity", "1")
++    await expect(logo.locator(".wordmark-shimmer")).toHaveCSS("opacity", "0")
++    expect(await logo.evaluate((element) => element.getAnimations({ subtree: true }).length)).toBe(0)
++    expect(await logo.evaluate((element) => element.getBoundingClientRect().right <= innerWidth)).toBe(true)
+   })
+-
+-  return page.evaluate(async (png) => {
+-    const image = await createImageBitmap(await (await fetch(`data:image/png;base64,${png}`)).blob())
+-    const canvas = new OffscreenCanvas(1, 1)
+-    const context = canvas.getContext("2d")!
+-    context.drawImage(image, 0, 0)
+-    const d = context.getImageData(0, 0, 1, 1).data
+-
+-    return { red: d[0], green: d[1], blue: d[2] }
+-  }, shot.toString("base64"))
+-}
+-
+-// Counts animation frames the page requests while we watch the next 20 frames.
+-function requestedFrames(page: Page) {
+-  return page.evaluate(
+-    () =>
+-      new Promise<number>((resolve) => {
+-        const original = window.requestAnimationFrame
+-        const watch = original.bind(window)
+-        const state = { requested: 0, left: 20 }
+-        window.requestAnimationFrame = (callback) => {
+-          state.requested++
+-
+-          return watch(callback)
+-        }
+-
+-        const tick = () => {
+-          if (--state.left > 0) return watch(tick)
+-          window.requestAnimationFrame = original
+-          resolve(state.requested)
+-        }
+-
+-        watch(tick)
+-      }),
+-  )
+-}
+-
+-function nextFrames(page: Page, count: number) {
+-  return page.evaluate(
+-    (count) =>
+-      new Promise<void>((resolve) => {
+-        const tick = (left: number) => (left ? requestAnimationFrame(() => tick(left - 1)) : resolve())
+-        tick(count)
+-      }),
+-    count,
+-  )
+ }
 diff --git a/packages/app/src/entry.tsx b/packages/app/src/entry.tsx
 index b9760dd88b..f8cc3fb24d 100644
 --- a/packages/app/src/entry.tsx
@@ -58,6 +258,3184 @@ index 25cac9498b..9b2c4109de 100644
      },
    }
  }
+diff --git a/packages/app/src/new-session/brick-breaker.tsx b/packages/app/src/new-session/brick-breaker.tsx
+deleted file mode 100644
+index 8ef2c9de02..0000000000
+--- a/packages/app/src/new-session/brick-breaker.tsx
++++ /dev/null
+@@ -1,471 +0,0 @@
+-import { For, onCleanup, onMount } from "solid-js"
+-import type { PinBoardHandle } from "./pin-board"
+-import { PinSound } from "./pin-sound"
+-import type { LodgerBall } from "./wordmark"
+-
+-const LIVES = 3
+-const ENTER = 0.85
+-const EXIT = 1
+-
+-type Phase = "enter" | "serve" | "play" | "miss" | "exit"
+-type Box = { x: number; y: number; w: number; h: number; r: number }
+-
+-/**
+- * A brick breaker homage. The lodger curls into the ball, the pins are the bricks, and the composer shrinks
+- * into the paddle. Like Arkanoid, the ball waits on the paddle until it is served with a click or Space.
+- */
+-export function NewSessionBrickBreaker(props: {
+-  panel: HTMLElement
+-  board: PinBoardHandle
+-  ball: LodgerBall
+-  sound: () => boolean
+-  onDone: () => void
+-}) {
+-  let paddle!: HTMLDivElement
+-  let hud!: HTMLDivElement
+-  let score!: HTMLSpanElement
+-  const spares: HTMLSpanElement[] = []
+-  const walls: HTMLSpanElement[] = []
+-
+-  onMount(() =>
+-    onCleanup(
+-      mountGame({ panel: props.panel, paddle, hud, score, spares, walls }, props.board, props.ball, props.sound, props.onDone),
+-    ),
+-  )
+-
+-  return (
+-    <>
+-      <div
+-        ref={paddle}
+-        aria-hidden="true"
+-        data-slot="brick-breaker-paddle"
+-        class="pointer-events-none absolute left-0 top-0 -z-[5] origin-center"
+-      />
+-      <div
+-        ref={hud}
+-        aria-hidden="true"
+-        data-slot="brick-breaker-hud"
+-        class="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300"
+-      >
+-        <span ref={(el) => (walls[0] = el)} class="absolute inset-y-0 left-0 w-px bg-v2-border-border-base" />
+-        <span ref={(el) => (walls[1] = el)} class="absolute inset-y-0 left-0 w-px bg-v2-border-border-base" />
+-        <span
+-          ref={score}
+-          class="absolute right-4 top-3 font-mono text-[11px] leading-[16px] tabular-nums text-v2-text-text-faint"
+-        />
+-        <div class="absolute bottom-4 left-4 flex gap-1.5">
+-          <For each={Array.from({ length: LIVES - 1 })}>
+-            {(_, i) => (
+-              <span
+-                ref={(el) => (spares[i()] = el)}
+-                class="h-1.5 w-5 rounded-full bg-v2-icon-icon-faint transition-[opacity,transform] duration-300"
+-              />
+-            )}
+-          </For>
+-        </div>
+-      </div>
+-    </>
+-  )
+-}
+-
+-function mountGame(
+-  parts: {
+-    panel: HTMLElement
+-    paddle: HTMLDivElement
+-    hud: HTMLDivElement
+-    score: HTMLSpanElement
+-    spares: HTMLSpanElement[]
+-    walls: HTMLSpanElement[]
+-  },
+-  board: PinBoardHandle,
+-  ball: LodgerBall,
+-  sound: () => boolean,
+-  onDone: () => void,
+-) {
+-  const panel = parts.panel
+-  const wrap = panel.querySelector<HTMLElement>('[data-slot="new-session-composer"]')
+-  const form = wrap?.querySelector<HTMLElement>('[data-component="composer"]')
+-  const tip = panel.querySelector<HTMLElement>('[data-component="new-session-tip"]')
+-  const surface = form ? getComputedStyle(form).backgroundColor : ""
+-  // The arena is exactly as wide as the wordmark, like Arkanoid's tall, narrow playfield.
+-  const view = { left: 0, top: 0, w: 0, h: 0, l: 0, r: 0 }
+-  const g = { phase: "enter" as Phase, t0: performance.now() / 1000, last: 0, raf: 0, lives: LIVES, score: 0 }
+-  const rally = { combo: 0, hits: 0, base: 0, speed: 0 }
+-  const pad = { x: 0, target: 0, v: 0, w: 0, h: 12, y: 0, tilt: 0, kickAt: -1, steer: 1 }
+-  const b = { x: 0, y: 0, vx: 0, vy: 0, hitAt: -1, hitAngle: 0, hitAmp: 0, squintUntil: 0, curl: 0.85, landed: false }
+-  const keys = { left: false, right: false }
+-  const start = { ball: ball.at(), composer: composerBox(), from: composerBox() }
+-  // The paddle's drawn shape, so the exit morph starts from wherever the paddle is.
+-  const shape: Box = { ...start.composer }
+-  const written = { w: -1, h: -1, r: -1, transform: "", score: "" }
+-
+-  const layout = () => {
+-    const r = panel.getBoundingClientRect()
+-    view.left = r.left
+-    view.top = r.top
+-    view.w = r.width
+-    view.h = r.height
+-    // Walls sit on the wordmark's outer pin edges, using the board's integer pitch and rounded origin, so the
+-    // ball can only reach the top by breaking through.
+-    const logo = panel.querySelector('[data-slot="wordmark-box"]')?.getBoundingClientRect()
+-    const pitch = logo ? Math.max(3, Math.round(logo.width / 78)) : 0
+-    const x0 = logo ? Math.round(logo.left - r.left + (logo.width - pitch * 78) / 2) : 0
+-    const c = composerBox()
+-    view.l = logo ? x0 : Math.max(0, c.x)
+-    view.r = logo ? x0 + pitch * 78 : Math.min(view.w, c.x + c.w)
+-    parts.walls[0].style.transform = `translateX(${view.l - 1}px)`
+-    parts.walls[1].style.transform = `translateX(${view.r}px)`
+-    pad.w = Math.max(84, Math.min(136, (view.r - view.l) * 0.15))
+-    pad.y = view.h - 64
+-    rally.base = Math.max(460, Math.min(760, view.h * 0.7))
+-    rally.speed = rally.base * (1 + Math.min(0.55, rally.hits * 0.025))
+-  }
+-
+-  function composerBox(): Box {
+-    const p = panel.getBoundingClientRect()
+-    const r = form?.getBoundingClientRect()
+-    if (!r) return { x: p.width / 2 - 60, y: p.height - 64, w: 120, h: 12, r: 6 }
+-    const radius = form ? parseFloat(getComputedStyle(form).borderTopLeftRadius) : 12
+-    return { x: r.left - p.left, y: r.top - p.top, w: r.width, h: r.height, r: radius || 12 }
+-  }
+-
+-  const paddleBox = (): Box => ({ x: pad.x - pad.w / 2, y: pad.y, w: pad.w, h: pad.h, r: pad.h / 2 })
+-
+-  const frame = (ms: number) => {
+-    g.raf = 0
+-    const now = ms / 1000
+-    const dt = Math.min(1 / 30, Math.max(1 / 240, now - g.last))
+-    g.last = now
+-    const t = now - g.t0
+-    movePaddle(dt, now)
+-    if (g.phase === "enter") enter(t)
+-    if (g.phase === "serve") serve(t)
+-    if (g.phase === "play") play(dt, now)
+-    if (g.phase === "miss") miss(t)
+-    if (g.phase === "exit") return exit(t)
+-    pose(now)
+-    board.steer(b.x, b.y)
+-    g.raf = requestAnimationFrame(frame)
+-  }
+-
+-  const movePaddle = (dt: number, now: number) => {
+-    if (g.phase === "enter" || g.phase === "exit") return
+-    if (keys.left !== keys.right) pad.target += (keys.right ? 1 : -1) * 1100 * dt
+-    pad.target = Math.max(view.l + pad.w / 2 + 4, Math.min(view.r - pad.w / 2 - 4, pad.target))
+-    const prev = pad.x
+-    pad.x += (pad.target - pad.x) * (1 - Math.exp(-dt * 30))
+-    pad.v = (pad.x - prev) / dt
+-    pad.tilt += (Math.max(-5, Math.min(5, pad.v / 260)) - pad.tilt) * (1 - Math.exp(-dt * 14))
+-    const k = now - pad.kickAt
+-    const kick = k < 0.5 ? Math.exp(-k * 12) * Math.sin(k * 34) * 4 : 0
+-    draw({ ...paddleBox(), y: pad.y + kick }, pad.tilt)
+-  }
+-
+-  // The composer content fades, then its box springs down and narrows into the paddle while the ball rides on top.
+-  const enter = (t: number) => {
+-    const u = seg(t, 0.1, ENTER)
+-    const e = spring(u)
+-    const to = paddleBox()
+-    const box = {
+-      x: lerp(start.from.x + start.from.w / 2, to.x + to.w / 2, e),
+-      y: lerp(start.from.y, to.y, e),
+-      w: Math.max(pad.h, lerp(start.from.w, to.w, e)),
+-      h: Math.max(4, lerp(start.from.h, to.h, e)),
+-      r: lerp(start.from.r, to.r, Math.min(1, u * 1.6)),
+-    }
+-    draw({ ...box, x: box.x - box.w / 2 }, 0)
+-    const k = easeOut(seg(t, 0, 0.38))
+-    const r = ball.radius()
+-    b.x = lerp(start.ball.x, box.x, k)
+-    b.y = lerp(start.ball.y, box.y - r, k) - Math.sin(Math.PI * k) * 28
+-    b.curl = lerp(0.85, 1, k)
+-    if (k >= 1 && !b.landed) {
+-      b.landed = true
+-      bump(Math.PI / 2, 0.32)
+-      if (sound()) PinSound.paddle(b.x, view.w)
+-    }
+-    // Once it has shrunk enough to read as a paddle, it takes on the colour of the pins it is about to break.
+-    if (t >= 0.3) parts.paddle.style.background = "var(--v2-icon-icon-muted)"
+-    if (t >= 0.5) parts.hud.style.opacity = "1"
+-    if (t < ENTER) return
+-    pad.target = pad.x
+-    setPhase("serve")
+-    panel.style.cursor = "none"
+-  }
+-
+-  // The ball waits on the paddle like Arkanoid's; after a miss it drops back onto it first.
+-  const serve = (t: number) => {
+-    const r = ball.radius()
+-    const drop = g.lives < LIVES ? seg(t, 0, 0.42) : 1
+-    b.x = pad.x
+-    b.y = pad.y - r - Math.pow(1 - drop, 2) * 110
+-    b.vx = 0
+-    b.vy = 0
+-    b.curl = 1
+-    if (drop >= 1 && !b.landed) {
+-      b.landed = true
+-      bump(Math.PI / 2, 0.36)
+-      if (sound()) PinSound.paddle(b.x, view.w)
+-    }
+-  }
+-
+-  const launch = () => {
+-    if (g.phase !== "serve" || !b.landed) return
+-    // Serve away from the side the paddle is moving toward, up and to the right when still.
+-    const lean = Math.abs(pad.v) > 40 ? Math.sign(pad.v) : 1
+-    const a = lean * (0.32 + Math.random() * 0.12)
+-    b.vx = Math.sin(a) * rally.speed
+-    b.vy = -Math.cos(a) * rally.speed
+-    rally.combo = 0
+-    pad.kickAt = performance.now() / 1000
+-    bump(Math.PI / 2, 0.3)
+-    if (sound()) PinSound.paddle(b.x, view.w)
+-    setPhase("play")
+-  }
+-
+-  const play = (dt: number, now: number) => {
+-    const r = ball.radius()
+-    // Substeps keep the ball from tunnelling through a pin between frames at high speed.
+-    const steps = Math.max(1, Math.ceil((rally.speed * dt) / (r * 0.35)))
+-    const sdt = dt / steps
+-    for (let i = 0; i < steps; i++) {
+-      b.x += b.vx * sdt
+-      b.y += b.vy * sdt
+-      if (b.x < view.l + r || b.x > view.r - r) {
+-        b.x = Math.max(view.l + r, Math.min(view.r - r, b.x))
+-        b.vx = b.x <= view.l + r ? Math.abs(b.vx) : -Math.abs(b.vx)
+-        bump(0, 0.22)
+-        if (sound()) PinSound.bounce(b.x, view.w, 4000)
+-      }
+-      if (b.y < r) {
+-        b.y = r
+-        b.vy = Math.abs(b.vy)
+-        bump(Math.PI / 2, 0.22)
+-        if (sound()) PinSound.bounce(b.x, view.w, 4000)
+-      }
+-      if (
+-        b.vy > 0 &&
+-        b.y + r >= pad.y &&
+-        b.y - r < pad.y + pad.h &&
+-        Math.abs(b.x - pad.x) <= pad.w / 2 + r * 0.6
+-      ) {
+-        // Classic paddle control: where the ball lands sets its angle, up to 60° from vertical.
+-        const off = Math.max(-1, Math.min(1, (b.x - pad.x) / (pad.w / 2)))
+-        const a = off * (Math.PI / 3) + Math.max(-0.15, Math.min(0.15, pad.v / 6000))
+-        rally.hits++
+-        rally.speed = rally.base * (1 + Math.min(0.55, rally.hits * 0.025))
+-        rally.combo = 0
+-        b.vx = Math.sin(a) * rally.speed
+-        b.vy = -Math.cos(a) * rally.speed
+-        b.y = pad.y - r
+-        pad.kickAt = now
+-        bump(Math.PI / 2, 0.34)
+-        if (sound()) PinSound.paddle(b.x, view.w)
+-      }
+-      // Each hit carves a round bite out of the wordmark rather than a single pin.
+-      const hit = board.collide(b.x, b.y, r, r * 0.55, b.vx, b.vy)
+-      if (hit) {
+-        const side = Math.abs(hit.nx) > Math.abs(hit.ny)
+-        if (side && b.vx * hit.nx < 0) b.vx = -b.vx
+-        if (!side && b.vy * hit.ny < 0) b.vy = -b.vy
+-        rally.combo++
+-        g.score += hit.count * 10 * Math.min(8, rally.combo)
+-        b.squintUntil = now + 0.14
+-        bump(side ? 0 : Math.PI / 2, 0.26)
+-        if (sound()) PinSound.brick(b.x, view.w, rally.combo)
+-        if (!board.left()) return finish("win")
+-      }
+-      // A nearly flat rally never comes back down, so keep at least a quarter of the speed vertical.
+-      const min = rally.speed * 0.25
+-      if (Math.abs(b.vy) < min) {
+-        b.vy = (b.vy < 0 ? -1 : 1) * min
+-        b.vx = Math.sign(b.vx || 1) * Math.sqrt(rally.speed * rally.speed - min * min)
+-      }
+-      if (b.y - r > view.h) {
+-        setPhase("miss")
+-        if (sound()) PinSound.sweep({ duration: 0.45, columns: 78, reverse: true })
+-        return
+-      }
+-    }
+-  }
+-
+-  const miss = (t: number) => {
+-    if (t < 0.55) return
+-    g.lives--
+-    parts.spares.forEach((el, i) => {
+-      el.style.opacity = i < g.lives - 1 ? "1" : "0"
+-      el.style.transform = i < g.lives - 1 ? "" : "translateY(4px)"
+-    })
+-    if (!g.lives) return finish("lose")
+-    b.landed = false
+-    setPhase("serve")
+-  }
+-
+-  const finish = (kind: "win" | "lose" | "quit") => {
+-    if (g.phase === "exit") return
+-    start.composer = composerBox()
+-    start.from = { ...shape }
+-    setPhase("exit")
+-    panel.style.cursor = ""
+-    parts.hud.style.opacity = "0"
+-    parts.paddle.style.background = surface
+-    board.restore()
+-    ball.done()
+-    if (sound()) PinSound.sweep({ duration: 0.9, columns: 78, reverse: kind !== "win" })
+-  }
+-
+-  // The paddle grows back into the composer, then the composer content fades in over it.
+-  const exit = (t: number) => {
+-    const e = easeInOut(seg(t, 0.15, 0.75))
+-    const to = start.composer
+-    draw(
+-      {
+-        x: lerp(start.from.x, to.x, e),
+-        y: lerp(start.from.y, to.y, e),
+-        w: lerp(start.from.w, to.w, e),
+-        h: lerp(start.from.h, to.h, e),
+-        r: lerp(start.from.r, to.r, e),
+-      },
+-      pad.tilt * (1 - e),
+-    )
+-    if (t >= 0.75) {
+-      if (wrap) wrap.style.opacity = ""
+-      if (tip) tip.style.opacity = ""
+-      parts.paddle.style.opacity = "0"
+-    }
+-    if (t < EXIT) {
+-      g.raf = requestAnimationFrame(frame)
+-      return
+-    }
+-    onDone()
+-  }
+-
+-  const setPhase = (phase: Phase) => {
+-    g.phase = phase
+-    g.t0 = performance.now() / 1000
+-  }
+-
+-  const bump = (angle: number, amp: number) => {
+-    b.hitAt = performance.now() / 1000
+-    b.hitAngle = angle
+-    b.hitAmp = amp
+-  }
+-
+-  const pose = (now: number) => {
+-    const t = now - b.hitAt
+-    const jiggle = t < 0.45 ? b.hitAmp * Math.exp(-t * 12) * Math.cos(t * 38) : 0
+-    const moving = g.phase === "play" || g.phase === "miss"
+-    const heading = Math.atan2(b.vy, b.vx)
+-    const squash = Math.abs(jiggle) > 0.015
+-    ball.place(b.x, b.y, {
+-      look: moving ? 1 : 0.8,
+-      lookAngle: moving ? heading : -Math.PI / 2,
+-      stretch: squash ? -jiggle : moving ? 0.07 : 0,
+-      angle: ((squash ? b.hitAngle : heading) * 180) / Math.PI,
+-      squint: now < b.squintUntil ? 0.45 : 1,
+-      curl: b.curl,
+-    })
+-    const text = `${g.score}`.padStart(5, "0")
+-    if (text !== written.score) {
+-      written.score = text
+-      parts.score.textContent = text
+-    }
+-  }
+-
+-  const draw = (box: Box, tilt: number) => {
+-    Object.assign(shape, box)
+-    const el = parts.paddle
+-    const w = Math.round(box.w * 10) / 10
+-    const h = Math.round(box.h * 10) / 10
+-    if (w !== written.w) el.style.width = `${(written.w = w)}px`
+-    if (h !== written.h) el.style.height = `${(written.h = h)}px`
+-    if (box.r !== written.r) el.style.borderRadius = `${(written.r = box.r)}px`
+-    const transform = `translate(${box.x.toFixed(1)}px, ${box.y.toFixed(1)}px) rotate(${tilt.toFixed(2)}deg)`
+-    if (transform !== written.transform) el.style.transform = written.transform = transform
+-  }
+-
+-  const onMove = (event: PointerEvent) => {
+-    pad.target = event.clientX - view.left
+-  }
+-  const onDown = (event: PointerEvent) => {
+-    if (event.button !== 0 || g.phase === "exit") return
+-    event.preventDefault()
+-    event.stopPropagation()
+-    launch()
+-  }
+-  const onKey = (event: KeyboardEvent) => {
+-    if (g.phase === "exit") return
+-    const down = event.type === "keydown"
+-    if (event.key === "Escape" && down) finish("quit")
+-    else if (event.key === "ArrowLeft" || event.key === "a") keys.left = down
+-    else if (event.key === "ArrowRight" || event.key === "d") keys.right = down
+-    else if ((event.key === " " || event.key === "ArrowUp") && down) launch()
+-    else return
+-    event.preventDefault()
+-    event.stopPropagation()
+-  }
+-  const onBlur = () => {
+-    keys.left = false
+-    keys.right = false
+-  }
+-
+-  layout()
+-  pad.x = start.composer.x + start.composer.w / 2
+-  pad.target = pad.x
+-  b.x = start.ball.x
+-  b.y = start.ball.y
+-  parts.paddle.style.background = surface
+-  parts.paddle.style.boxShadow = "var(--v2-elevation-raised)"
+-  parts.paddle.style.transition = "opacity 180ms ease-out, background-color 360ms ease-out"
+-  // The provider tip sits where the paddle plays, so it steps aside for the game.
+-  if (tip) {
+-    tip.style.transition = "opacity 200ms ease-out"
+-    tip.style.opacity = "0"
+-  }
+-  draw(start.composer, 0)
+-  if (wrap) {
+-    if (wrap.contains(document.activeElement) && document.activeElement instanceof HTMLElement)
+-      document.activeElement.blur()
+-    wrap.style.transition = "opacity 160ms ease-out"
+-    wrap.style.opacity = "0"
+-    wrap.style.pointerEvents = "none"
+-    wrap.inert = true
+-  }
+-  board.play()
+-  const resize = new ResizeObserver(layout)
+-  resize.observe(panel)
+-  panel.addEventListener("pointermove", onMove, { passive: true })
+-  panel.addEventListener("pointerdown", onDown, { capture: true })
+-  window.addEventListener("keydown", onKey, { capture: true })
+-  window.addEventListener("keyup", onKey, { capture: true })
+-  window.addEventListener("blur", onBlur)
+-  g.last = performance.now() / 1000 - 1 / 60
+-  g.raf = requestAnimationFrame(frame)
+-
+-  return () => {
+-    cancelAnimationFrame(g.raf)
+-    resize.disconnect()
+-    panel.removeEventListener("pointermove", onMove)
+-    panel.removeEventListener("pointerdown", onDown, { capture: true })
+-    window.removeEventListener("keydown", onKey, { capture: true })
+-    window.removeEventListener("keyup", onKey, { capture: true })
+-    window.removeEventListener("blur", onBlur)
+-    panel.style.cursor = ""
+-    if (tip) {
+-      tip.style.opacity = ""
+-      tip.style.transition = ""
+-    }
+-    if (!wrap) return
+-    wrap.style.opacity = ""
+-    wrap.style.transition = ""
+-    wrap.style.pointerEvents = ""
+-    wrap.inert = false
+-  }
+-}
+-
+-const lerp = (a: number, b: number, t: number) => a + (b - a) * t
+-const seg = (t: number, from: number, to: number) => Math.max(0, Math.min(1, (t - from) / (to - from)))
+-const easeOut = (t: number) => 1 - Math.pow(1 - t, 3)
+-const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
+-// An underdamped spring that settles by t = 1, overshooting about 9% on the way.
+-const spring = (t: number) => (t >= 1 ? 1 : 1 - Math.exp(-7 * t) * Math.cos(9 * t))
+diff --git a/packages/app/src/new-session/pin-board.tsx b/packages/app/src/new-session/pin-board.tsx
+deleted file mode 100644
+index ef638e11b0..0000000000
+--- a/packages/app/src/new-session/pin-board.tsx
++++ /dev/null
+@@ -1,975 +0,0 @@
+-import { createEffect, onCleanup, onMount } from "solid-js"
+-import { createQuads, type Quads, type Rgba } from "./pin-quads"
+-import { PinSound } from "./pin-sound"
+-import { prefersReducedMotion } from "@opencode/ui/motion"
+-
+-// The wordmark as a 78×14 pin grid: 1 = counter shadow, 2 = "open", 3 = "code".
+-const GRID = [
+-  "..................................................................33..........",
+-  "..................................................................33..........",
+-  "22222222..22222222..22222222..222222....33333333..33333333..33333333..33333333",
+-  "22222222..22222222..22222222..222222....33333333..33333333..33333333..33333333",
+-  "22....22..22....22..22....22..22....22..33........33....33..33....33..33....33",
+-  "22....22..22....22..22....22..22....22..33........33....33..33....33..33....33",
+-  "22111122..22111122..22222222..22111122..33111111..33111133..33111133..33333333",
+-  "22111122..22111122..22222222..22111122..33111111..33111133..33111133..33333333",
+-  "22111122..22111122..22111111..22111122..33111111..33111133..33111133..33111111",
+-  "22111122..22111122..22111111..22111122..33111111..33111133..33111133..33111111",
+-  "22222222..22222222..22222222..22111122..33333333..33333333..33333333..33333333",
+-  "22222222..22222222..22222222..22111122..33333333..33333333..33333333..33333333",
+-  "..........22..................................................................",
+-  "..........22..................................................................",
+-]
+-const COLS = 78
+-const ROWS = 14
+-
+-const HOME = 0
+-const AIR = 1
+-const REST = 2
+-const RETURN = 3
+-// Knocked out by the brick breaker ball and fallen off the panel; the socket stays empty until the game ends.
+-const OUT = 4
+-
+-export type PinEntrance = "sweep" | "chain"
+-
+-/** Lets the brick breaker treat the pins as bricks. Coordinates are relative to the new session panel. */
+-export type PinBoardHandle = {
+-  /**
+-   * When the ball touches a pin, knocks out every pin within `blast` of the ball's edge. Returns the average
+-   * offset from the touched pins to the ball and how many pins were knocked out.
+-   */
+-  collide: (
+-    x: number,
+-    y: number,
+-    radius: number,
+-    blast: number,
+-    vx: number,
+-    vy: number,
+-  ) => { nx: number; ny: number; count: number } | undefined
+-  /** Pins still in their sockets. */
+-  left: () => number
+-  /** Starts game mode: pins ignore the pointer, follow the ball, and knocked pins fall off the panel. */
+-  play: () => void
+-  steer: (x: number, y: number) => void
+-  /** Ends game mode and flies every pin home. */
+-  restore: () => void
+-}
+-
+-const REST_TILT = [0.42, 0.7] as const
+-const LIGHT = [0.55 / Math.hypot(0.55, 0.83), -0.83 / Math.hypot(0.55, 0.83)] as const
+-const SHADES = 16
+-const LOOSE = 4
+-const REVEAL = 0.75
+-const INTERACTIVE =
+-  'button, a, input, textarea, select, label, [contenteditable], [role], [data-component="composer"], [data-component="new-session-tip"]'
+-
+-type Pin = {
+-  c: number
+-  r: number
+-  lv: number
+-  hx: number
+-  hy: number
+-  x: number
+-  y: number
+-  vx: number
+-  vy: number
+-  z: number
+-  zv: number
+-  e: number
+-  rot: number
+-  spin: number
+-  state: number
+-  pop: number
+-  popAt: number
+-  bucket: number
+-  onComposer: boolean
+-  level: number
+-  x0: number
+-  y0: number
+-  rot0: number
+-  t0: number
+-  duration: number
+-  lift: number
+-  fd: number
+-  bd: number
+-}
+-
+-/**
+- * The new session wordmark as a 3D pin board. Pins tilt toward the cursor and sink under it.
+- * A click or drag knocks pins out; they pop toward the viewer, pile up on the composer,
+- * then slot back in. The animation loop only runs while something is moving.
+- */
+-export function NewSessionPinBoard(props: {
+-  logo: HTMLElement
+-  sound: () => boolean
+-  entrance?: PinEntrance
+-  closing?: boolean
+-  ref?: (board: PinBoardHandle) => void
+-}) {
+-  let back!: HTMLCanvasElement
+-  let front!: HTMLCanvasElement
+-
+-  onMount(() => {
+-    const board = mountPinBoard(back, front, props.logo, props.sound, props.entrance)
+-    props.ref?.(board.handle)
+-    createEffect(() => {
+-      if (props.closing) board.close()
+-    })
+-    onCleanup(board.dispose)
+-  })
+-
+-  return (
+-    <>
+-      <canvas
+-        ref={back}
+-        aria-hidden="true"
+-        data-slot="new-session-pins"
+-        class="pointer-events-none absolute left-0 top-0 -z-10"
+-      />
+-      <canvas
+-        ref={front}
+-        aria-hidden="true"
+-        data-slot="new-session-pins-popped"
+-        class="pointer-events-none absolute left-0 top-0"
+-      />
+-    </>
+-  )
+-}
+-
+-function mountPinBoard(
+-  back: HTMLCanvasElement,
+-  front: HTMLCanvasElement,
+-  logo: HTMLElement,
+-  sound: () => boolean,
+-  entrance: PinEntrance = "sweep",
+-) {
+-  const stage = back.parentElement!
+-  // The pins behind the composer and the ones popped in front of it are each one layer of quads.
+-  const layers = { back: createQuads(back, () => wake()), front: createQuads(front, () => wake()) }
+-  const still = prefersReducedMotion()
+-  const pins: Pin[] = GRID.flatMap((row, r) =>
+-    [...row].flatMap((ch, c) => (ch === "." ? [] : [createPin(c, r, Number(ch))])),
+-  )
+-  const band: Pin[] = []
+-  const orders = new Map<number, Pin[]>()
+-  const corners = new Float32Array(8)
+-  const view = {
+-    left: 0,
+-    top: 0,
+-    w: 0,
+-    h: 0,
+-    x0: 0,
+-    y0: 0,
+-    activity: 0,
+-    dpr: 1,
+-    pitch: 7,
+-    depth: 12,
+-    size: 6,
+-    composer: undefined as { left: number; right: number; top: number } | undefined,
+-    region: { x: 0, y: 0, w: 0, h: 0, full: false },
+-    frontOn: true,
+-    game: false,
+-  }
+-  const pointer = { x: 0, y: 0, lx: 0, ly: 0, vx: 0, vy: 0, inside: false, down: false, dragX: 0, dragY: 0 }
+-  const tilt = { x: REST_TILT[0], y: REST_TILT[1] }
+-  const piles = { top: new Int16Array(0), floor: new Int16Array(0) }
+-  const clock = { born: performance.now() / 1000 - (still ? REVEAL * 2 : 0), last: 0, knocked: -99, closed: 0 }
+-  let colors = readColors(stage)
+-  let raf = 0
+-
+-  const wake = () => {
+-    if (raf) return
+-    clock.last = performance.now() / 1000 - 1 / 60
+-    raf = requestAnimationFrame(frame)
+-  }
+-
+-  const frame = (ms: number) => {
+-    raf = 0
+-    const now = ms / 1000
+-    const dt = Math.min(1 / 30, Math.max(1 / 240, now - clock.last))
+-    clock.last = now
+-    if (!still) step(now, dt)
+-    draw(now)
+-    if (!still && !settled(now)) raf = requestAnimationFrame(frame)
+-  }
+-
+-  const layout = () => {
+-    const s = stage.getBoundingClientRect()
+-    const l = logo.getBoundingClientRect()
+-    const composer = stage.querySelector('[data-component="composer"]')?.getBoundingClientRect()
+-    const pitch = Math.max(3, Math.round(l.width / COLS))
+-    const x0 = Math.round(l.left - s.left + (l.width - pitch * COLS) / 2)
+-    const y0 = Math.round(l.top - s.top + (l.height - pitch * ROWS) / 2)
+-    view.left = s.left
+-    view.top = s.top
+-    if (view.w === s.width && view.h === s.height && view.pitch === pitch && view.x0 === x0 && view.y0 === y0) return
+-    view.w = s.width
+-    view.h = s.height
+-    view.dpr = Math.min(2, devicePixelRatio || 1)
+-    view.pitch = pitch
+-    view.depth = view.pitch * 1.7
+-    view.size = view.pitch * 0.8
+-    view.composer = composer && {
+-      left: composer.left - s.left,
+-      right: composer.right - s.left,
+-      top: composer.top - s.top,
+-    }
+-    view.x0 = x0
+-    view.y0 = y0
+-    for (const p of pins) {
+-      p.hx = view.x0 + (p.c + 0.5) * view.pitch
+-      p.hy = view.y0 + (p.r + 0.5) * view.pitch
+-      p.x = p.hx
+-      p.y = p.hy
+-      p.state = HOME
+-      p.pop = 0
+-      p.rot = 0
+-    }
+-    const buckets = Math.ceil(view.w / view.pitch) + 1
+-    piles.top = new Int16Array(buckets)
+-    piles.floor = new Int16Array(buckets)
+-    setRegion(false)
+-    setFront(false)
+-    wake()
+-  }
+-
+-  // The back canvas only covers the logo while it is intact, and the whole panel while pins are loose.
+-  const setRegion = (full: boolean) => {
+-    const r = view.region
+-    const margin = Math.ceil(view.pitch * 3 + view.depth * 1.5)
+-    const x = full ? 0 : view.x0 - margin
+-    const y = full ? 0 : view.y0 - margin
+-    const next = {
+-      x,
+-      y,
+-      w: full ? Math.ceil(view.w) : Math.ceil(view.pitch * COLS + margin * 2),
+-      h: full ? Math.ceil(view.h) : Math.ceil(view.pitch * ROWS + margin * 2),
+-    }
+-    if (r.full === full && r.x === next.x && r.y === next.y && r.w === next.w && r.h === next.h && back.width) return
+-    Object.assign(r, next, { full })
+-    back.width = Math.round(r.w * view.dpr)
+-    back.height = Math.round(r.h * view.dpr)
+-    back.style.transform = `translate(${r.x}px, ${r.y}px)`
+-    back.style.width = `${r.w}px`
+-    back.style.height = `${r.h}px`
+-  }
+-
+-  // The popped-pin layer covers the panel only while pins are popped, so it holds no memory at rest.
+-  const setFront = (on: boolean) => {
+-    if (view.frontOn === on) return
+-    view.frontOn = on
+-    front.width = on ? Math.round(view.w * view.dpr) : 0
+-    front.height = on ? Math.round(view.h * view.dpr) : 0
+-    front.style.width = on ? `${view.w}px` : "0px"
+-    front.style.height = on ? `${view.h}px` : "0px"
+-  }
+-
+-  const popOf = (p: Pin, now: number) => {
+-    if (!p.pop) return 0
+-    const t = now - p.popAt
+-    return p.pop * (1 - Math.exp(-t * 22)) * Math.exp(-t * 2.6)
+-  }
+-
+-  const knock = (x: number, y: number, radius: number, power: number, carryX: number, carryY: number, now: number) => {
+-    const hits = pins.filter((p) => Math.hypot(p.x - x, p.y - y) <= radius)
+-    hits.filter((p) => p.state === REST).forEach(unstack)
+-    for (const p of hits) {
+-      const dx = p.x - x
+-      const dy = p.y - y
+-      const dist = Math.hypot(dx, dy) || 1
+-      const f = 1 - dist / radius
+-      const home = p.state === HOME
+-      p.state = AIR
+-      p.e = 1
+-      p.vx = (home ? 0 : p.vx * 0.3) + (dx / dist) * power * f + carryX + (Math.random() - 0.5) * 60
+-      p.vy = (home ? 0 : Math.min(0, p.vy) * 0.3) + (dy / dist) * power * f + carryY - (home ? 220 : 420) - 380 * f
+-      p.spin += (Math.random() - 0.5) * 18
+-      p.pop = 0.35 + 0.65 * f
+-      p.popAt = now
+-    }
+-    if (!hits.length) return
+-    clock.knocked = now
+-    setRegion(true)
+-    if (sound()) PinSound.knock(x, view.w)
+-  }
+-
+-  // Hitting a piled pin topples everything stacked above it.
+-  const unstack = (p: Pin) => {
+-    const heights = p.onComposer ? piles.top : piles.floor
+-    for (const o of pins) {
+-      if (o.state !== REST || o.onComposer !== p.onComposer || o.bucket !== p.bucket || o.level < p.level) continue
+-      o.state = AIR
+-      o.vx = (Math.random() - 0.5) * 120
+-      o.vy = -80 - Math.random() * 120
+-      o.spin += (Math.random() - 0.5) * 6
+-    }
+-    heights[p.bucket] = Math.min(heights[p.bucket], p.level)
+-  }
+-
+-  // Piled pins sit above the composer's edge by their extrusion depth, so their sides do not tuck behind it.
+-  const composerSurface = () => (view.composer ? view.composer.top - view.depth * REST_TILT[1] : Infinity)
+-
+-  const onComposer = (bucket: number) => {
+-    const x = (bucket + 0.5) * view.pitch
+-    return !!view.composer && x > view.composer.left + 2 && x < view.composer.right - 2
+-  }
+-
+-  const settle = (p: Pin, start: number, top: boolean) => {
+-    const heights = top ? piles.top : piles.floor
+-    const bucket = Array.from({ length: 14 }).reduce<number>((b) => {
+-      const options = [b - 1, b + 1].filter(
+-        (n) => n >= 0 && n < heights.length && (top && !onComposer(n) ? heights[b] > 0 : heights[n] < heights[b]),
+-      )
+-      if (!options.length) return b
+-      return options[Math.floor(Math.random() * options.length)]
+-    }, start)
+-    if (top && !onComposer(bucket)) {
+-      p.x = (bucket + 0.5) * view.pitch
+-      p.vx = (bucket < start ? -1 : 1) * 90
+-      p.vy = 0
+-      return
+-    }
+-    p.state = REST
+-    p.bucket = bucket
+-    p.onComposer = top
+-    p.level = heights[bucket]
+-    p.x = (bucket + 0.5) * view.pitch
+-    p.y = (top ? composerSurface() : view.h) - heights[bucket] * view.pitch - view.pitch / 2
+-    heights[bucket]++
+-  }
+-
+-  const reassemble = (now: number) => {
+-    for (const p of pins) {
+-      if (p.state !== AIR && p.state !== REST) continue
+-      p.state = RETURN
+-      p.x0 = p.x
+-      p.y0 = p.y
+-      p.rot0 = p.rot
+-      p.t0 = now + (p.c / COLS) * 0.6 + Math.random() * 0.1
+-      p.duration = 0.5 + Math.random() * 0.25
+-      p.lift = 30 + Math.random() * 70
+-    }
+-    piles.top.fill(0)
+-    piles.floor.fill(0)
+-    clock.knocked = now
+-  }
+-
+-  const step = (now: number, dt: number) => {
+-    pointer.vx += ((pointer.x - pointer.lx) / dt - pointer.vx) * 0.5
+-    pointer.vy += ((pointer.y - pointer.ly) / dt - pointer.vy) * 0.5
+-    pointer.lx = pointer.x
+-    pointer.ly = pointer.y
+-
+-    const cx = view.x0 + (COLS * view.pitch) / 2
+-    const cy = view.y0 + (ROWS * view.pitch) / 2
+-    // In game mode the board leans only slightly after the ball, so the bricks stay readable.
+-    const lean = view.game ? 0.12 : 0.6
+-    const tx = pointer.inside ? lerp(REST_TILT[0], clamp(((cx - pointer.x) / (view.w * 0.5)) * 1.4), lean) : REST_TILT[0]
+-    const ty = pointer.inside ? lerp(REST_TILT[1], clamp(((cy - pointer.y) / (view.h * 0.5)) * 1.4), lean) : REST_TILT[1]
+-    const ease = 1 - Math.exp(-dt * 4)
+-    tilt.x += (tx - tilt.x) * ease
+-    tilt.y += (ty - tilt.y) * ease
+-
+-    // A held button keeps knocking along the drag path, spaced so it reads as a trail.
+-    if (pointer.down && Math.hypot(pointer.x - pointer.dragX, pointer.y - pointer.dragY) > view.pitch * 1.2) {
+-      pointer.dragX = pointer.x
+-      pointer.dragY = pointer.y
+-      knock(pointer.x, pointer.y, 16, 260, pointer.vx * 0.25, pointer.vy * 0.25, now)
+-    }
+-
+-    const cell = view.pitch
+-    const counts = { air: 0, loose: 0 }
+-    const sink = view.game ? 36 : 55
+-    view.activity = Math.abs(tx - tilt.x) + Math.abs(ty - tilt.y) + (Math.abs(pointer.vx) + Math.abs(pointer.vy)) / 1000
+-    for (const p of pins) {
+-      if (p.state === OUT) continue
+-      p.e *= Math.exp(-dt * 1.8)
+-      if (p.pop && now - p.popAt > 1.5) p.pop = 0
+-      if (p.state === HOME) {
+-        const dist = pointer.inside ? Math.hypot(p.hx - pointer.x, p.hy - pointer.y) : Infinity
+-        const f = dist < sink ? 1 - dist / sink : 0
+-        const target = f * f * 0.9
+-        p.zv += ((target - p.z) * 260 - p.zv * 14) * dt
+-        p.z = Math.max(-0.8, Math.min(1, p.z + p.zv * dt))
+-        view.activity = Math.max(view.activity, Math.abs(p.zv) * 0.1 + Math.abs(target - p.z), p.e * 0.05)
+-        continue
+-      }
+-      if (p.state === REST) {
+-        counts.loose++
+-        p.rot = wrapQuarter(p.rot) * Math.exp(-dt * 14)
+-        continue
+-      }
+-      if (p.state === RETURN) {
+-        const k = (now - p.t0) / p.duration
+-        if (k < 0) continue
+-        if (k >= 1) {
+-          Object.assign(p, {
+-            state: HOME,
+-            x: p.hx,
+-            y: p.hy,
+-            vx: 0,
+-            vy: 0,
+-            rot: 0,
+-            spin: 0,
+-            pop: 0,
+-            e: clock.closed ? 0.5 : 0.9,
+-            z: clock.closed ? -0.2 : -0.8,
+-            zv: 0,
+-          })
+-          if (sound()) PinSound.slot(p.c, COLS, p.hx, view.w)
+-          continue
+-        }
+-        const e = 1 - Math.pow(1 - k, 3)
+-        p.x = lerp(p.x0, p.hx, e)
+-        p.y = lerp(p.y0, p.hy, e) - Math.sin(k * Math.PI) * p.lift
+-        p.rot = lerp(wrapQuarter(p.rot0), 0, e)
+-        continue
+-      }
+-      counts.air++
+-      counts.loose++
+-      p.vy += 2400 * dt
+-      p.x += p.vx * dt
+-      p.y += p.vy * dt
+-      p.rot += p.spin * dt
+-      if (p.x < cell) Object.assign(p, { x: cell, vx: Math.abs(p.vx) * 0.5 })
+-      if (p.x > view.w - cell) Object.assign(p, { x: view.w - cell, vx: -Math.abs(p.vx) * 0.5 })
+-      if (view.game) {
+-        if (p.y > view.h + cell * 4) p.state = OUT
+-        continue
+-      }
+-      if (p.vy <= 0 || popOf(p, now) >= 0.1) continue
+-      const bucket = Math.max(0, Math.min(piles.top.length - 1, Math.floor(p.x / cell)))
+-      const topSurface = composerSurface() - piles.top[bucket] * cell
+-      const top = onComposer(bucket) && p.y - p.vy * dt + cell / 2 <= topSurface + 1
+-      const surface = top ? topSurface : view.h - piles.floor[bucket] * cell
+-      if (p.y + cell / 2 < surface) continue
+-      if (p.vy <= 260) {
+-        settle(p, bucket, top)
+-        continue
+-      }
+-      p.y = surface - cell / 2
+-      if (sound()) PinSound.bounce(p.x, view.w, p.vy)
+-      p.vy = -p.vy * 0.34
+-      p.vx *= 0.55
+-      p.spin = -p.spin * 0.5 + (Math.random() - 0.5) * 4
+-    }
+-
+-    const idle = now - clock.knocked
+-    if (!view.game && !pointer.down && counts.loose && ((counts.air === 0 && idle > 2) || idle > 6)) reassemble(now)
+-    if (view.region.full && pins.every((p) => p.state === HOME)) setRegion(false)
+-  }
+-
+-  const revealSpan = entrance === "sweep" ? REVEAL : 1.3
+-  const resting = (p: Pin) => p.state === HOME || p.state === OUT
+-  const settled = (now: number) => {
+-    if (clock.closed) return now - clock.closed >= 1.2 && pins.every((p) => p.state === HOME)
+-    if (now - clock.born < revealSpan || pointer.down || view.activity > 1e-3) return false
+-    return pins.every(resting)
+-  }
+-
+-  const draw = (now: number) => {
+-    const back = layers.back
+-    back.begin()
+-    drawBoard(now)
+-
+-    const loose = pins.filter((p) => !resting(p))
+-    const popped = loose.filter((p) => popOf(p, now) > 0.06).sort((a, b) => popOf(a, now) - popOf(b, now))
+-    const flat = loose.filter((p) => popOf(p, now) <= 0.06)
+-
+-    for (const p of loose) {
+-      const pop = popOf(p, now)
+-      const offset = view.depth * (0.35 + pop * 5)
+-      const size = view.size * (1 + pop * 1.6) * (1 + pop * 0.4)
+-      back.rect(
+-        p.x + tilt.x * view.depth - LIGHT[0] * offset - size / 2,
+-        p.y + tilt.y * view.depth - LIGHT[1] * offset - size / 2,
+-        size,
+-        size,
+-        [0, 0, 0, colors.shadow[3] * (1 - pop * 0.65)],
+-      )
+-    }
+-    // Cubes further along the extrusion direction sit in front, so stacked pins overlap correctly.
+-    flat.sort((a, b) => a.x * tilt.x + a.y * tilt.y - (b.x * tilt.x + b.y * tilt.y))
+-    for (const p of flat) drawCube(back, p, 1)
+-    back.draw(view.region, view.dpr)
+-
+-    setFront(popped.length > 0)
+-    if (!popped.length) return
+-    layers.front.begin()
+-    for (const p of popped) drawCube(layers.front, p, 1 + popOf(p, now) * 1.6)
+-    layers.front.draw({ x: 0, y: 0, w: view.w, h: view.h }, view.dpr)
+-  }
+-
+-  // Pins are prisms from their front face back to the board. Drawing them in order of their
+-  // grid position along the extrusion direction is a correct painter's order for any heights,
+-  // since pins on the same diagonal never overlap.
+-  const drawBoard = (now: number) => {
+-    const quads = layers.back
+-    const sx = tilt.x >= 0 ? 1 : -1
+-    const sy = tilt.y >= 0 ? 1 : -1
+-    const ox = tilt.x * view.depth
+-    const oy = tilt.y * view.depth
+-    const half = view.size / 2
+-    const size = view.size
+-    const age = now - clock.born
+-    const closeAge = clock.closed ? now - clock.closed : -1
+-
+-    for (const p of pins) {
+-      if (p.state !== HOME) continue
+-      const g =
+-        closeAge >= 0
+-          ? closeOf(p, closeAge)
+-          : entrance === "sweep"
+-            ? age >= (p.c / COLS) * 0.45
+-              ? 1
+-              : 0
+-            : chainOf(p, age)
+-      if (g <= 0.05) continue
+-      const s = Math.min(1, g)
+-      quads.shadow(
+-        p.hx + ox * s - LIGHT[0] * 2.5 * s - half - 1,
+-        p.hy + oy * s - LIGHT[1] * 2.5 * s - half - 1,
+-        size + 2,
+-        size + 2,
+-        [colors.shadow[0], colors.shadow[1], colors.shadow[2], colors.shadow[3] * s],
+-      )
+-    }
+-
+-    // An empty socket: a dark rim with its floor visible through the opening, shifted by the tilt.
+-    for (const p of pins)
+-      if (p.state !== HOME) quads.rect(p.hx + ox - half, p.hy + oy - half, size, size, colors.socketRim)
+-    for (const p of pins) {
+-      if (p.state === HOME) continue
+-      const w = size - Math.abs(ox * 0.45)
+-      const h = size - Math.abs(oy * 0.45)
+-      if (w > 0 && h > 0)
+-        quads.rect(
+-          p.hx + ox - half + Math.max(0, ox * 0.45),
+-          p.hy + oy - half + Math.max(0, oy * 0.45),
+-          w,
+-          h,
+-          colors.socketFloor,
+-        )
+-    }
+-
+-    const key = (sx > 0 ? 1 : 0) + (sy > 0 ? 2 : 0)
+-    const order =
+-      orders.get(key) ??
+-      orders
+-        .set(
+-          key,
+-          [...pins].sort((a, b) => a.c * sx + a.r * sy - (b.c * sx + b.r * sy)),
+-        )
+-        .get(key)!
+-    const sideX = sx > 0 ? Math.round(Math.max(0, LIGHT[0]) * SHADES) : 0
+-    const sideY = sy < 0 ? Math.round(Math.max(0, -LIGHT[1]) * SHADES) : 0
+-
+-    // Each diagonal goes out grouped by colour, so the 2D fallback can fill each run as one path.
+-    const flush = () => {
+-      for (let lv = 1; lv <= 3; lv++) {
+-        for (const p of band) {
+-          if (p.lv !== lv) continue
+-          const fx = p.hx + ox * p.fd + sx * half
+-          quads.quad(fx, p.hy + oy * p.fd - half, ox * (p.bd - p.fd), oy * (p.bd - p.fd), 0, size, colors.side[lv][sideX])
+-        }
+-        for (const p of band) {
+-          if (p.lv !== lv) continue
+-          const fy = p.hy + oy * p.fd + sy * half
+-          quads.quad(p.hx + ox * p.fd - half, fy, size, 0, ox * (p.bd - p.fd), oy * (p.bd - p.fd), colors.side[lv][sideY])
+-        }
+-      }
+-      for (const p of band)
+-        quads.rect(
+-          p.hx + ox * p.fd - half,
+-          p.hy + oy * p.fd - half,
+-          size,
+-          size,
+-          colors.face[p.lv][shadeOf(Math.max(p.e, p.z))],
+-        )
+-      if (size < 4) return
+-      // The lit and shaded edges are split at the corners so no pixel is tinted twice by one of them.
+-      for (const p of band) {
+-        if (p.lv === 1) continue
+-        const x = p.hx + ox * p.fd - half
+-        const y = p.hy + oy * p.fd - half
+-        quads.rect(x, y, size, 1, colors.highlight)
+-        quads.rect(x + size - 1, y + 1, 1, size - 1, colors.highlight)
+-      }
+-      for (const p of band) {
+-        if (p.lv === 1) continue
+-        const x = p.hx + ox * p.fd - half
+-        const y = p.hy + oy * p.fd - half
+-        quads.rect(x, y + size - 1, size, 1, colors.lowlight)
+-        quads.rect(x, y, 1, size - 1, colors.lowlight)
+-      }
+-    }
+-
+-    let current = NaN
+-    band.length = 0
+-    for (const p of order) {
+-      if (p.state !== HOME) continue
+-      const height = (p.lv === 1 ? 0.35 : 1) * (1 - Math.max(0, p.z)) + Math.max(0, -p.z) * 0.6
+-      if (entrance === "sweep" && closeAge < 0) {
+-        const grow = Math.min(1, Math.max(0, (age - (p.c / COLS) * 0.45) / 0.3))
+-        if (!grow) continue
+-        p.bd = 1
+-        p.fd = 1 - height * (1 - Math.pow(1 - grow, 3))
+-      }
+-      if (entrance !== "sweep" || closeAge >= 0) {
+-        const w = closeAge >= 0 ? closeOf(p, closeAge) : chainOf(p, age)
+-        if (w <= 0.01) continue
+-        const g = Math.min(1, w)
+-        p.bd = g
+-        p.fd = (1 - height) * g
+-        p.e = Math.max(p.e, Math.sin(g * Math.PI) * 0.85)
+-      }
+-      const k = p.c * sx + p.r * sy
+-      if (k !== current && band.length) {
+-        flush()
+-        band.length = 0
+-      }
+-      current = k
+-      band.push(p)
+-    }
+-    if (band.length) flush()
+-  }
+-
+-  // Loose pins are extruded squares. Each visible side is lit by its own normal, so tumbling pins flicker.
+-  // Counter pins are recessed and nearly black on the board; out of it they use the loose shade so they read as cubes.
+-  const drawCube = (layer: Quads, p: Pin, scale: number) => {
+-    const lv = p.lv === 1 ? LOOSE : p.lv
+-    const radius = (view.size * scale) / Math.SQRT2
+-    for (let j = 0; j < 4; j++) {
+-      const a = p.rot + Math.PI / 4 + (j * Math.PI) / 2
+-      corners[j * 2] = p.x + Math.cos(a) * radius
+-      corners[j * 2 + 1] = p.y + Math.sin(a) * radius
+-    }
+-    const ox = tilt.x * view.depth * scale
+-    const oy = tilt.y * view.depth * scale
+-    for (let j = 0; j < 4; j++) {
+-      const ax = corners[j * 2]
+-      const ay = corners[j * 2 + 1]
+-      const bx = corners[((j + 1) % 4) * 2]
+-      const by = corners[((j + 1) % 4) * 2 + 1]
+-      const nx = (ax + bx) / 2 - p.x
+-      const ny = (ay + by) / 2 - p.y
+-      if (nx * tilt.x + ny * tilt.y <= 0) continue
+-      const n = Math.hypot(nx, ny) || 1
+-      const shade = Math.round(Math.max(0, (nx * LIGHT[0] + ny * LIGHT[1]) / n) * SHADES)
+-      layer.quad(ax, ay, bx - ax, by - ay, ox, oy, colors.side[lv][shade])
+-    }
+-    const x = corners[0]
+-    const y = corners[1]
+-    layer.quad(x, y, corners[2] - x, corners[3] - y, corners[6] - x, corners[7] - y, colors.face[lv][shadeOf(p.e)])
+-  }
+-
+-  const toStage = (event: PointerEvent) => {
+-    pointer.x = event.clientX - view.left
+-    pointer.y = event.clientY - view.top
+-  }
+-  const onEnter = (event: PointerEvent) => {
+-    if (view.game) return
+-    const s = stage.getBoundingClientRect()
+-    view.left = s.left
+-    view.top = s.top
+-    toStage(event)
+-    pointer.lx = pointer.x
+-    pointer.ly = pointer.y
+-    pointer.inside = true
+-    wake()
+-  }
+-  const onMove = (event: PointerEvent) => {
+-    if (view.game) return
+-    toStage(event)
+-    pointer.inside = true
+-    wake()
+-  }
+-  const onLeave = () => {
+-    if (pointer.down || view.game) return
+-    pointer.inside = false
+-    wake()
+-  }
+-  // Capturing the pointer keeps a long drag alive; without it the browser can start a text
+-  // selection or native drag mid-gesture and cancel the pointer stream.
+-  const onDown = (event: PointerEvent) => {
+-    if (view.game || event.button !== 0 || (event.target instanceof Element && event.target.closest(INTERACTIVE)))
+-      return
+-    event.preventDefault()
+-    stage.setPointerCapture(event.pointerId)
+-    toStage(event)
+-    pointer.down = true
+-    pointer.dragX = pointer.x
+-    pointer.dragY = pointer.y
+-    knock(pointer.x, pointer.y, 24, 560, 0, 0, performance.now() / 1000)
+-    wake()
+-  }
+-  const onUp = (event: Event) => {
+-    pointer.down = false
+-    if (event instanceof PointerEvent && stage.hasPointerCapture(event.pointerId))
+-      stage.releasePointerCapture(event.pointerId)
+-  }
+-  const onSelect = (event: Event) => {
+-    if (pointer.down) event.preventDefault()
+-  }
+-  const onTheme = () => {
+-    colors = readColors(stage)
+-    wake()
+-  }
+-
+-  const resize = new ResizeObserver(layout)
+-  resize.observe(stage)
+-  resize.observe(logo)
+-  const theme = new MutationObserver(onTheme)
+-  theme.observe(document.documentElement, {
+-    attributes: true,
+-    attributeFilter: ["data-color-scheme", "data-theme", "class"],
+-  })
+-  const scheme = matchMedia("(prefers-color-scheme: dark)")
+-  scheme.addEventListener("change", onTheme)
+-  if (!still) {
+-    stage.addEventListener("pointerenter", onEnter)
+-    stage.addEventListener("pointermove", onMove)
+-    stage.addEventListener("pointerleave", onLeave)
+-    stage.addEventListener("pointerdown", onDown)
+-    stage.addEventListener("pointerup", onUp)
+-    stage.addEventListener("pointercancel", onUp)
+-    stage.addEventListener("lostpointercapture", onUp)
+-    stage.addEventListener("selectstart", onSelect)
+-    stage.addEventListener("dragstart", onSelect)
+-    window.addEventListener("blur", onUp)
+-  }
+-  layout()
+-  // The reveal staggers columns over 0.45 s and each rises over 0.3 s; the sweep spans the same window.
+-  if (!still && sound()) PinSound.sweep({ duration: entrance === "sweep" ? REVEAL : 0.9, columns: COLS })
+-
+-  const handle: PinBoardHandle = {
+-    collide: (x, y, radius, blast, vx, vy) => {
+-      const half = view.size / 2
+-      const reach = radius + blast + half
+-      const now = performance.now() / 1000
+-      const hit = { nx: 0, ny: 0, count: 0 }
+-      const struck: Pin[] = []
+-      for (const p of pins) {
+-        if (p.state !== HOME) continue
+-        const dx = x - p.hx
+-        const dy = y - p.hy
+-        if (Math.abs(dx) > reach || Math.abs(dy) > reach) continue
+-        const gap = Math.hypot(dx - Math.max(-half, Math.min(half, dx)), dy - Math.max(-half, Math.min(half, dy)))
+-        if (gap > radius + blast) continue
+-        struck.push(p)
+-        if (gap > radius) continue
+-        hit.nx += dx
+-        hit.ny += dy
+-        hit.count++
+-      }
+-      if (!hit.count) return
+-      hit.nx /= hit.count
+-      hit.ny /= hit.count
+-      hit.count = struck.length
+-      for (const p of struck) {
+-        const dx = x - p.hx
+-        const dy = y - p.hy
+-        const dist = Math.hypot(dx, dy) || 1
+-        // Bricks burst away from the ball toward the viewer, then fall off the panel.
+-        p.state = AIR
+-        p.e = 1
+-        p.vx = vx * 0.35 - (dx / dist) * 140 + (Math.random() - 0.5) * 160
+-        p.vy = vy * 0.35 - (dy / dist) * 140 - 180 - Math.random() * 180
+-        p.spin += (Math.random() - 0.5) * 22
+-        p.pop = 0.45 + Math.random() * 0.4
+-        p.popAt = now
+-      }
+-      clock.knocked = now
+-      setRegion(true)
+-      wake()
+-      return hit
+-    },
+-    left: () => pins.reduce((n, p) => (p.state === HOME ? n + 1 : n), 0),
+-    play: () => {
+-      const now = performance.now() / 1000
+-      view.game = true
+-      pointer.down = false
+-      pointer.inside = false
+-      piles.top.fill(0)
+-      piles.floor.fill(0)
+-      // Pins still loose from earlier clicks hurry home so the wall is whole when the ball is served.
+-      for (const p of pins) {
+-        if (p.state === HOME) continue
+-        Object.assign(p, { state: RETURN, x0: p.x, y0: p.y, rot0: p.rot, t0: now + (p.c / COLS) * 0.2 })
+-        p.duration = 0.35 + Math.random() * 0.1
+-        p.lift = 20 + Math.random() * 30
+-      }
+-      wake()
+-    },
+-    steer: (x, y) => {
+-      pointer.x = x
+-      pointer.y = y
+-      pointer.inside = true
+-      wake()
+-    },
+-    restore: () => {
+-      const now = performance.now() / 1000
+-      view.game = false
+-      pointer.inside = false
+-      clock.knocked = now
+-      // Lost bricks fly back up from below the panel, sweeping in column by column.
+-      for (const p of pins) {
+-        if (p.state === HOME) continue
+-        const out = p.state === OUT
+-        Object.assign(p, {
+-          state: RETURN,
+-          x0: out ? p.hx + (Math.random() - 0.5) * view.pitch * 6 : p.x,
+-          y0: out ? view.h + view.pitch * 2 : p.y,
+-          rot0: out ? (Math.random() - 0.5) * 6 : p.rot,
+-          t0: now + 0.15 + (p.c / COLS) * 0.55 + Math.random() * 0.08,
+-          duration: 0.55 + Math.random() * 0.2,
+-          lift: 20 + Math.random() * 50,
+-        })
+-      }
+-      wake()
+-    },
+-  }
+-
+-  return {
+-    handle,
+-    close: () => {
+-      if (clock.closed) return
+-      const now = performance.now() / 1000
+-      clock.closed = now
+-      pointer.down = false
+-      piles.top.fill(0)
+-      piles.floor.fill(0)
+-      for (const p of pins) {
+-        if (p.state === HOME) continue
+-        p.state = RETURN
+-        p.x0 = p.x
+-        p.y0 = p.y
+-        p.rot0 = p.rot
+-        p.t0 = now + (p.c / COLS) * 0.18
+-        p.duration = 0.28 + Math.random() * 0.06
+-        p.lift = 24 + Math.random() * 42
+-      }
+-      if (!still && sound()) PinSound.sweep({ duration: 0.95, columns: COLS, reverse: true })
+-      wake()
+-    },
+-    dispose: () => {
+-      cancelAnimationFrame(raf)
+-      resize.disconnect()
+-      theme.disconnect()
+-      scheme.removeEventListener("change", onTheme)
+-      stage.removeEventListener("pointerenter", onEnter)
+-      stage.removeEventListener("pointermove", onMove)
+-      stage.removeEventListener("pointerleave", onLeave)
+-      stage.removeEventListener("pointerdown", onDown)
+-      stage.removeEventListener("pointerup", onUp)
+-      stage.removeEventListener("pointercancel", onUp)
+-      stage.removeEventListener("lostpointercapture", onUp)
+-      stage.removeEventListener("selectstart", onSelect)
+-      stage.removeEventListener("dragstart", onSelect)
+-      window.removeEventListener("blur", onUp)
+-      layers.back.dispose()
+-      layers.front.dispose()
+-    },
+-  }
+-}
+-
+-function createPin(c: number, r: number, lv: number): Pin {
+-  return {
+-    c,
+-    r,
+-    lv,
+-    hx: 0,
+-    hy: 0,
+-    x: 0,
+-    y: 0,
+-    vx: 0,
+-    vy: 0,
+-    z: 0,
+-    zv: 0,
+-    e: 0,
+-    rot: 0,
+-    spin: 0,
+-    state: HOME,
+-    pop: 0,
+-    popAt: 0,
+-    bucket: 0,
+-    onComposer: false,
+-    level: 0,
+-    x0: 0,
+-    y0: 0,
+-    rot0: 0,
+-    t0: 0,
+-    duration: 0,
+-    lift: 0,
+-    fd: 0,
+-    bd: 1,
+-  }
+-}
+-
+-// Radial chain-reaction from the starter pin in the "e" (column 75, row 3).
+-function chainOf(p: Pin, age: number) {
+-  const dist = Math.hypot(p.c - 75, (p.r - 3) * 1.4)
+-  const u = (age - (dist / 76) * 0.62) / 0.36
+-  if (u <= 0) return 0
+-  if (u >= 1) return 1
+-  return 1 - Math.pow(1 - u, 3)
+-}
+-
+-// Reverse wave reeling pins from left ("o") back into the "e" hole when the lodger is tucked back in.
+-function closeOf(p: Pin, closeAge: number) {
+-  const dist = Math.hypot(p.c - 75, (p.r - 3) * 1.4)
+-  const u = (closeAge - (0.32 + ((76 - dist) / 76) * 0.48)) / 0.32
+-  if (u <= 0) return 1
+-  if (u >= 1) return 0
+-  return 1 - u * u * (3 - 2 * u)
+-}
+-
+-// Theme colours are resolved through a 1×1 canvas so any CSS colour syntax works.
+-function readColors(stage: HTMLElement) {
+-  const probe = document.createElement("canvas").getContext("2d", { willReadFrequently: true })!
+-  const style = getComputedStyle(stage)
+-  const rgb = (value: string, fallback: string) => {
+-    probe.clearRect(0, 0, 1, 1)
+-    probe.fillStyle = fallback
+-    probe.fillStyle = value || fallback
+-    probe.fillRect(0, 0, 1, 1)
+-    const d = probe.getImageData(0, 0, 1, 1).data
+-    return [d[0], d[1], d[2]] as const
+-  }
+-  const token = (name: string, fallback: string) => rgb(style.getPropertyValue(name).trim(), fallback)
+-  const bg = rgb(style.backgroundColor, "#161616")
+-  const faint = token("--v2-icon-icon-faint", "#5c5c5c")
+-  const levels = [
+-    bg,
+-    mix(bg, faint, 0.5),
+-    token("--v2-icon-icon-muted", "#808080"),
+-    token("--v2-icon-icon-base", "#dbdbdb"),
+-    faint,
+-  ]
+-  const brand = token("--v2-orange-500", "#ffa478")
+-  const dark = bg[0] * 0.2126 + bg[1] * 0.7152 + bg[2] * 0.0722 < 128
+-  const black = [0, 0, 0]
+-  const shades = (fn: (t: number) => readonly number[]) =>
+-    Array.from({ length: SHADES + 1 }, (_, i) => color(fn(i / SHADES)))
+-  // Sides are the pin's own colour in shadow, so they stay darker than its face in either theme.
+-  return {
+-    side: levels.map((level) => shades((t) => mix(black, level, 0.3 + 0.5 * t))),
+-    face: levels.map((level, lv) => shades((t) => mix(level, brand, t * (lv === 1 ? 0.4 : 0.85)))),
+-    socketRim: color(mix(bg, black, dark ? 0.6 : 0.16)),
+-    socketFloor: color(mix(bg, black, dark ? 0.35 : 0.08)),
+-    shadow: color(black, dark ? 0.3 : 0.12),
+-    highlight: color([255, 255, 255], 0.2),
+-    lowlight: color(black, 0.2),
+-  }
+-}
+-
+-const mix = (a: readonly number[], b: readonly number[], t: number) => a.map((v, i) => v + (b[i] - v) * t)
+-const color = (c: readonly number[], alpha = 1): Rgba => [Math.round(c[0]), Math.round(c[1]), Math.round(c[2]), alpha]
+-const lerp = (a: number, b: number, t: number) => a + (b - a) * t
+-const clamp = (v: number) => Math.max(-1, Math.min(1, v))
+-const shadeOf = (v: number) => Math.round(Math.max(0, Math.min(1, v)) * SHADES)
+-const wrapQuarter = (a: number) => {
+-  const q = Math.PI / 2
+-  const m = (((a + q / 2) % q) + q) % q
+-  return m - q / 2
+-}
+diff --git a/packages/app/src/new-session/pin-quads.ts b/packages/app/src/new-session/pin-quads.ts
+deleted file mode 100644
+index 556d775fd4..0000000000
+--- a/packages/app/src/new-session/pin-quads.ts
++++ /dev/null
+@@ -1,252 +0,0 @@
+-// Draws a pin board layer as a list of filled parallelograms. With WebGL2 the whole list is at most two
+-// instanced draws, so a frame costs about the same however many pins there are. A 2D canvas spends a
+-// GPU draw call on most shapes, which kept weak machines busy. Without hardware WebGL2 it falls back to one 2D
+-// path fill per run of same-coloured quads, as drawing straight to the canvas would.
+-
+-export type Rgba = readonly [number, number, number, number]
+-export type Quads = ReturnType<typeof createQuads>
+-
+-type Region = { x: number; y: number; w: number; h: number }
+-
+-const FLOATS = 10
+-
+-const VERTEX = `#version 300 es
+-in vec2 corner;
+-in vec2 origin;
+-in vec2 u;
+-in vec2 v;
+-in vec4 color;
+-uniform vec2 view;
+-uniform vec2 size;
+-uniform float scale;
+-out vec2 st;
+-out vec2 span;
+-out vec4 tint;
+-void main() {
+-  vec2 du = u * scale;
+-  vec2 dv = v * scale;
+-  float area = max(abs(du.x * dv.y - du.y * dv.x), 1e-4);
+-  // span is the quad's width across each pair of edges in device pixels; the quad grows a pixel
+-  // past every edge so partly covered pixels get drawn.
+-  span = vec2(area / max(length(dv), 1e-4), area / max(length(du), 1e-4));
+-  st = mix(-1.0 / span, 1.0 + 1.0 / span, corner);
+-  vec2 p = (origin - view) * scale + du * st.x + dv * st.y;
+-  gl_Position = vec4(p.x / size.x * 2.0 - 1.0, 1.0 - p.y / size.y * 2.0, 0.0, 1.0);
+-  tint = color;
+-}`
+-
+-// Coverage is the overlap of the pixel with the quad along each axis, which is exact for axis-aligned rects.
+-const FRAGMENT = `#version 300 es
+-precision highp float;
+-in vec2 st;
+-in vec2 span;
+-in vec4 tint;
+-out vec4 outColor;
+-void main() {
+-  vec2 d = st * span;
+-  vec2 c = clamp(min(d + 0.5, span) - max(d - 0.5, 0.0), 0.0, 1.0);
+-  outColor = tint * (c.x * c.y);
+-}`
+-
+-export function createQuads(canvas: HTMLCanvasElement, restored: () => void) {
+-  // Each quad's colour is also kept as given, for the 2D fallback.
+-  const data = { list: new Float32Array(FLOATS * 1024), tints: [] as Rgba[], count: 0, shadows: 0 }
+-  // The context is created on first draw, so a layer that never shows pins never holds one.
+-  const surface: {
+-    current?: { gl: WebGL2RenderingContext; gpu: ReturnType<typeof setup> } | { ctx: CanvasRenderingContext2D }
+-  } = {}
+-  const styles = new WeakMap<Rgba, string>()
+-
+-  const push = (x: number, y: number, ux: number, uy: number, vx: number, vy: number, c: Rgba) => {
+-    if ((data.count + 1) * FLOATS > data.list.length) {
+-      const grown = new Float32Array(data.list.length * 2)
+-      grown.set(data.list)
+-      data.list = grown
+-    }
+-    const list = data.list
+-    data.tints[data.count] = c
+-    const i = data.count++ * FLOATS
+-    const a = c[3]
+-    list[i] = x
+-    list[i + 1] = y
+-    list[i + 2] = ux
+-    list[i + 3] = uy
+-    list[i + 4] = vx
+-    list[i + 5] = vy
+-    list[i + 6] = (c[0] / 255) * a
+-    list[i + 7] = (c[1] / 255) * a
+-    list[i + 8] = (c[2] / 255) * a
+-    list[i + 9] = a
+-  }
+-
+-  return {
+-    begin() {
+-      data.count = 0
+-      data.shadows = 0
+-    },
+-    /** Shadows, all in one colour, go first and merge where they overlap instead of darkening. */
+-    shadow(x: number, y: number, w: number, h: number, c: Rgba) {
+-      push(x, y, w, 0, 0, h, c)
+-      data.shadows = data.count
+-    },
+-    rect(x: number, y: number, w: number, h: number, c: Rgba) {
+-      push(x, y, w, 0, 0, h, c)
+-    },
+-    /** The parallelogram with a corner at (x, y) and edges u and v. */
+-    quad(x: number, y: number, ux: number, uy: number, vx: number, vy: number, c: Rgba) {
+-      push(x, y, ux, uy, vx, vy, c)
+-    },
+-    draw(region: Region, scale: number) {
+-      surface.current ??= open()
+-      if ("gl" in surface.current) return drawGL(surface.current.gl, surface.current.gpu, region, scale)
+-      drawCanvas(surface.current.ctx, region, scale)
+-    },
+-    dispose() {
+-      const current = surface.current
+-      if (!current || !("gl" in current)) return
+-      // Losing the context in the frame the canvas leaves the page lets the compositor redraw the last
+-      // frame from a released buffer, which some GPUs show as a one-frame white flash. Drop it once the
+-      // canvas is gone instead.
+-      setTimeout(() => current.gl.getExtension("WEBGL_lose_context")?.loseContext(), 250)
+-    },
+-  }
+-
+-  function open() {
+-    // Software WebGL is refused: the browser would read every frame back to composite it, which costs more than 2D.
+-    const gl = canvas.getContext("webgl2", {
+-      premultipliedAlpha: true,
+-      antialias: false,
+-      depth: false,
+-      failIfMajorPerformanceCaveat: true,
+-    })
+-    if (gl) return { gl, gpu: setup(gl) }
+-    return { ctx: canvas.getContext("2d")! }
+-  }
+-
+-  function drawGL(gl: WebGL2RenderingContext, gpu: ReturnType<typeof setup>, region: Region, scale: number) {
+-    if (gl.isContextLost()) return
+-    if (!gpu.ready) gpu.init()
+-    gl.viewport(0, 0, canvas.width, canvas.height)
+-    gl.clearColor(0, 0, 0, 0)
+-    gl.clear(gl.COLOR_BUFFER_BIT)
+-    if (!data.count) return
+-    gl.useProgram(gpu.program)
+-    gl.bindVertexArray(gpu.vao)
+-    gl.uniform2f(gpu.view, region.x, region.y)
+-    gl.uniform2f(gpu.size, canvas.width, canvas.height)
+-    gl.uniform1f(gpu.scale, scale)
+-    gl.bindBuffer(gl.ARRAY_BUFFER, gpu.instances)
+-    // The GPU buffer is reused across frames and only reallocated when the quad list outgrows it.
+-    if (gpu.capacity < data.list.length) {
+-      gpu.capacity = data.list.length
+-      gl.bufferData(gl.ARRAY_BUFFER, gpu.capacity * 4, gl.DYNAMIC_DRAW)
+-    }
+-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, data.list, 0, data.count * FLOATS)
+-    gl.enable(gl.BLEND)
+-    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+-    if (data.shadows) {
+-      gl.blendEquation(gl.MAX)
+-      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, data.shadows)
+-    }
+-    gl.blendEquation(gl.FUNC_ADD)
+-    if (data.count > data.shadows) {
+-      gpu.offset(data.shadows)
+-      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, data.count - data.shadows)
+-      gpu.offset(0)
+-    }
+-  }
+-
+-  // Each run of quads in one colour is one path fill. The board emits quads grouped by colour, so this makes
+-  // about as many fills as drawing straight to the canvas would. A shared path also merges overlapping shadows.
+-  function drawCanvas(ctx: CanvasRenderingContext2D, region: Region, scale: number) {
+-    ctx.setTransform(1, 0, 0, 1, 0, 0)
+-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+-    ctx.setTransform(scale, 0, 0, scale, -region.x * scale, -region.y * scale)
+-    const list = data.list
+-    for (let n = 0; n < data.count; ) {
+-      const c = data.tints[n]
+-      ctx.fillStyle = styles.get(c) ?? styles.set(c, `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${c[3]})`).get(c)!
+-      ctx.beginPath()
+-      for (; n < data.count && data.tints[n] === c; n++) {
+-        const i = n * FLOATS
+-        const x = list[i]
+-        const y = list[i + 1]
+-        if (list[i + 3] === 0 && list[i + 4] === 0) {
+-          ctx.rect(x, y, list[i + 2], list[i + 5])
+-          continue
+-        }
+-        ctx.moveTo(x, y)
+-        ctx.lineTo(x + list[i + 2], y + list[i + 3])
+-        ctx.lineTo(x + list[i + 2] + list[i + 4], y + list[i + 3] + list[i + 5])
+-        ctx.lineTo(x + list[i + 4], y + list[i + 5])
+-        ctx.closePath()
+-      }
+-      ctx.fill()
+-    }
+-  }
+-  // GPU objects are rebuilt after the context is lost and restored.
+-  function setup(gl: WebGL2RenderingContext) {
+-    const gpu = {
+-      ready: false,
+-      capacity: 0,
+-      program: null as WebGLProgram | null,
+-      vao: null as WebGLVertexArrayObject | null,
+-      instances: null as WebGLBuffer | null,
+-      view: null as WebGLUniformLocation | null,
+-      size: null as WebGLUniformLocation | null,
+-      scale: null as WebGLUniformLocation | null,
+-      attributes: [] as { at: number; size: number; offset: number }[],
+-      init() {
+-        const program = gl.createProgram()!
+-        for (const [type, source] of [
+-          [gl.VERTEX_SHADER, VERTEX],
+-          [gl.FRAGMENT_SHADER, FRAGMENT],
+-        ] as const) {
+-          const shader = gl.createShader(type)!
+-          gl.shaderSource(shader, source)
+-          gl.compileShader(shader)
+-          gl.attachShader(program, shader)
+-        }
+-        gl.linkProgram(program)
+-        gpu.program = program
+-        gpu.view = gl.getUniformLocation(program, "view")
+-        gpu.size = gl.getUniformLocation(program, "size")
+-        gpu.scale = gl.getUniformLocation(program, "scale")
+-        gpu.vao = gl.createVertexArray()
+-        gl.bindVertexArray(gpu.vao)
+-        const corners = gl.createBuffer()
+-        gl.bindBuffer(gl.ARRAY_BUFFER, corners)
+-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW)
+-        const corner = gl.getAttribLocation(program, "corner")
+-        gl.enableVertexAttribArray(corner)
+-        gl.vertexAttribPointer(corner, 2, gl.FLOAT, false, 0, 0)
+-        gpu.instances = gl.createBuffer()
+-        gpu.capacity = 0
+-        gl.bindBuffer(gl.ARRAY_BUFFER, gpu.instances)
+-        gpu.attributes = [
+-          { at: gl.getAttribLocation(program, "origin"), size: 2, offset: 0 },
+-          { at: gl.getAttribLocation(program, "u"), size: 2, offset: 2 },
+-          { at: gl.getAttribLocation(program, "v"), size: 2, offset: 4 },
+-          { at: gl.getAttribLocation(program, "color"), size: 4, offset: 6 },
+-        ]
+-        for (const a of gpu.attributes) {
+-          gl.enableVertexAttribArray(a.at)
+-          gl.vertexAttribDivisor(a.at, 1)
+-        }
+-        gpu.offset(0)
+-        gpu.ready = true
+-      },
+-      // Points the per-quad attributes at the given first quad, so one buffer serves both draws.
+-      offset(first: number) {
+-        for (const a of gpu.attributes)
+-          gl.vertexAttribPointer(a.at, a.size, gl.FLOAT, false, FLOATS * 4, (first * FLOATS + a.offset) * 4)
+-      },
+-    }
+-    canvas.addEventListener("webglcontextlost", (event) => event.preventDefault())
+-    canvas.addEventListener("webglcontextrestored", () => {
+-      gpu.ready = false
+-      restored()
+-    })
+-    return gpu
+-  }
+-}
+diff --git a/packages/app/src/new-session/pin-sound.ts b/packages/app/src/new-session/pin-sound.ts
+deleted file mode 100644
+index 3bb39ba572..0000000000
+--- a/packages/app/src/new-session/pin-sound.ts
++++ /dev/null
+@@ -1,193 +0,0 @@
+-// Synthesised stone sounds for the new session pin board. Nothing is loaded from disk; every sound is a
+-// short burst of filtered noise, optionally with a low thud, so the whole palette reads as pebbles on stone.
+-
+-const PENTATONIC = [0, 2, 4, 7, 9]
+-
+-type Audio = { context: AudioContext; bus: GainNode; noise: AudioBuffer; recent: number[] }
+-
+-let shared: Audio | undefined
+-
+-/** Returns a running audio graph, or nothing when the browser would block or has not been interacted with. */
+-function audio() {
+-  if (typeof AudioContext === "undefined" || document.hidden) return
+-  if (!navigator.userActivation?.hasBeenActive) return
+-  if (!shared) shared = createAudio()
+-  if (shared.context.state === "suspended") void shared.context.resume()
+-  if (shared.context.state !== "running") return
+-  return shared
+-}
+-
+-function createAudio(): Audio {
+-  const context = new AudioContext()
+-  const limiter = context.createDynamicsCompressor()
+-  limiter.threshold.value = -24
+-  limiter.ratio.value = 4
+-  limiter.connect(context.destination)
+-  const master = context.createGain()
+-  master.gain.value = 0.9
+-  master.connect(limiter)
+-  const bus = context.createGain()
+-  bus.connect(master)
+-  const room = context.createConvolver()
+-  room.buffer = impulse(context, 1.2, 3.2)
+-  const wet = context.createGain()
+-  wet.gain.value = 0.18
+-  bus.connect(room)
+-  room.connect(wet)
+-  wet.connect(master)
+-  const noise = context.createBuffer(1, context.sampleRate, context.sampleRate)
+-  noise.getChannelData(0).forEach((_, i, data) => (data[i] = Math.random() * 2 - 1))
+-  return { context, bus, noise, recent: [] }
+-}
+-
+-function impulse(context: AudioContext, seconds: number, decay: number) {
+-  const length = Math.floor(context.sampleRate * seconds)
+-  const buffer = context.createBuffer(2, length, context.sampleRate)
+-  for (let channel = 0; channel < 2; channel++) {
+-    const data = buffer.getChannelData(channel)
+-    for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay)
+-  }
+-  return buffer
+-}
+-
+-// Caps bursts of collision sounds so a crumble stays a patter rather than a roar.
+-function allow(a: Audio) {
+-  const now = performance.now()
+-  while (a.recent.length && now - a.recent[0] > 80) a.recent.shift()
+-  if (a.recent.length >= 5) return false
+-  a.recent.push(now)
+-  return true
+-}
+-
+-/** One pebble click: band-passed noise with a resonant body and an optional low thud. */
+-function pebble(
+-  a: Audio,
+-  at: number,
+-  input: { freq: number; q: number; gain: number; decay: number; pan: number; thud?: number },
+-) {
+-  const c = a.context
+-  const source = c.createBufferSource()
+-  source.buffer = a.noise
+-  const band = c.createBiquadFilter()
+-  band.type = "bandpass"
+-  band.frequency.value = input.freq
+-  band.Q.value = input.q
+-  const env = c.createGain()
+-  env.gain.setValueAtTime(0.0001, at)
+-  env.gain.exponentialRampToValueAtTime(input.gain, at + 0.002)
+-  env.gain.exponentialRampToValueAtTime(0.0001, at + input.decay)
+-  const pan = c.createStereoPanner()
+-  pan.pan.value = Math.max(-0.9, Math.min(0.9, input.pan))
+-  source.connect(band).connect(env).connect(pan).connect(a.bus)
+-  source.start(at, Math.random() * 0.8, input.decay + 0.02)
+-  if (!input.thud) return
+-  const body = c.createOscillator()
+-  body.frequency.setValueAtTime(input.thud * 1.6, at)
+-  body.frequency.exponentialRampToValueAtTime(input.thud, at + 0.03)
+-  const thud = c.createGain()
+-  thud.gain.setValueAtTime(0.0001, at)
+-  thud.gain.exponentialRampToValueAtTime(input.gain * 0.5, at + 0.003)
+-  thud.gain.exponentialRampToValueAtTime(0.0001, at + input.decay * 2.5)
+-  body.connect(thud).connect(pan)
+-  body.start(at)
+-  body.stop(at + input.decay * 2.5 + 0.02)
+-}
+-
+-const note = (step: number) =>
+-  440 * Math.pow(2, (74 + 12 * Math.floor(step / 5) + PENTATONIC[((step % 5) + 5) % 5] - 69) / 12)
+-const panOf = (x: number, width: number) => (width ? (x / width) * 1.6 - 0.8 : 0)
+-
+-export const PinSound = {
+-  /** The wordmark rising in: a gritty stone slide sweeping across with pebbles settling under it. */
+-  sweep(input: { duration: number; columns: number; reverse?: boolean }) {
+-    const a = audio()
+-    if (!a) return
+-    const c = a.context
+-    const at = c.currentTime + 0.02
+-    const end = at + input.duration
+-
+-    const source = c.createBufferSource()
+-    source.buffer = a.noise
+-    source.loop = true
+-    const grit = c.createBiquadFilter()
+-    grit.type = "bandpass"
+-    grit.Q.value = 1.4
+-    grit.frequency.setValueAtTime(input.reverse ? 1500 : 260, at)
+-    grit.frequency.exponentialRampToValueAtTime(input.reverse ? 260 : 1500, end)
+-    const body = c.createBiquadFilter()
+-    body.type = "lowpass"
+-    body.frequency.value = 2400
+-    const env = c.createGain()
+-    env.gain.setValueAtTime(0.0001, at)
+-    env.gain.exponentialRampToValueAtTime(0.03, at + 0.12)
+-    env.gain.setValueAtTime(0.03, end - 0.18)
+-    env.gain.exponentialRampToValueAtTime(0.0001, end + 0.12)
+-    const pan = c.createStereoPanner()
+-    pan.pan.setValueAtTime(-0.7, at)
+-    pan.pan.linearRampToValueAtTime(0.7, end)
+-    source.connect(grit).connect(body).connect(env).connect(pan).connect(a.bus)
+-    source.start(at)
+-    source.stop(end + 0.15)
+-
+-    const clicks = 22
+-    for (let i = 0; i < clicks; i++) {
+-      const k = (i + Math.random() * 0.6) / clicks
+-      pebble(a, at + k * (input.duration - 0.1) + 0.06, {
+-        freq: 1800 + Math.random() * 1600,
+-        q: 5,
+-        gain: 0.02 + Math.random() * 0.018,
+-        decay: 0.02 + Math.random() * 0.015,
+-        pan: k * 1.4 - 0.7,
+-      })
+-    }
+-  },
+-
+-  /** A click that knocks pins out: one solid stone clack. */
+-  knock(x: number, width: number) {
+-    const a = audio()
+-    if (!a) return
+-    pebble(a, a.context.currentTime, { freq: 1100, q: 2.2, gain: 0.14, decay: 0.05, pan: panOf(x, width), thud: 95 })
+-  },
+-
+-  /** The brick breaker ball smashing pins: a clack whose ring climbs the scale with each hit before the paddle. */
+-  brick(x: number, width: number, combo: number) {
+-    const a = audio()
+-    if (!a) return
+-    const at = a.context.currentTime
+-    pebble(a, at, { freq: 1300, q: 2, gain: 0.1, decay: 0.04, pan: panOf(x, width), thud: 110 })
+-    pebble(a, at + 0.004, { freq: note(Math.min(14, combo)), q: 16, gain: 0.06, decay: 0.09, pan: panOf(x, width) })
+-  },
+-
+-  /** The brick breaker ball landing on the paddle: a soft, low knock. */
+-  paddle(x: number, width: number) {
+-    const a = audio()
+-    if (!a) return
+-    pebble(a, a.context.currentTime, { freq: 520, q: 1.4, gain: 0.12, decay: 0.05, pan: panOf(x, width), thud: 72 })
+-  },
+-
+-  /** A loose pin bouncing off the composer or the floor. */
+-  bounce(x: number, width: number, speed: number) {
+-    const a = audio()
+-    if (!a || !allow(a)) return
+-    pebble(a, a.context.currentTime, {
+-      freq: 2200 + Math.random() * 1400,
+-      q: 6,
+-      gain: Math.min(0.07, 0.012 + speed / 40000),
+-      decay: 0.02,
+-      pan: panOf(x, width),
+-    })
+-  },
+-
+-  /** A pin seating back into its socket; pitch rises across the wordmark so the return reads as a cascade. */
+-  slot(column: number, columns: number, x: number, width: number) {
+-    const a = audio()
+-    if (!a || !allow(a)) return
+-    pebble(a, a.context.currentTime, {
+-      freq: note(Math.floor((column / columns) * 10)),
+-      q: 14,
+-      gain: 0.05,
+-      decay: 0.045,
+-      pan: panOf(x, width),
+-    })
+-  },
+-}
+diff --git a/packages/app/src/new-session/view.tsx b/packages/app/src/new-session/view.tsx
+index 8d68e6670c..592a8c9c24 100644
+--- a/packages/app/src/new-session/view.tsx
++++ b/packages/app/src/new-session/view.tsx
+@@ -32,12 +32,9 @@ import { useProviders } from "@/providers/catalog/providers"
+ import { NEW_SESSION_CONTENT_WIDTH } from "@/new-session/layout"
+ import { Persist, persisted } from "@/runtime/persistence/storage"
+ import { Persistence } from "@/runtime/persistence/schema"
+-import { useSettings } from "@/settings/model"
+ import type { NewSessionWorkspaceController } from "./workspace/controller"
+ import { NewSessionBranch } from "./workspace/selector"
+-import { NewSessionBrickBreaker } from "./brick-breaker"
+-import { NewSessionPinBoard, type PinBoardHandle } from "./pin-board"
+-import { NewSessionWordmark, type LodgerBall } from "./wordmark"
++import { NewSessionWordmark } from "./wordmark"
+ 
+ const providerTipDismissalDuration = 30 * 24 * 60 * 60 * 1000
+ 
+@@ -49,17 +46,6 @@ export const ProviderTipSchema = Persistence.struct({
+   dismissedAt: Schema.Finite,
+ })
+ 
+-type WordmarkState = {
+-  box?: HTMLDivElement
+-  mode: "flat" | "open" | "closing"
+-  game: boolean
+-}
+-
+-type BrickBreakerHandles = {
+-  board?: PinBoardHandle
+-  ball?: LodgerBall
+-}
+-
+ export function NewSessionView(props: {
+   composer: ComposerModel
+   project: PromptProjectController
+@@ -72,18 +58,9 @@ export function NewSessionView(props: {
+     { used: false },
+   )
+ 
+-  const settings = useSettings()
+-
+-  const [wordmark, setWordmark] = createStore<WordmarkState>({ mode: "flat", game: false })
+-
+-  // Imperative handles for the brick breaker; they are not reactive state.
+-  const handles: BrickBreakerHandles = {}
+-  let panel!: HTMLDivElement
+-
+   return (
+     <div class="@container relative flex flex-col min-h-0 h-full flex-1">
+       <div
+-        ref={panel}
+         data-component="new-session"
+         class="relative isolate flex-1 min-h-0 overflow-hidden rounded-[10px] bg-v2-background-bg-base shadow-[var(--v2-elevation-raised)]"
+       >
+@@ -93,17 +70,7 @@ export function NewSessionView(props: {
+         />
+         <div class="absolute inset-x-0 top-[25.375%] flex justify-center px-6">
+           <div class={NEW_SESSION_CONTENT_WIDTH}>
+-            <NewSessionWordmark
+-              ref={(box) => setWordmark("box", box)}
+-              sound={settings.sounds.interfaceEnabled}
+-              onOpen={() => setWordmark("mode", "open")}
+-              onClose={() => setWordmark("mode", "closing")}
+-              onFlat={() => setWordmark("mode", "flat")}
+-              onPlay={(ball) => {
+-                handles.ball = ball
+-                setWordmark("game", true)
+-              }}
+-            />
++            <NewSessionWordmark />
+             <div class="mt-8 flex flex-col gap-3">
+               <div data-slot="new-session-composer" class="flex flex-col gap-1">
+                 <div class="relative z-10">
+@@ -134,31 +101,6 @@ export function NewSessionView(props: {
+             </div>
+           </div>
+         </div>
+-        <Show when={wordmark.mode !== "flat" && wordmark.box}>
+-          {(logo) => (
+-            <NewSessionPinBoard
+-              logo={logo()}
+-              sound={settings.sounds.interfaceEnabled}
+-              entrance="chain"
+-              closing={wordmark.mode === "closing"}
+-              ref={(board) => (handles.board = board)}
+-            />
+-          )}
+-        </Show>
+-        <Show when={wordmark.game && handles.board && handles.ball && { board: handles.board, ball: handles.ball }}>
+-          {(game) => (
+-            <NewSessionBrickBreaker
+-              panel={panel}
+-              board={game().board}
+-              ball={game().ball}
+-              sound={settings.sounds.interfaceEnabled}
+-              onDone={() => {
+-                setWordmark("game", false)
+-                props.composer.restoreFocus()
+-              }}
+-            />
+-          )}
+-        </Show>
+         <NewSessionTips selection={props.composer.model.selection} onDone={props.composer.restoreFocus} />
+       </div>
+     </div>
+diff --git a/packages/app/src/new-session/wordmark.css b/packages/app/src/new-session/wordmark.css
+index 6a01197f1b..1adc0d0ab0 100644
+--- a/packages/app/src/new-session/wordmark.css
++++ b/packages/app/src/new-session/wordmark.css
+@@ -1,10 +1,6 @@
+ [data-component="new-session-wordmark"] {
+   --icon-strong-base: var(--icon-base);
+   --wordmark-shimmer-opacity: 0.45;
+-  --lodger-body: color-mix(in srgb, var(--v2-icon-icon-base) 22%, var(--v2-background-bg-base));
+-  --lodger-side: color-mix(in srgb, var(--v2-icon-icon-base) 38%, var(--v2-background-bg-base));
+-  --lodger-eye: var(--v2-icon-icon-base);
+-  --lodger-crack: color-mix(in srgb, var(--v2-icon-icon-base) 55%, var(--v2-background-bg-base));
+ 
+   .wordmark-shimmer {
+     --icon-base: white;
+@@ -20,25 +16,6 @@
+     mask-repeat: no-repeat;
+     animation: new-session-wordmark-shimmer 800ms linear both;
+   }
+-
+-  [data-slot="lodger-blink"] {
+-    transform-box: fill-box;
+-    transform-origin: center;
+-  }
+-}
+-
+-/* The composer gives a little under the lodger while it is carried over it, hinting it can be dropped there. */
+-[data-component="new-session"] [data-slot="new-session-composer"] {
+-  transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+-}
+-
+-[data-component="new-session"] [data-slot="new-session-composer"][data-lodger-over] {
+-  transform: translateY(3px) scale(0.985);
+-}
+-
+-[data-component="new-session-wordmark"][data-lifted] {
+-  position: relative;
+-  z-index: 20;
+ }
+ 
+ [data-color-scheme="light"] [data-component="new-session-wordmark"] {
+diff --git a/packages/app/src/new-session/wordmark.stories.tsx b/packages/app/src/new-session/wordmark.stories.tsx
+index 2a87621b2c..f1c0017e38 100644
+--- a/packages/app/src/new-session/wordmark.stories.tsx
++++ b/packages/app/src/new-session/wordmark.stories.tsx
+@@ -1,6 +1,3 @@
+-import { Show } from "solid-js"
+-import { createStore } from "solid-js/store"
+-import { NewSessionPinBoard } from "./pin-board"
+ import { NewSessionWordmark } from "./wordmark"
+ 
+ export default {
+@@ -9,51 +6,6 @@ export default {
+   component: NewSessionWordmark,
+ }
+ 
+-function Panel(props: { pins: boolean }) {
+-  const [state, setState] = createStore({
+-    box: undefined as HTMLDivElement | undefined,
+-    mode: (props.pins ? "open" : "flat") as "flat" | "open" | "closing",
+-  })
+-
+-  return (
+-    <div
+-      data-component="new-session"
+-      class="relative isolate h-[640px] w-full overflow-hidden rounded-[10px] bg-v2-background-bg-base"
+-    >
+-      <div class="absolute inset-x-0 top-[25%] flex justify-center px-6">
+-        <div class="w-full max-w-[720px]">
+-          <NewSessionWordmark
+-            ref={(box) => setState("box", box)}
+-            pins={props.pins}
+-            sound={() => true}
+-            onOpen={() => setState("mode", "open")}
+-            onClose={() => setState("mode", "closing")}
+-            onFlat={() => setState("mode", "flat")}
+-          />
+-          <form
+-            data-component="composer"
+-            class="mt-8 h-24 w-full rounded-xl bg-v2-background-bg-base shadow-[var(--v2-elevation-raised)]"
+-          />
+-        </div>
+-      </div>
+-      <Show when={state.mode !== "flat" && state.box}>
+-        {(element) => (
+-          <NewSessionPinBoard
+-            logo={element()}
+-            sound={() => true}
+-            entrance={props.pins ? "sweep" : "chain"}
+-            closing={state.mode === "closing"}
+-          />
+-        )}
+-      </Show>
+-    </div>
+-  )
+-}
+-
+-export const Flat = {
+-  render: () => <Panel pins={false} />,
+-}
+-
+-export const PinBoard = {
+-  render: () => <Panel pins={true} />,
++export const Reveal = {
++  render: () => <NewSessionWordmark />,
+ }
+diff --git a/packages/app/src/new-session/wordmark.tsx b/packages/app/src/new-session/wordmark.tsx
+index 4874e223d9..33e3e6cb01 100644
+--- a/packages/app/src/new-session/wordmark.tsx
++++ b/packages/app/src/new-session/wordmark.tsx
+@@ -1,1042 +1,17 @@
+ import { Logo } from "@opencode/ui/logo"
+-import { prefersReducedMotion } from "@opencode/ui/motion"
+-import { For, onCleanup, onMount, Show } from "solid-js"
+-import { PinSound } from "./pin-sound"
+ import "./wordmark.css"
+ 
+-// Each letter in the 234×42 logo viewBox, with its counter shadow, stem, and bottom-centre pivot.
+-const LETTERS = [
+-  {
+-    cx: 12,
+-    weak: "M18 30H6V18H18V30Z",
+-    fill: "var(--icon-base)",
+-    stem: "M18 12H6V30H18V12ZM24 36H0V6H24V36Z",
+-  },
+-  {
+-    cx: 42,
+-    weak: "M48 30H36V18H48V30Z",
+-    fill: "var(--icon-base)",
+-    stem: "M36 30H48V12H36V30ZM54 36H36V42H30V6H54V36Z",
+-  },
+-  {
+-    cx: 72,
+-    weak: "M84 24V30H66V24H84Z",
+-    fill: "var(--icon-base)",
+-    stem: "M84 24H66V30H84V36H60V6H84V24ZM66 18H78V12H66V18Z",
+-  },
+-  {
+-    cx: 102,
+-    weak: "M108 36H96V18H108V36Z",
+-    fill: "var(--icon-base)",
+-    stem: "M108 12H96V36H90V6H108V12ZM114 36H108V12H114V36Z",
+-  },
+-  {
+-    cx: 132,
+-    weak: "M144 30H126V18H144V30Z",
+-    fill: "var(--icon-strong-base)",
+-    stem: "M144 12H126V30H144V36H120V6H144V12Z",
+-  },
+-  {
+-    cx: 162,
+-    weak: "M168 30H156V18H168V30Z",
+-    fill: "var(--icon-strong-base)",
+-    stem: "M168 12H156V30H168V12ZM174 36H150V6H174V36Z",
+-  },
+-  {
+-    cx: 192,
+-    weak: "M198 30H186V18H198V30Z",
+-    fill: "var(--icon-strong-base)",
+-    stem: "M198 12H186V30H198V12ZM204 36H180V6H198V0H204V36Z",
+-  },
+-  {
+-    cx: 222,
+-    weak: "M234 24V30H216V24H234Z",
+-    fill: "var(--icon-strong-base)",
+-    stem: "M216 12V18H228V12H216ZM234 24H216V30H234V36H210V6H234V24Z",
+-  },
+-] as const
+-
+-// Lodger geometry, in the logo's 234×42 viewBox units. The lodger is drawn from its bottom centre.
+-const W = 234
+-const H = 42
+-const HOLE = { x: 222, y: 15 }
+-const REST = { x: 222, y: 21 }
+-const PIN_SLOT = { x: 226.5, y: 10.5 }
+-const GROUND = 36
+-const HOME = 246
+-const POP = 26
+-const SLIP = 60
+-const HOLE_MAGNET = 24
+-
+-type Phase = "hidden" | "drag" | "snap" | "show" | "idle" | "hop" | "carry" | "return" | "pack" | "game"
+-
+-/** The lodger curled up as the brick breaker ball. Positions are the ball's centre, relative to the new session panel. */
+-export type LodgerBall = {
+-  radius: () => number
+-  at: () => { x: number; y: number }
+-  place: (
+-    x: number,
+-    y: number,
+-    pose: { look: number; lookAngle: number; stretch: number; angle: number; squint: number; curl: number },
+-  ) => void
+-  blink: () => void
+-  /** Uncurls and hops back to its perch beside the pin board. */
+-  done: () => void
+-}
+-
+-type LetterPose = {
+-  x: number
+-  y: number
+-  sx: number
+-  sy: number
+-  opacity: number
+-}
+-
+-type Parts = {
+-  box: HTMLDivElement
+-  stage: HTMLDivElement
+-  svg: SVGSVGElement
+-  flat: HTMLDivElement
+-  notch: SVGRectElement
+-  letters: SVGGElement[]
+-  grip: HTMLDivElement
+-  neck: SVGLineElement
+-  pin: SVGGElement
+-  critter: SVGGElement
+-  body: SVGRectElement
+-  eyes: SVGGElement
+-  blink: SVGGElement
+-}
+-
+-/**
+- * Reserves the wordmark's space. With `pins`, `NewSessionPinBoard` draws the logo into it. Otherwise it shows
+- * the flat logo, and something lives in the top counter of the final "e".
+- */
+-export function NewSessionWordmark(props: {
+-  ref: (element: HTMLDivElement) => void
+-  pins?: boolean
+-  sound?: () => boolean
+-  onOpen?: () => void
+-  onClose?: () => void
+-  onFlat?: () => void
+-  onPlay?: (ball: LodgerBall) => void
+-}) {
+-  // Read once: the lodger stays mounted after handing over to the pin board, and can be dragged back into the hole.
+-  const lodger = !props.pins
+-  let box!: HTMLDivElement
+-
++export function NewSessionWordmark() {
+   return (
+     <div
+       data-component="new-session-wordmark"
+       aria-hidden="true"
+       class="pointer-events-none mx-auto w-full max-w-[720px] text-v2-background-bg-inverse"
+     >
+-      <div
+-        ref={(el) => {
+-          box = el
+-          props.ref(el)
+-        }}
+-        data-slot="wordmark-box"
+-        class="relative mx-auto aspect-[234/42] w-4/5"
+-      >
+-        <Show when={lodger}>
+-          <WordmarkLodger
+-            box={box}
+-            sound={props.sound ?? (() => false)}
+-            onOpen={() => props.onOpen?.()}
+-            onClose={() => props.onClose?.()}
+-            onFlat={() => props.onFlat?.()}
+-            onPlay={props.onPlay}
+-          />
+-        </Show>
+-      </div>
+-    </div>
+-  )
+-}
+-
+-/**
+- * Eyes peek out of the "e" when the pointer comes near. Dragging them pulls the lodger and a single corner pin
+- * out on a stretchy neck; pull far enough and that pin triggers an elastic 3D pull-wave across the wordmark.
+- * Dragging the lodger back into the "e" hole reels all the pins back into the flat wordmark.
+- */
+-function WordmarkLodger(props: {
+-  box: HTMLDivElement
+-  sound: () => boolean
+-  onOpen: () => void
+-  onClose: () => void
+-  onFlat: () => void
+-  onPlay?: (ball: LodgerBall) => void
+-}) {
+-  let stage!: HTMLDivElement
+-  let svg!: SVGSVGElement
+-  let flat!: HTMLDivElement
+-  let notch!: SVGRectElement
+-  let grip!: HTMLDivElement
+-  let neck!: SVGLineElement
+-  let pin!: SVGGElement
+-  let critter!: SVGGElement
+-  let body!: SVGRectElement
+-  let eyes!: SVGGElement
+-  let blink!: SVGGElement
+-  const letters: SVGGElement[] = []
+-
+-  onMount(() =>
+-    onCleanup(
+-      mountLodger(
+-        { box: props.box, stage, svg, flat, notch, letters, grip, neck, pin, critter, body, eyes, blink },
+-        props.sound,
+-        props.onOpen,
+-        props.onClose,
+-        props.onFlat,
+-        props.onPlay,
+-      ),
+-    ),
+-  )
+-
+-  return (
+-    <div ref={stage} class="absolute">
+-      <div ref={flat} data-slot="wordmark-flat" class="absolute inset-0">
+-        <svg viewBox="0 0 234 42" fill="none" class="block size-full overflow-visible">
+-          <For each={LETTERS}>
+-            {(item, i) => (
+-              <g ref={(el) => (letters[i()] = el)}>
+-                <g class="opacity-[0.16]">
+-                  <path d={item.weak} fill="var(--icon-weak-base)" />
+-                  <path d={item.stem} fill={item.fill} />
+-                </g>
+-                <Show when={i() === 7}>
+-                  <rect
+-                    ref={notch}
+-                    x="224.6"
+-                    y="8.6"
+-                    width="3.8"
+-                    height="3.8"
+-                    fill="var(--v2-background-bg-base)"
+-                    style={{ opacity: 0 }}
+-                  />
+-                </Show>
+-              </g>
+-            )}
+-          </For>
+-        </svg>
+-        <Logo class="wordmark-shimmer absolute inset-0 size-full" />
++      <div data-slot="wordmark-reveal" class="relative mx-auto w-5/12">
++        <Logo class="block aspect-[2170/725] w-full opacity-[0.16]" />
++        <Logo class="wordmark-shimmer absolute inset-0 aspect-[2170/725] w-full" />
+       </div>
+-      <svg
+-        ref={svg}
+-        data-slot="wordmark-lodger"
+-        viewBox="0 0 234 42"
+-        class="absolute inset-0 size-full overflow-visible"
+-      >
+-        <line ref={neck} stroke="var(--lodger-body)" stroke-linecap="round" style={{ opacity: 0 }} />
+-        <g ref={pin} style={{ opacity: 0 }}>
+-          <polygon points="-1.9,-1.9 1.9,-1.9 3.6,0.5 -0.2,0.5" fill="var(--lodger-side)" />
+-          <polygon points="1.9,-1.9 3.6,0.5 3.6,4.3 1.9,1.9" fill="var(--lodger-side)" />
+-          <rect x="-1.9" y="-1.9" width="3.8" height="3.8" rx="0.45" fill="var(--lodger-eye)" />
+-        </g>
+-        <g ref={critter}>
+-          <rect
+-            ref={body}
+-            x="-6"
+-            y="-10"
+-            width="12"
+-            height="10"
+-            rx="1.5"
+-            fill="var(--lodger-body)"
+-            style={{ opacity: 0 }}
+-          />
+-          <g ref={eyes} style={{ opacity: 0 }}>
+-            <g ref={blink} data-slot="lodger-blink">
+-              <rect x="-3.5" y="-7.3" width="2" height="2.6" rx="0.5" fill="var(--lodger-eye)" />
+-              <rect x="1.5" y="-7.3" width="2" height="2.6" rx="0.5" fill="var(--lodger-eye)" />
+-            </g>
+-          </g>
+-        </g>
+-      </svg>
+-      <div
+-        ref={grip}
+-        data-slot="wordmark-lodger-grip"
+-        class="pointer-events-auto absolute cursor-grab touch-none active:cursor-grabbing"
+-      />
+     </div>
+   )
+ }
+-
+-function mountLodger(
+-  parts: Parts,
+-  sound: () => boolean,
+-  onOpen: () => void,
+-  onClose: () => void,
+-  onFlat: () => void,
+-  onPlay?: (ball: LodgerBall) => void,
+-) {
+-  const still = prefersReducedMotion()
+-  const poses: LetterPose[] = LETTERS.map(() => ({ x: 0, y: 0, sx: 1, sy: 1, opacity: 1 }))
+-  const c = {
+-    phase: "hidden" as Phase,
+-    now: 0,
+-    t0: 0,
+-    cue: 0,
+-    x: REST.x,
+-    y: REST.y,
+-    vx: 0,
+-    vy: 0,
+-    fromX: REST.x,
+-    fromY: REST.y,
+-    rot: 0,
+-    crouch: 0,
+-    body: 0,
+-    neck: 0,
+-    eyes: 0,
+-    near: 0,
+-    lookX: 0,
+-    lookY: 0,
+-    wide: 1,
+-    squint: 1,
+-    notch: 0,
+-    pinOpacity: 0,
+-    pinX: PIN_SLOT.x,
+-    pinY: PIN_SLOT.y,
+-    pinRot: 0,
+-    pinScale: 1,
+-    ball: 0,
+-    stretch: 0,
+-    angle: 0,
+-    dur: 0.34,
+-    arc: 10,
+-  }
+-  const pointer = { x: HOLE.x, y: HOLE.y, inside: false, downX: HOLE.x, downY: HOLE.y }
+-  const impacts: { at: number; amp: number }[] = []
+-  const timers = { raf: 0, blink: 0, last: 0 }
+-  const panel = parts.box.closest<HTMLElement>('[data-component="new-session"]') ?? document.documentElement
+-  // The lodger's screen rect, read on resize and pointer entry so pointer moves never force a layout.
+-  const rect = { left: 0, top: 0, scale: 1, px: 0, py: 0 }
+-  // The composer, in lodger units while carrying; dropping the lodger on it starts the brick breaker.
+-  const drop = { el: undefined as HTMLElement | undefined, l: 0, t: 0, r: 0, b: 0, over: false }
+-  // Last written DOM values, so frames and pointer moves only touch what changed.
+-  const written = new Map<string, string>()
+-  const put = (key: string, write: (value: string) => void, value: string) => {
+-    if (written.get(key) === value) return
+-    written.set(key, value)
+-    write(value)
+-  }
+-  const measure = () => {
+-    const r = parts.svg.getBoundingClientRect()
+-    rect.left = r.left
+-    rect.top = r.top
+-    rect.scale = r.width / W || 1
+-    const p = panel.getBoundingClientRect()
+-    rect.px = r.left - p.left
+-    rect.py = r.top - p.top
+-  }
+-
+-  // Snaps the flat wordmark stage to the exact integer-pitch footprint and rounded origin used by `NewSessionPinBoard`.
+-  const fitStage = () => {
+-    const l = parts.box.getBoundingClientRect()
+-    if (!l.width) return
+-    const s = parts.box.closest('[data-component="new-session"]')?.getBoundingClientRect()
+-    const pitch = Math.max(3, Math.round(l.width / 78))
+-    const x = s ? Math.round(l.left - s.left + (l.width - pitch * 78) / 2) - (l.left - s.left) : (l.width - pitch * 78) / 2
+-    const y = s ? Math.round(l.top - s.top + (l.height - pitch * 14) / 2) - (l.top - s.top) : (l.height - pitch * 14) / 2
+-    parts.stage.style.left = `${x}px`
+-    parts.stage.style.top = `${y}px`
+-    parts.stage.style.width = `${pitch * 78}px`
+-    parts.stage.style.height = `${pitch * 14}px`
+-    measure()
+-  }
+-
+-  // Moves the interactive hit box between the "e" counter (when hidden) and HOME (when perched beside the board).
+-  const placeGrip = (where: "hidden" | "idle" | "none") => {
+-    if (where === "none") {
+-      parts.grip.style.display = "none"
+-      return
+-    }
+-    parts.grip.style.display = ""
+-    const box = where === "hidden" ? { x: 213, y: 8, w: 18, h: 14 } : { x: 234, y: 18, w: 24, h: 24 }
+-    parts.grip.style.left = `${(box.x / W) * 100}%`
+-    parts.grip.style.top = `${(box.y / H) * 100}%`
+-    parts.grip.style.width = `${(box.w / W) * 100}%`
+-    parts.grip.style.height = `${(box.h / H) * 100}%`
+-  }
+-
+-  const resetPoses = (opacity = 1) => {
+-    for (const p of poses) Object.assign(p, { x: 0, y: 0, sx: 1, sy: 1, opacity })
+-  }
+-
+-  const wake = () => {
+-    if (timers.raf) return
+-    timers.last = performance.now() / 1000 - 1 / 60
+-    timers.raf = requestAnimationFrame(frame)
+-  }
+-
+-  const frame = (ms: number) => {
+-    timers.raf = 0
+-    c.now = ms / 1000
+-    const dt = Math.min(1 / 30, Math.max(1 / 240, c.now - timers.last))
+-    timers.last = c.now
+-    if (c.phase === "drag") dragOut(dt)
+-    if (c.phase === "snap") snapIn(dt)
+-    if (c.phase === "show") show(c.now - c.t0)
+-    if (c.phase === "hop") hop(c.now - c.t0)
+-    if (c.phase === "carry") dragCarry(dt)
+-    if (c.phase === "return") returnHome(c.now - c.t0)
+-    if (c.phase === "pack") pack(c.now - c.t0)
+-    render()
+-    if (c.phase !== "hidden" && c.phase !== "idle" && c.phase !== "game") timers.raf = requestAnimationFrame(frame)
+-  }
+-
+-  const dragOut = (dt: number) => {
+-    const dx = pointer.x - pointer.downX
+-    const dy = pointer.y - pointer.downY
+-    const pull = Math.hypot(dx, dy)
+-    if (pull > SLIP) return pop()
+-    const give = 1 / (1 + pull / 40)
+-    const ease = 1 - Math.exp(-dt * 30)
+-    c.x += (REST.x + dx * give - c.x) * ease
+-    c.y += (REST.y + dy * give - c.y) * ease
+-    const out = Math.hypot(c.x - REST.x, c.y - REST.y)
+-    const stress = clamp01(pull / POP)
+-    c.body = clamp01(out / 4.5)
+-    c.neck = c.body
+-    c.eyes = 1
+-    c.wide = 1 + stress * 0.32
+-    c.rot = clamp((c.x - REST.x) * 2, 24)
+-    c.crouch = -clamp01(out / 20) * 0.18
+-    c.lookX = clamp(dx / 15, 1)
+-    c.lookY = clamp(dy / 15, 1) * 0.6
+-    c.notch = clamp01(out / 3)
+-    c.pinOpacity = c.notch
+-    c.pinX = lerp(PIN_SLOT.x, c.x - 1.5, clamp01(out / 7))
+-    c.pinY = lerp(PIN_SLOT.y, c.y - 11, clamp01(out / 7))
+-    c.pinRot = (c.x - REST.x) * 2.5
+-    c.pinScale = 1 + stress * 0.35
+-    poses[7].x = (c.x - REST.x) * 0.12
+-    poses[7].y = (c.y - REST.y) * 0.12
+-    poses[7].sx = 1 + stress * 0.05
+-    poses[7].sy = 1 + stress * 0.05
+-  }
+-
+-  const snapIn = (dt: number) => {
+-    c.vx += (-(c.x - REST.x) * 420 - c.vx * 18) * dt
+-    c.vy += (-(c.y - REST.y) * 420 - c.vy * 18) * dt
+-    c.x += c.vx * dt
+-    c.y += c.vy * dt
+-    const out = Math.hypot(c.x - REST.x, c.y - REST.y)
+-    const fade = Math.exp(-dt * 10)
+-    c.body = clamp01(out / 4.5)
+-    c.neck = c.body
+-    c.notch *= fade
+-    c.pinOpacity *= fade
+-    c.rot *= fade
+-    c.crouch *= fade
+-    c.wide = 1 + (c.wide - 1) * fade
+-    for (const p of poses) {
+-      p.x *= fade
+-      p.y *= fade
+-      p.sx = 1 + (p.sx - 1) * fade
+-      p.sy = 1 + (p.sy - 1) * fade
+-    }
+-    if (out > 0.05 || Math.hypot(c.vx, c.vy) > 0.5) return
+-    restHidden()
+-    if (sound()) PinSound.slot(70, 78, c.x, W)
+-    blinkOnce()
+-  }
+-
+-  const restHidden = () => {
+-    resetPoses(1)
+-    parts.flat.style.display = ""
+-    placeGrip("hidden")
+-    Object.assign(c, {
+-      phase: "hidden",
+-      x: REST.x,
+-      y: REST.y,
+-      vx: 0,
+-      vy: 0,
+-      rot: 0,
+-      crouch: 0,
+-      wide: 1,
+-      squint: 1,
+-      body: 0,
+-      neck: 0,
+-      notch: 0,
+-      pinOpacity: 0,
+-      ball: 0,
+-      stretch: 0,
+-      eyes: c.near * 0.55,
+-    })
+-    look()
+-  }
+-
+-  const pop = () => {
+-    c.now = performance.now() / 1000
+-    Object.assign(c, {
+-      phase: "show",
+-      t0: c.now,
+-      cue: 0,
+-      fromX: c.x,
+-      fromY: c.y,
+-      neck: 0,
+-    })
+-    placeGrip("none")
+-    onOpen()
+-    if (sound()) PinSound.knock(c.x, W)
+-    if (still) return settleIdle()
+-    wake()
+-  }
+-
+-  const showCues = [
+-    { at: 0.45, run: () => land(0.38) },
+-    {
+-      at: 0.95,
+-      run: () => {
+-        parts.flat.style.display = "none"
+-      },
+-    },
+-    {
+-      at: 1.35,
+-      run: () => {
+-        if (sound()) PinSound.slot(75, 78, PIN_SLOT.x, W)
+-      },
+-    },
+-    { at: 1.72, run: () => land(0.32) },
+-    { at: 1.95, run: () => blinkOnce() },
+-  ]
+-
+-  // Pulling one single pin out of the "e" triggers an elastic 3D pull-wave that pops every pin out toward
+-  // the viewer from right to left, then the lodger hops up to slot its starter pin back in.
+-  const show = (t: number) => {
+-    while (c.cue < showCues.length && t >= showCues[c.cue].at) showCues[c.cue++].run()
+-    if (t >= 2.15) return settleIdle()
+-    Object.assign(c, { rot: 0, crouch: 0, wide: 1, squint: 1, lookX: -1, lookY: 0, body: 1, eyes: 1 })
+-    c.notch = t < 1.35 ? 1 : 0
+-    c.pinOpacity = t < 1.35 ? 1 : 0
+-
+-    poses.forEach((p, i) => {
+-      const start = (7 - i) * 0.08
+-      const u = seg(t, start, start + 0.28)
+-      p.opacity = 1 - u
+-      p.x = 0
+-      p.y = 0
+-    })
+-
+-    if (t < 0.45) {
+-      const u = t / 0.45
+-      c.x = lerp(c.fromX, HOME, easeOut(u))
+-      c.y = lerp(c.fromY, GROUND, u) - Math.sin(Math.PI * u) * 20
+-      c.rot = 360 * easeInOut(u)
+-      c.wide = 1.35
+-      c.pinX = c.x - 1
+-      c.pinY = c.y - 13
+-      c.pinRot = u * 360
+-      c.pinScale = 1.4
+-      return
+-    }
+-    if (t < 1.05) {
+-      c.x = HOME
+-      c.y = GROUND
+-      c.lookX = -1
+-      c.pinX = c.x
+-      c.pinY = c.y - 12.5 - Math.sin(t * 8) * 0.8
+-      c.pinRot = Math.sin(t * 5) * 10
+-      c.pinScale = 1.3
+-      return
+-    }
+-    if (t < 1.35) {
+-      const u = seg(t, 1.05, 1.35)
+-      c.x = lerp(HOME, 233, easeInOut(u))
+-      c.y = lerp(GROUND, 18, easeOut(u)) - Math.sin(Math.PI * u) * 7
+-      c.pinX = lerp(HOME, PIN_SLOT.x, easeInOut(u))
+-      c.pinY = lerp(GROUND - 12.5, PIN_SLOT.y, easeInOut(u))
+-      c.pinRot = 0
+-      c.pinScale = lerp(1.3, 1, u)
+-      return
+-    }
+-    const u = seg(t, 1.35, 1.72)
+-    c.x = lerp(233, HOME, easeInOut(u))
+-    c.y = lerp(18, GROUND, u) - Math.sin(Math.PI * u) * 10
+-    c.squint = t > 1.72 ? 0.35 : 1
+-  }
+-
+-  const settleIdle = () => {
+-    resetPoses(0)
+-    parts.flat.style.display = "none"
+-    placeGrip("idle")
+-    Object.assign(c, {
+-      phase: "idle",
+-      x: HOME,
+-      y: GROUND,
+-      rot: 0,
+-      crouch: 0,
+-      wide: 1,
+-      squint: 1,
+-      body: 1,
+-      eyes: 1,
+-      neck: 0,
+-      notch: 0,
+-      pinOpacity: 0,
+-      ball: 0,
+-      stretch: 0,
+-    })
+-    look()
+-    render()
+-    scheduleBlink()
+-  }
+-
+-  // Carrying the lodger from HOME: dangles under the pointer and looks toward the "e" hole.
+-  const dragCarry = (dt: number) => {
+-    const dx = pointer.x - pointer.downX
+-    const dy = pointer.y - pointer.downY
+-    const rawX = HOME + dx
+-    const rawY = GROUND + dy
+-    const dist = Math.hypot(rawX - HOLE.x, rawY - 5 - HOLE.y)
+-    if (dist < 9) return startPack()
+-    const magnet = clamp01((HOLE_MAGNET - dist) / HOLE_MAGNET) * 0.45
+-    const targetX = lerp(rawX, REST.x, magnet)
+-    const targetY = lerp(rawY, REST.y, magnet)
+-    const ease = 1 - Math.exp(-dt * 28)
+-    const vx = targetX - c.x
+-    c.x += vx * ease
+-    c.y += (targetY - c.y) * ease
+-    c.rot = clamp(vx * 3.5 + Math.sin(c.now * 22) * 5, 26)
+-    c.crouch = -0.12 + magnet * 0.2
+-    c.wide = 1.2
+-    c.squint = 1 - magnet * 0.3
+-    const hx = HOLE.x - c.x
+-    const hy = HOLE.y - (c.y - 5)
+-    const hd = Math.hypot(hx, hy) || 1
+-    c.lookX = (hx / hd) * Math.min(1, hd / 10)
+-    c.lookY = (hy / hd) * Math.min(1, hd / 10) * 0.6
+-    c.pinOpacity = magnet
+-    c.pinX = PIN_SLOT.x
+-    c.pinY = PIN_SLOT.y
+-    c.pinRot = 0
+-    c.pinScale = 1 + magnet * 0.25
+-    // Over the composer it curls up and peers down at it, and the composer sinks a little under it.
+-    drop.over =
+-      !!onPlay && !!drop.el && pointer.x > drop.l && pointer.x < drop.r && pointer.y > drop.t && pointer.y < drop.b
+-    c.ball += ((drop.over ? 0.85 : 0) - c.ball) * (1 - Math.exp(-dt * 14))
+-    if (!drop.over) return
+-    c.lookX = 0
+-    c.lookY = 0.6
+-    c.squint = 0.8
+-    c.rot *= 0.4
+-  }
+-
+-  const play = () => {
+-    drop.over = false
+-    render()
+-    if (!onPlay) return
+-    Object.assign(c, { phase: "game", rot: 0, crouch: 0, wide: 1, squint: 1 })
+-    placeGrip("none")
+-    measure()
+-    onPlay(ball)
+-  }
+-
+-  const ball: LodgerBall = {
+-    radius: () => 5 * rect.scale,
+-    at: () => ({ x: rect.px + c.x * rect.scale, y: rect.py + (c.y - 5) * rect.scale }),
+-    place: (x, y, pose) => {
+-      c.now = performance.now() / 1000
+-      c.x = (x - rect.px) / rect.scale
+-      c.y = (y - rect.py) / rect.scale + 5
+-      c.lookX = Math.cos(pose.lookAngle) * pose.look
+-      c.lookY = Math.sin(pose.lookAngle) * pose.look * 0.6
+-      c.stretch = pose.stretch
+-      c.angle = pose.angle
+-      c.squint = pose.squint
+-      c.ball = pose.curl
+-      render()
+-    },
+-    blink: () => blinkOnce(),
+-    done: () => {
+-      measure()
+-      Object.assign(c, {
+-        phase: "return",
+-        fromX: c.x,
+-        fromY: c.y,
+-        t0: performance.now() / 1000,
+-        stretch: 0,
+-        squint: 1,
+-        dur: 0.7,
+-        arc: 36,
+-      })
+-      wake()
+-    },
+-  }
+-
+-  const returnHome = (t: number) => {
+-    const u = seg(t, 0, c.dur)
+-    c.x = lerp(c.fromX, HOME, easeOut(u))
+-    c.y = lerp(c.fromY, GROUND, u) - Math.sin(Math.PI * u) * c.arc
+-    c.rot = lerp(c.rot, 0, u)
+-    c.crouch = 0
+-    c.wide = 1
+-    c.pinOpacity = 0
+-    c.ball = Math.min(c.ball, 1 - easeInOut(u))
+-    if (t < c.dur) return
+-    tap(0.25)
+-    settleIdle()
+-  }
+-
+-  const startPack = () => {
+-    c.now = performance.now() / 1000
+-    resetPoses(0)
+-    parts.flat.style.display = ""
+-    placeGrip("none")
+-    Object.assign(c, {
+-      phase: "pack",
+-      t0: c.now,
+-      cue: 0,
+-      fromX: c.x,
+-      fromY: c.y,
+-    })
+-    onClose()
+-    if (sound()) PinSound.knock(c.x, W)
+-    if (still) {
+-      onFlat()
+-      restHidden()
+-      return
+-    }
+-    wake()
+-  }
+-
+-  const packCues = [
+-    {
+-      at: 0.95,
+-      run: () => {
+-        if (sound()) PinSound.slot(75, 78, HOLE.x, W)
+-      },
+-    },
+-    {
+-      at: 1.14,
+-      run: () => {
+-        onFlat()
+-        blinkOnce()
+-      },
+-    },
+-  ]
+-
+-  // Reverse sequence: the lodger hops into the "e" hole, grabs the corner pin, and reels all 800 pins
+-  // from left ("o") back into the "e" before tucking itself back inside.
+-  const pack = (t: number) => {
+-    while (c.cue < packCues.length && t >= packCues[c.cue].at) packCues[c.cue++].run()
+-    if (t >= 1.2) return restHidden()
+-
+-    poses.forEach((p, i) => {
+-      const start = 0.32 + (i / 7) * 0.48
+-      const u = seg(t, start, start + 0.32)
+-      p.opacity = u
+-      p.x = 0
+-      p.y = 0
+-    })
+-
+-    // Hops from the cursor into the "e" counter and grabs the corner starter pin while any loose pins fly home.
+-    if (t < 0.3) {
+-      const u = t / 0.3
+-      c.x = lerp(c.fromX, REST.x, easeOut(u))
+-      c.y = lerp(c.fromY, REST.y - 3, easeOut(u)) - Math.sin(Math.PI * u) * 8
+-      c.rot = lerp(c.rot, 10, u)
+-      c.crouch = 0
+-      c.wide = 1.15
+-      c.squint = 1
+-      c.body = 1
+-      c.eyes = 1
+-      c.notch = u
+-      c.pinOpacity = 1
+-      c.pinX = lerp(PIN_SLOT.x, REST.x + 3.5, u)
+-      c.pinY = lerp(PIN_SLOT.y, REST.y - 10.5, u)
+-      c.pinRot = u * 18
+-      c.pinScale = 1.3
+-      return
+-    }
+-    // Reels the wave in from "o" -> "e" while holding the corner pin.
+-    if (t < 0.9) {
+-      const u = seg(t, 0.3, 0.9)
+-      const tug = Math.sin(u * Math.PI * 3)
+-      c.x = REST.x + tug * 1.2
+-      c.y = REST.y - 3 + u * 2
+-      c.rot = tug * 10
+-      c.crouch = Math.abs(tug) * 0.14
+-      c.wide = 1
+-      c.squint = 0.45
+-      c.lookX = -1
+-      c.lookY = 0
+-      c.notch = 1
+-      c.pinOpacity = 1
+-      c.pinX = lerp(REST.x + 3.5, PIN_SLOT.x, u)
+-      c.pinY = lerp(REST.y - 10.5, PIN_SLOT.y, u)
+-      c.pinRot = (1 - u) * 18
+-      c.pinScale = lerp(1.3, 1, u)
+-      return
+-    }
+-    // Slots the corner pin flush and sinks back into the "e" hole.
+-    const u = seg(t, 0.9, 1.14)
+-    c.x = REST.x
+-    c.y = lerp(REST.y - 1, REST.y, easeOut(u))
+-    c.rot = 0
+-    c.crouch = Math.sin(u * Math.PI) * 0.18
+-    c.wide = 1
+-    c.squint = 1
+-    c.lookX = 0
+-    c.lookY = 0
+-    c.body = 1 - easeInOut(u)
+-    c.notch = 1 - u
+-    c.pinOpacity = 1 - u
+-  }
+-
+-  const hop = (t: number) => {
+-    const u = seg(t, 0.08, 0.43)
+-    c.crouch = t < 0.08 ? 0.15 * (t / 0.08) : 0
+-    c.y = GROUND - Math.sin(Math.PI * u) * 8
+-    c.squint = 0.35
+-    if (t >= 0.43 && c.cue === 0) {
+-      c.cue = 1
+-      tap(0.3)
+-    }
+-    if (t < 0.8) return
+-    Object.assign(c, { phase: "idle", y: GROUND, crouch: 0, squint: 1 })
+-    look()
+-    scheduleBlink()
+-  }
+-
+-  const look = () => {
+-    if (!pointer.inside) {
+-      c.lookX = 0
+-      c.lookY = 0
+-      return
+-    }
+-    const dx = pointer.x - c.x
+-    const dy = pointer.y - (c.y - 6)
+-    const d = Math.hypot(dx, dy) || 1
+-    const reach = Math.min(1, d / 15)
+-    // Gaze snaps to 0.08 units (about 0.2 px), so far-off pointer moves that would not move the eyes skip the frame.
+-    c.lookX = Math.round(((dx / d) * reach) / 0.08) * 0.08
+-    c.lookY = Math.round(((dy / d) * reach * 0.6) / 0.08) * 0.08
+-  }
+-
+-  const impact = (amp: number) => {
+-    impacts.push({ at: c.now, amp })
+-    while (impacts.length && c.now - impacts[0].at > 1) impacts.shift()
+-  }
+-  const land = (amp: number) => {
+-    impact(amp)
+-    if (sound()) PinSound.knock(c.x, W)
+-  }
+-  const tap = (amp: number) => {
+-    if (amp) impact(amp)
+-    if (sound()) PinSound.bounce(c.x, W, 3000)
+-  }
+-  const blinkOnce = () => {
+-    if (still) return
+-    parts.blink.animate([{ transform: "scaleY(1)" }, { transform: "scaleY(0.1)" }, { transform: "scaleY(1)" }], {
+-      duration: 160,
+-      easing: "ease-in-out",
+-    })
+-  }
+-  // Blinks are only scheduled while the eyes are showing, so the hidden lodger holds no timers.
+-  const visible = () => c.phase === "idle" || (c.phase === "hidden" && c.eyes > 0.1)
+-  const scheduleBlink = () => {
+-    if (timers.blink || still || !visible()) return
+-    timers.blink = window.setTimeout(
+-      () => {
+-        timers.blink = 0
+-        if (!visible()) return
+-        blinkOnce()
+-        scheduleBlink()
+-      },
+-      2500 + Math.random() * 3500,
+-    )
+-  }
+-
+-  const render = () => {
+-    const squash = impacts.reduce((sum, i) => {
+-      const t = c.now - i.at
+-      return t < 0 ? sum : sum + i.amp * Math.exp(-t * 10) * Math.cos(t * 30)
+-    }, 0)
+-    const sy = (1 - squash) * (1 - c.crouch)
+-    const sx = (1 + squash * 0.7) * (1 + c.crouch * 0.8)
+-    const attr = (el: Element, name: string) => (value: string) => el.setAttribute(name, value)
+-    const opacity = (el: SVGElement) => (value: string) => {
+-      el.style.opacity = value
+-    }
+-    // Stretching along an angle and rotating back keeps the eyes upright while the ball squashes on impact.
+-    const stretch = c.stretch
+-      ? ` rotate(${c.angle} 0 -5) scale(${1 + c.stretch} ${1 - c.stretch * 0.8}) rotate(${-c.angle} 0 -5)`
+-      : ""
+-    put(
+-      "critter",
+-      attr(parts.critter, "transform"),
+-      `translate(${c.x} ${c.y})${stretch} rotate(${c.rot} 0 -5) scale(${sx} ${sy})`,
+-    )
+-    put("body", opacity(parts.body), `${c.body}`)
+-    put(
+-      "curl",
+-      (value) => {
+-        const width = 12 - 2 * Number(value)
+-        parts.body.setAttribute("x", `${-width / 2}`)
+-        parts.body.setAttribute("width", `${width}`)
+-        parts.body.setAttribute("rx", `${1.5 + 3.5 * Number(value)}`)
+-      },
+-      `${Math.round(c.ball * 100) / 100}`,
+-    )
+-    if (drop.el)
+-      put("drop", (value) => drop.el?.toggleAttribute("data-lodger-over", value === "1"), drop.over ? "1" : "0")
+-    // Carried, returning, or in play, the lodger crosses the composer, so it is lifted above it.
+-    put(
+-      "lifted",
+-      (value) => parts.box.parentElement?.toggleAttribute("data-lifted", value === "1"),
+-      c.phase === "carry" || c.phase === "return" || c.phase === "game" ? "1" : "0",
+-    )
+-    put("eyes", opacity(parts.eyes), `${c.eyes}`)
+-    put(
+-      "look",
+-      attr(parts.eyes, "transform"),
+-      `translate(${c.lookX} ${c.lookY - 6}) scale(${c.wide} ${c.wide * c.squint}) translate(0 6)`,
+-    )
+-    put("neck", opacity(parts.neck), `${c.neck}`)
+-    if (c.neck) {
+-      const len = Math.hypot(c.x - HOLE.x, c.y - 5 - HOLE.y)
+-      put("neck-x1", attr(parts.neck, "x1"), `${HOLE.x}`)
+-      put("neck-y1", attr(parts.neck, "y1"), `${HOLE.y}`)
+-      put("neck-x2", attr(parts.neck, "x2"), `${c.x}`)
+-      put("neck-y2", attr(parts.neck, "y2"), `${c.y - 5}`)
+-      put("neck-w", attr(parts.neck, "stroke-width"), `${Math.max(2, Math.min(6, 40 / Math.max(1, len)))}`)
+-    }
+-    put("notch", opacity(parts.notch), `${c.notch}`)
+-    put("pin", opacity(parts.pin), `${c.pinOpacity}`)
+-    if (c.pinOpacity)
+-      put(
+-        "pin-at",
+-        attr(parts.pin, "transform"),
+-        `translate(${c.pinX} ${c.pinY}) rotate(${c.pinRot}) scale(${c.pinScale})`,
+-      )
+-    poses.forEach((p, i) => {
+-      const cx = LETTERS[i].cx
+-      const el = parts.letters[i]
+-      if (!el) return
+-      put(`letter-${i}`, (value) => (el.style.opacity = value), `${p.opacity}`)
+-      put(
+-        `letter-at-${i}`,
+-        attr(el, "transform"),
+-        `translate(${cx + p.x} ${GROUND + p.y}) scale(${p.sx} ${p.sy}) translate(${-cx} ${-GROUND})`,
+-      )
+-    })
+-  }
+-
+-  const toUnits = (event: PointerEvent) => {
+-    pointer.x = (event.clientX - rect.left) / rect.scale
+-    pointer.y = (event.clientY - rect.top) / rect.scale
+-    pointer.inside = true
+-  }
+-  // Pointer moves only schedule a frame when the lodger visibly changes; far from the "e" they do nothing.
+-  const onMove = (event: PointerEvent) => {
+-    toUnits(event)
+-    c.near = clamp01((24 - Math.hypot(pointer.x - HOLE.x, pointer.y - HOLE.y)) / 14)
+-    if (c.phase !== "hidden" && c.phase !== "idle") return
+-    if (c.phase === "hidden") {
+-      const eyes = c.near * 0.55
+-      if (eyes === c.eyes) return
+-      c.eyes = eyes
+-    }
+-    const gaze = { x: c.lookX, y: c.lookY }
+-    look()
+-    if (c.phase === "idle" && gaze.x === c.lookX && gaze.y === c.lookY) return
+-    scheduleBlink()
+-    wake()
+-  }
+-  const onEnter = () => measure()
+-  const onLeave = () => {
+-    pointer.inside = false
+-    c.near = 0
+-    if (c.phase !== "hidden" && c.phase !== "idle") return
+-    if (c.phase === "hidden") c.eyes = 0
+-    look()
+-    wake()
+-  }
+-  const onGrab = (event: PointerEvent) => {
+-    if (event.button !== 0 || (c.phase !== "hidden" && c.phase !== "idle")) return
+-    event.preventDefault()
+-    event.stopPropagation()
+-    parts.grip.setPointerCapture(event.pointerId)
+-    measure()
+-    if (c.phase === "idle") {
+-      drop.el = panel.querySelector<HTMLElement>('[data-slot="new-session-composer"]') ?? undefined
+-      const r = drop.el?.querySelector('[data-component="composer"]')?.getBoundingClientRect()
+-      if (r) {
+-        const p = panel.getBoundingClientRect()
+-        drop.l = (r.left - p.left - rect.px) / rect.scale
+-        drop.r = (r.right - p.left - rect.px) / rect.scale
+-        drop.t = (r.top - p.top - rect.py) / rect.scale
+-        drop.b = (r.bottom - p.top - rect.py) / rect.scale
+-      }
+-    }
+-    toUnits(event)
+-    Object.assign(pointer, { downX: pointer.x, downY: pointer.y })
+-    c.phase = c.phase === "hidden" ? "drag" : "carry"
+-    wake()
+-  }
+-  const onRelease = () => {
+-    if (c.phase === "drag") {
+-      if (Math.hypot(pointer.x - pointer.downX, pointer.y - pointer.downY) > POP) return pop()
+-      Object.assign(c, { phase: "snap", vx: 0, vy: 0 })
+-      if (still) restHidden()
+-      render()
+-      return
+-    }
+-    if (c.phase !== "carry") return
+-    const moved = Math.hypot(pointer.x - pointer.downX, pointer.y - pointer.downY)
+-    if (moved < 4) {
+-      if (still) return settleIdle()
+-      Object.assign(c, { phase: "hop", x: HOME, y: GROUND, rot: 0, t0: performance.now() / 1000, cue: 0 })
+-      wake()
+-      return
+-    }
+-    if (drop.over && !still) return play()
+-    drop.over = false
+-    const dropX = HOME + (pointer.x - pointer.downX)
+-    const dropY = GROUND + (pointer.y - pointer.downY) - 5
+-    if (
+-      Math.hypot(c.x - HOLE.x, c.y - 5 - HOLE.y) < HOLE_MAGNET ||
+-      Math.hypot(dropX - HOLE.x, dropY - HOLE.y) < HOLE_MAGNET ||
+-      Math.hypot(pointer.x - HOLE.x, pointer.y - HOLE.y) < HOLE_MAGNET
+-    )
+-      return startPack()
+-    if (still) return settleIdle()
+-    Object.assign(c, { phase: "return", fromX: c.x, fromY: c.y, t0: performance.now() / 1000, dur: 0.34, arc: 10 })
+-    wake()
+-  }
+-
+-  const resize = new ResizeObserver(fitStage)
+-  resize.observe(parts.box)
+-  // The panel can resize while the clamped wordmark keeps its size but moves, e.g. when the sidebar toggles.
+-  resize.observe(panel)
+-  fitStage()
+-  placeGrip("hidden")
+-  panel.addEventListener("pointermove", onMove, { passive: true })
+-  panel.addEventListener("pointerenter", onEnter)
+-  panel.addEventListener("pointerleave", onLeave)
+-  parts.grip.addEventListener("pointerdown", onGrab)
+-  parts.grip.addEventListener("pointerup", onRelease)
+-  parts.grip.addEventListener("pointercancel", onRelease)
+-  parts.grip.addEventListener("lostpointercapture", onRelease)
+-  render()
+-
+-  return () => {
+-    cancelAnimationFrame(timers.raf)
+-    clearTimeout(timers.blink)
+-    resize.disconnect()
+-    panel.removeEventListener("pointermove", onMove)
+-    panel.removeEventListener("pointerenter", onEnter)
+-    panel.removeEventListener("pointerleave", onLeave)
+-    parts.grip.removeEventListener("pointerdown", onGrab)
+-    parts.grip.removeEventListener("pointerup", onRelease)
+-    parts.grip.removeEventListener("pointercancel", onRelease)
+-    parts.grip.removeEventListener("lostpointercapture", onRelease)
+-  }
+-}
+-
+-const lerp = (a: number, b: number, t: number) => a + (b - a) * t
+-const clamp = (v: number, limit: number) => Math.max(-limit, Math.min(limit, v))
+-const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
+-const seg = (t: number, from: number, to: number) => clamp01((t - from) / (to - from))
+-const easeOut = (t: number) => 1 - Math.pow(1 - t, 3)
+-const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
 diff --git a/packages/app/src/providers/connect/dialog.tsx b/packages/app/src/providers/connect/dialog.tsx
 index ca5e17629c..52b81ac60c 100644
 --- a/packages/app/src/providers/connect/dialog.tsx
@@ -18192,6 +21570,101 @@ index 48ad4b107d..b6a5209012 100644
    const setBody = (body: string) => url.searchParams.set("description", head + "```\n" + body + "\n```")
  
    setBody(stack)
+diff --git a/packages/tui/src/component/logo.tsx b/packages/tui/src/component/logo.tsx
+index 2c3abc3cb0..8ed99afa96 100644
+--- a/packages/tui/src/component/logo.tsx
++++ b/packages/tui/src/component/logo.tsx
+@@ -2,7 +2,6 @@ import { RGBA, TextAttributes } from "@opentui/core"
+ import { For, type JSX } from "solid-js"
+ import { useTerminalDimensions } from "@opentui/solid"
+ import { useTheme } from "../context/theme"
+-import { tint } from "../theme/color"
+ import { go, logo } from "../logo"
+ 
+ export function Logo() {
+@@ -10,45 +9,20 @@ export function Logo() {
+   const dimensions = useTerminalDimensions()
+ 
+   const renderLine = (line: string, fg: RGBA, bold: boolean): JSX.Element[] => {
+-    const shadow = tint(theme.background.base, fg, 0.25)
+     const attrs = bold ? TextAttributes.BOLD : undefined
+-    return Array.from(line).map((char) => {
+-      if (char === "_") {
+-        return (
+-          <text fg={fg} bg={shadow} attributes={attrs} selectable={false}>
+-            {" "}
+-          </text>
+-        )
+-      }
+-      if (char === "^") {
+-        return (
+-          <text fg={fg} bg={shadow} attributes={attrs} selectable={false}>
+-            ▀
+-          </text>
+-        )
+-      }
+-      if (char === "~") {
+-        return (
+-          <text fg={shadow} attributes={attrs} selectable={false}>
+-            ▀
+-          </text>
+-        )
+-      }
+-      if (char === ",") {
+-        return (
+-          <text fg={shadow} attributes={attrs} selectable={false}>
+-            ▄
+-          </text>
+-        )
+-      }
+-      return (
+-        <text fg={fg} attributes={attrs} selectable={false}>
+-          {char}
+-        </text>
+-      )
+-    })
++    return Array.from(line).map((char) => (
++      <text fg={fg} attributes={attrs} selectable={false}>
++        {char}
++      </text>
++    ))
+   }
+ 
++  const renderArt = (art: string[], fg: RGBA, bold: boolean) => (
++    <For each={art}>
++      {(line) => <box flexDirection="row">{renderLine(line, fg, bold)}</box>}
++    </For>
++  )
++
+   return (
+     <box>
+       {dimensions().height < 12 ? null : dimensions().width < 22 ? (
+@@ -56,23 +30,9 @@ export function Logo() {
+           {(line) => <box flexDirection="row">{renderLine(line, theme.text.base, true)}</box>}
+         </For>
+       ) : dimensions().width < 44 ? (
+-        <>
+-          <For each={logo.left.slice(1)}>
+-            {(line) => <box flexDirection="row">{renderLine(line, theme.text.muted, false)}</box>}
+-          </For>
+-          <For each={logo.right}>
+-            {(line) => <box flexDirection="row">{renderLine(line, theme.text.base, true)}</box>}
+-          </For>
+-        </>
++        renderArt(logo.narrow, theme.text.muted, false)
+       ) : (
+-        <For each={logo.left}>
+-          {(line, index) => (
+-            <box flexDirection="row" gap={1}>
+-              <box flexDirection="row">{renderLine(line, theme.text.muted, false)}</box>
+-              <box flexDirection="row">{renderLine(logo.right[index()], theme.text.base, true)}</box>
+-            </box>
+-          )}
+-        </For>
++        renderArt(logo.wide, theme.text.muted, false)
+       )}
+     </box>
+   )
 diff --git a/packages/tui/src/component/terminal-pane.tsx b/packages/tui/src/component/terminal-pane.tsx
 index 596926901c..e848650b51 100644
 --- a/packages/tui/src/component/terminal-pane.tsx
@@ -18285,53 +21758,55 @@ index cf03ecab96..0f6aa049bb 100644
    {
      title: "Clear Session Failures",
 diff --git a/packages/tui/src/logo.ts b/packages/tui/src/logo.ts
-index 8c570fb934..0b2a19232d 100644
+index 8c570fb934..92a727dd0b 100644
 --- a/packages/tui/src/logo.ts
 +++ b/packages/tui/src/logo.ts
-@@ -1,9 +1,41 @@
+@@ -1,9 +1,43 @@
++// The brand wordmark (packages/ui/src/assets/logo/wordmark.svg) rasterized into
++// terminal half-block art: wide for full-size splashes, narrow for tight terminals.
  export const logo = {
 -  left: ["                   ", "█▀▀█ █▀▀█ █▀▀█ █▀▀▄", "█__█ █__█ █^^^ █__█", "▀▀▀▀ █▀▀▀ ▀▀▀▀ ▀~~▀"],
 -  right: ["             ▄     ", "█▀▀▀ █▀▀█ █▀▀█ █▀▀█", "█___ █__█ █__█ █^^^", "▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀"],
-+  left: [
-+    "                                   ",
-+    "██╗       ██████╗  ██████╗ ██████╗ ",
-+    "██║      ██╔═══█╗ ██╔═══█╗ ██╔══██╗",
-+    "██║      ██║   ██ ██║   ██ ██████╔╝",
-+    "██║      ██║   ██ ██║   ██ ██╔══╝  ",
-+    "███████╗ ╚██████╔ ╚██████╔ ██║     ",
-+    "╚══════╝  ╚═════╝  ╚═════╝ ╚═╝     "
++  wide: [
++    "███                                ██                 ███",
++    "███  ▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄  ██▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄ ███  ▄▄▄▄▄▄▄▄▄",
++    "███  ██▀▀▀▀██  ██▀▀▀▀██  ██▀▀▀▀██  ██▀▀▀▀██  ██▀▀▀███ ███  ███▀▀▀███",
++    "███  ██    ██  ██    ██  ██▄▄▄▄██  ██    ██  ██   ███ ███  █████████",
++    "███▄ ██▄▄▄▄██  ██▄▄▄▄██  ████████  ██    ██  ██▄▄▄███ ███▄ ███",
++    "████ ████████  ████████  ██        ██    ██  ████████ ████ █████████",
++    "                          ██",
 +  ],
-+  right: [
-+    "                                   ",
-+    "██╗  ██╗  ██████╗ ██╗      ███████╗",
-+    "██║  ██║ ██╔═══█╗ ██║      ██╔════╝",
-+    "███████║ ██║   ██ ██║      █████╗  ",
-+    "██╔══██║ ██║   ██ ██║      ██╔══╝  ",
-+    "██║  ██║ ╚██████╔ ███████╗ ███████╗",
-+    "╚═╝  ╚═╝  ╚═════╝ ╚══════╝ ╚══════╝"
++  narrow: [
++    "██                   ██           █",
++    "██ █████ █████ ████████████ █████ █  █████",
++    "██ ██  █ ██  █ ██▄▄████  ██ █  ██ █  █████",
++    "██ ██▄▄█ ██▄▄█ ██▀▀▀▀██  ██ █▄▄██ █▄ █▄▄▄▄",
++    "               ██",
 +  ],
  }
  
++// "L" monogram for the mini splash, update preflight, and Go upsell. The first
++// row stays blank so slice(1) consumers keep the full glyph.
  export const go = {
 -  left: ["    ", "█▀▀▀", "█_^█", "▀▀▀▀"],
 -  right: ["    ", "█▀▀█", "█__█", "▀▀▀▀"],
 +  left: [
-+    "    ",
-+    "██╗  ██╗",
-+    "██║  ██║",
-+    "███████║",
-+    "██╔══██║",
-+    "██║  ██║",
-+    "╚═╝  ╚═╝"
++    "        ",
++    "███     ",
++    "███     ",
++    "███     ",
++    "███     ",
++    "███     ",
++    "██████  ",
 +  ],
 +  right: [
-+    "    ",
-+    "██╗  ██╗",
-+    "██║  ██║",
-+    "███████║",
-+    "██╔══██║",
-+    "██║  ██║",
-+    "╚═╝  ╚═╝"
++    "        ",
++    "███     ",
++    "███     ",
++    "███     ",
++    "███     ",
++    "███     ",
++    "██████  ",
 +  ],
  }
 diff --git a/packages/tui/src/mini/footer.permission.tsx b/packages/tui/src/mini/footer.permission.tsx
@@ -18441,6 +21916,47 @@ index 552e383d4c..514ed6efd8 100644
      ].join("\n\n"),
    }
  }
+diff --git a/packages/tui/src/util/presentation.ts b/packages/tui/src/util/presentation.ts
+index d6416a02f1..ae794b89fa 100644
+--- a/packages/tui/src/util/presentation.ts
++++ b/packages/tui/src/util/presentation.ts
+@@ -5,22 +5,7 @@ const bold = "\x1b[1m"
+ const dim = "\x1b[90m"
+ 
+ function wordmark(pad = "") {
+-  const draw = (line: string, fg: string, shadow: string, bg: string) =>
+-    [...line]
+-      .map((char) => {
+-        if (char === "_") return `${bg} ${reset}`
+-        if (char === "^") return `${fg}${bg}▀${reset}`
+-        if (char === "~") return `${shadow}▀${reset}`
+-        if (char === " ") return " "
+-        return `${fg}${char}${reset}`
+-      })
+-      .join("")
+-
+-  return logo.left.map((line, index) => {
+-    const left = draw(line, dim, "\x1b[38;5;235m", "\x1b[48;5;235m")
+-    const right = draw(logo.right[index] ?? "", reset, "\x1b[38;5;238m", "\x1b[48;5;238m")
+-    return `${pad}${left} ${right}`
+-  })
++  return logo.wide.map((line) => `${pad}${dim}${line}${reset}`)
+ }
+ 
+ export type SessionEpilogue = { readonly title: string; readonly sessionID?: string }
+@@ -33,10 +18,10 @@ export function epilogue(input: { readonly session?: SessionEpilogue; readonly u
+     ...wordmark("  "),
+     "",
+     ...(input.updatedVersion
+-      ? [`  ${dim}Run ${reset}${bold}opencode${reset}${dim} to use ${reset}${bold}${input.updatedVersion}${reset}`, ""]
++      ? [`  ${dim}Run ${reset}${bold}loophole${reset}${dim} to use ${reset}${bold}${input.updatedVersion}${reset}`, ""]
+       : []),
+     ...(input.session
+-      ? [row("Session", input.session.title), row("Continue", `opencode -s ${input.session.sessionID}`), ""]
++      ? [row("Session", input.session.title), row("Continue", `loophole -s ${input.session.sessionID}`), ""]
+       : []),
+   ].join("\n")
+ }
 diff --git a/packages/tui/src/util/tool-display.ts b/packages/tui/src/util/tool-display.ts
 index 0d565670b3..89da1c988f 100644
 --- a/packages/tui/src/util/tool-display.ts
@@ -18460,6 +21976,115 @@ index 0d565670b3..89da1c988f 100644
    return `${provider[0].toUpperCase()}${provider.slice(1)}`
  }
  
+diff --git a/packages/tui/test/util/presentation.test.ts b/packages/tui/test/util/presentation.test.ts
+index e4a8e4de83..3d30a129fd 100644
+--- a/packages/tui/test/util/presentation.test.ts
++++ b/packages/tui/test/util/presentation.test.ts
+@@ -4,7 +4,7 @@ import { epilogue } from "../../src/util/presentation"
+ const rows = (text: string | undefined) =>
+   Bun.stripANSI(text ?? "")
+     .split("\n")
+-    .filter((line) => line.trim() && !/[▀▄█]/.test(line))
++    .filter((line) => line.trim() && !/[█▄▀]/.test(line))
+ 
+ test("prints nothing without a session or update", () => {
+   expect(epilogue({})).toBeUndefined()
+@@ -13,18 +13,18 @@ test("prints nothing without a session or update", () => {
+ test("formats session continuation summary", () => {
+   expect(rows(epilogue({ session: { title: "A session", sessionID: "ses_123" } }))).toEqual([
+     "  Session   A session",
+-    "  Continue  opencode -s ses_123",
++    "  Continue  loophole -s ses_123",
+   ])
+ })
+ 
+-test("tells the user to start OpenCode again after an update", () => {
+-  expect(rows(epilogue({ updatedVersion: "2.0.0" }))).toEqual(["  Run opencode to use 2.0.0"])
++test("tells the user to start Loophole again after an update", () => {
++  expect(rows(epilogue({ updatedVersion: "2.0.0" }))).toEqual(["  Run loophole to use 2.0.0"])
+ })
+ 
+ test("keeps the session continuation after an update", () => {
+   expect(rows(epilogue({ session: { title: "A session", sessionID: "ses_123" }, updatedVersion: "2.0.0" }))).toEqual([
+-    "  Run opencode to use 2.0.0",
++    "  Run loophole to use 2.0.0",
+     "  Session   A session",
+-    "  Continue  opencode -s ses_123",
++    "  Continue  loophole -s ses_123",
+   ])
+ })
+diff --git a/packages/ui/src/assets/logo/wordmark.svg b/packages/ui/src/assets/logo/wordmark.svg
+new file mode 100644
+index 0000000000..7596c81955
+--- /dev/null
++++ b/packages/ui/src/assets/logo/wordmark.svg
+@@ -0,0 +1,10 @@
++<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2170 725">
++<path d="M0 0 C0.75 -0.01 1.5 -0.01 2.27 -0.02 C4.77 -0.03 7.28 -0.02 9.79 -0.01 C11.59 -0.02 13.38 -0.02 15.18 -0.03 C20.06 -0.05 24.94 -0.04 29.83 -0.03 C34.93 -0.02 40.04 -0.03 45.14 -0.03 C53.72 -0.04 62.29 -0.03 70.87 -0.01 C80.78 0.01 90.7 0 100.62 -0.02 C109.13 -0.04 117.64 -0.04 126.15 -0.03 C131.24 -0.02 136.32 -0.02 141.41 -0.04 C146.19 -0.05 150.97 -0.04 155.75 -0.02 C157.5 -0.01 159.26 -0.01 161.02 -0.02 C163.41 -0.03 165.8 -0.02 168.2 0 C169.24 -0.01 169.24 -0.01 170.31 -0.03 C173.55 0.03 175.36 0.34 178.03 2.23 C179.87 4.9 180.1 6.26 180.11 9.48 C180.12 10.48 180.13 11.48 180.14 12.51 C180.13 13.61 180.12 14.7 180.12 15.82 C180.12 16.98 180.13 18.13 180.14 19.32 C180.15 23.14 180.14 26.97 180.13 30.79 C180.13 33.44 180.14 36.09 180.14 38.75 C180.15 44.31 180.14 49.87 180.12 55.43 C180.1 61.86 180.11 68.29 180.13 74.72 C180.15 80.24 180.15 85.76 180.14 91.28 C180.13 94.58 180.13 97.87 180.14 101.17 C180.15 104.84 180.14 108.52 180.12 112.19 C180.12 113.29 180.13 114.38 180.14 115.5 C180.13 116.5 180.12 117.5 180.11 118.54 C180.1 119.4 180.1 120.27 180.1 121.17 C179.41 124.38 178.22 125.56 175.6 127.51 C173.08 128 173.08 128 170.18 127.99 C169.08 127.99 167.98 128 166.85 128.01 C165.65 127.99 164.45 127.98 163.21 127.96 C161.94 127.96 160.67 127.96 159.37 127.96 C155.89 127.96 152.42 127.94 148.94 127.91 C145.31 127.89 141.68 127.89 138.04 127.88 C131.17 127.87 124.29 127.84 117.41 127.8 C109.58 127.75 101.75 127.73 93.92 127.71 C77.81 127.67 61.71 127.59 45.6 127.51 C45.6 135.76 45.6 144.01 45.6 152.51 C49.52 152.49 53.43 152.47 57.47 152.44 C70.39 152.38 83.32 152.33 96.24 152.3 C104.08 152.28 111.92 152.25 119.75 152.21 C126.59 152.17 133.42 152.14 140.25 152.13 C143.87 152.13 147.48 152.11 151.1 152.09 C155.14 152.05 159.17 152.05 163.21 152.05 C164.41 152.04 165.61 152.03 166.85 152.01 C167.95 152.02 169.05 152.02 170.18 152.03 C171.61 152.02 171.61 152.02 173.08 152.02 C176.34 152.65 177.53 153.96 179.6 156.51 C180.11 158.44 180.11 158.44 180.12 160.48 C180.13 161.25 180.14 162.01 180.15 162.8 C180.15 163.62 180.14 164.44 180.13 165.29 C180.13 166.14 180.14 166.99 180.14 167.87 C180.14 169.66 180.14 171.46 180.12 173.25 C180.1 176 180.12 178.74 180.15 181.49 C180.14 183.23 180.14 184.98 180.13 186.73 C180.14 187.55 180.15 188.37 180.15 189.21 C180.14 189.98 180.13 190.75 180.12 191.54 C180.11 192.21 180.11 192.88 180.11 193.57 C179.33 196.52 177.99 197.63 175.6 199.51 C172.99 199.9 170.8 200.05 168.2 200.02 C167.45 200.02 166.7 200.03 165.93 200.03 C163.42 200.05 160.92 200.04 158.41 200.03 C156.61 200.03 154.81 200.04 153.02 200.05 C148.14 200.07 143.25 200.06 138.37 200.05 C133.27 200.04 128.16 200.04 123.05 200.05 C114.48 200.06 105.91 200.05 97.33 200.03 C87.41 200.01 77.49 200.01 67.58 200.04 C59.07 200.05 50.56 200.06 42.05 200.05 C36.96 200.04 31.88 200.04 26.79 200.05 C22.01 200.06 17.23 200.06 12.45 200.03 C10.69 200.03 8.94 200.03 7.18 200.04 C4.79 200.05 2.39 200.04 0 200.02 C-0.7 200.02 -1.4 200.03 -2.11 200.04 C-5.24 199.99 -7.18 199.65 -9.83 197.96 C-11.98 194.61 -11.96 191.65 -11.91 187.8 C-11.92 187.02 -11.92 186.24 -11.93 185.44 C-11.94 182.82 -11.93 180.2 -11.92 177.58 C-11.92 175.71 -11.93 173.83 -11.94 171.96 C-11.96 166.86 -11.95 161.76 -11.94 156.67 C-11.93 151.34 -11.94 146.01 -11.94 140.68 C-11.95 131.72 -11.94 122.77 -11.92 113.82 C-11.9 103.47 -11.91 93.11 -11.93 82.76 C-11.95 73.88 -11.95 64.99 -11.94 56.11 C-11.93 50.8 -11.93 45.49 -11.95 40.18 C-11.96 35.19 -11.95 30.2 -11.93 25.21 C-11.92 23.38 -11.92 21.54 -11.93 19.71 C-11.94 17.21 -11.93 14.71 -11.91 12.21 C-11.92 11.48 -11.93 10.76 -11.94 10 C-11.89 6.8 -11.58 4.78 -9.83 2.06 C-6.57 -0.02 -3.75 -0.05 0 0 Z M45.6 53.51 C45.6 62.42 45.6 71.33 45.6 80.51 C71.01 80.51 96.42 80.51 122.6 80.51 C122.6 71.6 122.6 62.69 122.6 53.51 C97.19 53.51 71.78 53.51 45.6 53.51 Z " fill="currentColor" transform="translate(1655.4014892578125,265.4920654296875)"/>
++<path d="M0 0 C1.1 -0.01 1.1 -0.01 2.23 -0.02 C4.7 -0.03 7.16 -0.02 9.63 -0.01 C11.39 -0.02 13.16 -0.02 14.93 -0.03 C19.73 -0.05 24.53 -0.04 29.33 -0.03 C34.36 -0.02 39.38 -0.03 44.4 -0.03 C52.83 -0.04 61.27 -0.03 69.7 -0.01 C79.45 0.01 89.21 0 98.96 -0.02 C107.33 -0.04 115.7 -0.04 124.07 -0.03 C129.07 -0.02 134.08 -0.02 139.08 -0.04 C143.78 -0.05 148.48 -0.04 153.18 -0.02 C154.91 -0.01 156.63 -0.01 158.36 -0.02 C160.72 -0.03 163.07 -0.02 165.42 0 C166.74 0 168.06 0 169.42 0 C172.71 0.51 172.71 0.51 175.14 2.16 C177.16 5.17 177.22 7 177.22 10.62 C177.23 11.87 177.24 13.13 177.25 14.42 C177.25 15.8 177.24 17.19 177.23 18.58 C177.24 20.04 177.24 21.5 177.25 22.96 C177.27 26.93 177.26 30.9 177.25 34.87 C177.24 39.02 177.25 43.17 177.26 47.33 C177.26 54.3 177.25 61.28 177.23 68.25 C177.21 76.31 177.22 84.38 177.24 92.44 C177.26 99.36 177.26 106.29 177.25 113.21 C177.25 117.34 177.24 121.48 177.26 125.61 C177.27 129.5 177.26 133.39 177.24 137.27 C177.23 138.7 177.23 140.13 177.24 141.56 C177.25 143.5 177.24 145.45 177.22 147.4 C177.22 148.49 177.22 149.58 177.22 150.7 C176.58 154.25 175.63 155.42 172.71 157.51 C170.24 158 170.24 158 167.41 157.99 C166.34 157.99 165.26 158 164.16 158.01 C162.4 157.98 162.4 157.98 160.6 157.96 C159.36 157.96 158.12 157.96 156.84 157.96 C153.45 157.96 150.06 157.94 146.66 157.91 C143.11 157.89 139.56 157.89 136.02 157.88 C129.3 157.87 122.58 157.84 115.86 157.8 C108.21 157.75 100.56 157.73 92.91 157.71 C77.18 157.67 61.45 157.6 45.71 157.51 C45.72 158.61 45.73 159.72 45.74 160.86 C45.82 171.28 45.88 181.7 45.92 192.11 C45.94 197.47 45.97 202.83 46.01 208.18 C46.06 213.35 46.08 218.52 46.09 223.68 C46.1 225.66 46.11 227.63 46.14 229.6 C46.16 232.36 46.17 235.12 46.17 237.88 C46.18 238.7 46.2 239.52 46.21 240.36 C46.18 243.88 46.01 246.08 43.99 249.01 C41.35 250.74 39.96 251.01 36.82 251.03 C35.86 251.04 34.89 251.05 33.89 251.06 C32.85 251.06 31.81 251.05 30.74 251.04 C29.13 251.04 29.13 251.04 27.49 251.05 C25.23 251.05 22.96 251.05 20.7 251.03 C17.23 251.01 13.76 251.03 10.29 251.05 C8.08 251.05 5.88 251.05 3.68 251.04 C2.64 251.05 1.6 251.06 0.53 251.06 C-0.92 251.04 -0.92 251.04 -2.4 251.03 C-3.25 251.02 -4.1 251.02 -4.97 251.02 C-8.3 250.29 -9.26 249.27 -11.29 246.51 C-11.89 243.3 -11.83 240.12 -11.8 236.87 C-11.8 235.88 -11.81 234.89 -11.81 233.87 C-11.83 230.55 -11.82 227.23 -11.81 223.9 C-11.81 221.52 -11.82 219.15 -11.83 216.77 C-11.84 210.97 -11.84 205.18 -11.83 199.38 C-11.82 194.67 -11.82 189.97 -11.82 185.26 C-11.82 184.25 -11.82 184.25 -11.82 183.23 C-11.83 181.87 -11.83 180.5 -11.83 179.14 C-11.84 166.38 -11.83 153.61 -11.81 140.85 C-11.79 129.89 -11.79 118.94 -11.81 107.98 C-11.83 95.26 -11.84 82.55 -11.83 69.83 C-11.83 68.47 -11.82 67.12 -11.82 65.76 C-11.82 65.09 -11.82 64.43 -11.82 63.74 C-11.82 59.03 -11.82 54.33 -11.83 49.63 C-11.84 43.3 -11.84 36.97 -11.81 30.64 C-11.81 28.31 -11.81 25.98 -11.82 23.66 C-11.83 20.49 -11.82 17.32 -11.8 14.15 C-11.8 13.22 -11.81 12.29 -11.82 11.34 C-11.78 7.56 -11.71 5.2 -9.71 1.94 C-6.35 -0.04 -3.89 0 0 0 Z M45.71 55.51 C45.71 72.34 45.71 89.17 45.71 106.51 C70.46 106.51 95.21 106.51 120.71 106.51 C120.71 89.68 120.71 72.85 120.71 55.51 C95.96 55.51 71.21 55.51 45.71 55.51 Z " fill="currentColor" transform="translate(890.28759765625,265.4920654296875)"/>
++<path d="M0 0 C1.1 -0.01 1.1 -0.01 2.23 -0.02 C4.7 -0.03 7.16 -0.02 9.63 -0.01 C11.39 -0.02 13.16 -0.02 14.93 -0.03 C19.73 -0.05 24.53 -0.04 29.33 -0.03 C34.36 -0.02 39.38 -0.03 44.4 -0.03 C52.83 -0.04 61.27 -0.03 69.7 -0.01 C79.45 0.01 89.21 0 98.96 -0.02 C107.33 -0.04 115.7 -0.04 124.07 -0.03 C129.07 -0.02 134.08 -0.02 139.08 -0.04 C143.78 -0.05 148.48 -0.04 153.18 -0.02 C154.91 -0.01 156.63 -0.01 158.36 -0.02 C160.72 -0.03 163.07 -0.02 165.42 0 C166.74 0 168.06 0 169.42 0 C172.71 0.51 172.71 0.51 175.14 2.06 C177.29 5.4 177.27 8.36 177.22 12.21 C177.23 12.99 177.23 13.77 177.24 14.58 C177.26 17.2 177.24 19.81 177.23 22.43 C177.24 24.31 177.24 26.18 177.25 28.06 C177.27 33.16 177.26 38.25 177.25 43.35 C177.24 48.68 177.25 54.01 177.26 59.34 C177.26 68.29 177.25 77.24 177.23 86.19 C177.21 96.55 177.22 106.9 177.24 117.26 C177.26 126.14 177.26 135.02 177.25 143.91 C177.25 149.22 177.24 154.53 177.26 159.83 C177.27 164.83 177.26 169.82 177.24 174.81 C177.23 176.64 177.23 178.47 177.24 180.31 C177.25 182.81 177.24 185.3 177.22 187.8 C177.23 188.53 177.24 189.26 177.25 190.01 C177.2 193.22 176.89 195.24 175.14 197.96 C171.78 200.1 169.39 200.01 165.42 200.02 C164.69 200.02 163.95 200.03 163.2 200.03 C160.73 200.05 158.26 200.04 155.8 200.03 C154.03 200.03 152.26 200.04 150.5 200.05 C145.69 200.07 140.89 200.06 136.09 200.05 C131.07 200.04 126.05 200.04 121.03 200.05 C112.59 200.06 104.16 200.05 95.73 200.03 C85.97 200.01 76.22 200.01 66.46 200.04 C58.09 200.05 49.72 200.06 41.35 200.05 C36.35 200.04 31.35 200.04 26.35 200.05 C21.65 200.06 16.95 200.06 12.24 200.03 C10.52 200.03 8.79 200.03 7.06 200.04 C4.71 200.05 2.35 200.04 0 200.02 C-1.32 200.01 -2.64 200.01 -4 200.01 C-7.29 199.51 -7.29 199.51 -9.71 197.96 C-11.86 194.61 -11.84 191.66 -11.8 187.8 C-11.8 187.02 -11.81 186.24 -11.81 185.44 C-11.83 182.82 -11.82 180.2 -11.81 177.58 C-11.81 175.71 -11.82 173.83 -11.83 171.96 C-11.84 166.86 -11.84 161.76 -11.82 156.67 C-11.81 151.34 -11.82 146.01 -11.83 140.68 C-11.84 131.72 -11.83 122.77 -11.81 113.82 C-11.79 103.47 -11.79 93.11 -11.82 82.76 C-11.83 73.88 -11.84 64.99 -11.83 56.11 C-11.82 50.8 -11.82 45.49 -11.83 40.18 C-11.84 35.19 -11.84 30.2 -11.81 25.21 C-11.81 23.38 -11.81 21.54 -11.82 19.71 C-11.83 17.21 -11.82 14.71 -11.8 12.21 C-11.8 11.48 -11.81 10.76 -11.82 10 C-11.77 6.79 -11.46 4.78 -9.71 2.06 C-6.36 -0.09 -3.97 0 0 0 Z M44.71 54.51 C44.71 85.86 44.71 117.21 44.71 149.51 C55.31 150.13 65.7 150.65 76.28 150.61 C77.42 150.6 78.56 150.6 79.74 150.6 C83.92 150.6 88.1 150.58 92.27 150.57 C101.66 150.55 111.04 150.53 120.71 150.51 C120.71 118.83 120.71 87.15 120.71 54.51 C95.63 54.51 70.55 54.51 44.71 54.51 Z " fill="currentColor" transform="translate(672.28759765625,265.4920654296875)"/>
++<path d="M0 0 C1.1 -0.01 1.1 -0.01 2.22 -0.02 C4.67 -0.03 7.12 -0.02 9.57 -0.01 C11.33 -0.02 13.09 -0.02 14.85 -0.03 C19.62 -0.05 24.39 -0.04 29.17 -0.03 C34.16 -0.02 39.16 -0.03 44.15 -0.03 C52.54 -0.04 60.92 -0.03 69.31 -0.01 C79.01 0.01 88.71 0 98.41 -0.02 C106.73 -0.04 115.06 -0.04 123.38 -0.03 C128.35 -0.02 133.33 -0.02 138.3 -0.04 C142.98 -0.05 147.65 -0.04 152.33 -0.02 C154.04 -0.01 155.76 -0.01 157.48 -0.02 C159.82 -0.03 162.16 -0.02 164.5 0 C166.47 0 166.47 0 168.47 0 C171.75 0.51 171.75 0.51 174.17 2.06 C176.33 5.4 176.31 8.36 176.26 12.21 C176.26 12.99 176.27 13.77 176.28 14.58 C176.29 17.2 176.28 19.81 176.27 22.43 C176.27 24.31 176.28 26.18 176.29 28.06 C176.31 33.16 176.3 38.25 176.29 43.35 C176.28 48.68 176.29 54.01 176.29 59.34 C176.3 68.29 176.29 77.24 176.27 86.19 C176.25 96.55 176.26 106.9 176.28 117.26 C176.3 126.14 176.3 135.02 176.29 143.91 C176.28 149.22 176.28 154.53 176.3 159.83 C176.31 164.83 176.3 169.82 176.28 174.81 C176.27 176.64 176.27 178.47 176.28 180.31 C176.29 182.81 176.28 185.3 176.26 187.8 C176.27 188.53 176.28 189.26 176.29 190.01 C176.24 193.22 175.93 195.24 174.17 197.96 C170.83 200.1 168.46 200.01 164.5 200.02 C163.77 200.02 163.04 200.03 162.28 200.03 C159.83 200.05 157.38 200.04 154.93 200.03 C153.17 200.03 151.41 200.04 149.66 200.05 C144.88 200.07 140.11 200.06 135.33 200.05 C130.34 200.04 125.34 200.04 120.35 200.05 C111.96 200.06 103.58 200.05 95.19 200.03 C85.49 200.01 75.79 200.01 66.09 200.04 C57.77 200.05 49.44 200.06 41.12 200.05 C36.15 200.04 31.17 200.04 26.2 200.05 C21.53 200.06 16.85 200.06 12.18 200.03 C10.46 200.03 8.74 200.03 7.02 200.04 C4.68 200.05 2.34 200.04 0 200.02 C-1.31 200.01 -2.62 200.01 -3.97 200.01 C-7.25 199.51 -7.25 199.51 -9.67 197.96 C-11.83 194.61 -11.8 191.66 -11.76 187.8 C-11.76 187.02 -11.77 186.24 -11.78 185.44 C-11.79 182.82 -11.78 180.2 -11.77 177.58 C-11.77 175.71 -11.78 173.83 -11.79 171.96 C-11.81 166.86 -11.8 161.76 -11.79 156.67 C-11.78 151.34 -11.79 146.01 -11.79 140.68 C-11.8 131.72 -11.79 122.77 -11.77 113.82 C-11.75 103.47 -11.76 93.11 -11.78 82.76 C-11.8 73.88 -11.8 64.99 -11.79 56.11 C-11.78 50.8 -11.78 45.49 -11.79 40.18 C-11.81 35.19 -11.8 30.2 -11.78 25.21 C-11.77 23.38 -11.77 21.54 -11.78 19.71 C-11.79 17.21 -11.78 14.71 -11.76 12.21 C-11.77 11.48 -11.78 10.76 -11.78 10 C-11.73 6.79 -11.43 4.78 -9.67 2.06 C-6.33 -0.08 -3.96 0 0 0 Z M44.75 54.51 C44.75 85.86 44.75 117.21 44.75 149.51 C61.36 150.1 77.86 150.67 94.46 150.64 C97.53 150.63 100.61 150.64 103.68 150.64 C105.64 150.64 107.61 150.64 109.57 150.64 C110.49 150.64 111.4 150.64 112.34 150.65 C116.37 151.04 116.37 151.04 119.75 149.51 C119.85 146.56 119.88 143.63 119.86 140.67 C119.86 139.75 119.86 138.82 119.86 137.87 C119.86 134.79 119.86 131.71 119.85 128.63 C119.85 126.5 119.84 124.37 119.84 122.24 C119.84 116.63 119.83 111.02 119.82 105.4 C119.81 98.67 119.8 91.94 119.8 85.21 C119.79 74.98 119.77 64.74 119.75 54.51 C95 54.51 70.25 54.51 44.75 54.51 Z " fill="currentColor" transform="translate(1328.2496337890625,265.4920654296875)"/>
++<path d="M0 0 C1.45 -0.02 1.45 -0.02 2.93 -0.04 C3.97 -0.03 5.01 -0.02 6.08 -0.01 C7.15 -0.02 8.22 -0.02 9.33 -0.03 C11.6 -0.03 13.86 -0.02 16.13 -0 C19.6 0.02 23.07 -0 26.54 -0.03 C28.74 -0.03 30.94 -0.02 33.14 -0.01 C34.18 -0.02 35.22 -0.03 36.29 -0.04 C37.26 -0.03 38.23 -0.01 39.22 0 C40.5 0 40.5 0 41.8 0.01 C44.97 0.71 46.07 2.01 48.11 4.52 C48.59 7.09 48.59 7.09 48.57 10.02 C48.57 11.12 48.56 12.22 48.56 13.36 C48.54 14.54 48.52 15.72 48.5 16.94 C48.5 18.15 48.49 19.37 48.48 20.62 C48.46 24.5 48.41 28.39 48.36 32.27 C48.34 34.9 48.32 37.53 48.31 40.16 C48.26 46.61 48.2 53.07 48.11 59.52 C49.1 59.51 49.1 59.51 50.1 59.51 C66.06 59.42 82.01 59.35 97.97 59.31 C105.69 59.29 113.41 59.26 121.12 59.22 C127.85 59.18 134.57 59.15 141.3 59.14 C144.86 59.14 148.42 59.12 151.98 59.09 C155.96 59.06 159.93 59.06 163.91 59.06 C165.68 59.04 165.68 59.04 167.49 59.02 C169.11 59.03 169.11 59.03 170.77 59.04 C171.71 59.03 172.65 59.03 173.62 59.03 C177.03 59.7 178.13 60.66 180.11 63.52 C180.5 66.21 180.65 68.49 180.62 71.18 C180.63 71.96 180.63 72.74 180.64 73.54 C180.65 76.14 180.64 78.75 180.63 81.35 C180.63 83.22 180.64 85.08 180.65 86.95 C180.67 92.02 180.66 97.09 180.65 102.16 C180.64 107.46 180.65 112.76 180.65 118.06 C180.66 126.97 180.65 135.87 180.63 144.78 C180.61 155.08 180.62 165.38 180.64 175.68 C180.66 184.51 180.66 193.35 180.65 202.19 C180.64 207.47 180.64 212.75 180.66 218.03 C180.67 222.99 180.66 227.96 180.64 232.92 C180.63 234.75 180.63 236.57 180.64 238.39 C180.65 240.88 180.64 243.36 180.62 245.85 C180.63 246.58 180.64 247.3 180.65 248.05 C180.59 251.46 180.34 253.22 178.22 255.96 C175.8 257.75 174.45 258.09 171.46 258.27 C170.58 258.32 169.7 258.38 168.79 258.44 C164.69 258.56 160.6 258.59 156.49 258.5 C155.62 258.49 154.76 258.47 153.86 258.45 C152.05 258.41 150.24 258.37 148.43 258.33 C145.66 258.27 142.88 258.23 140.11 258.19 C138.34 258.15 136.57 258.11 134.8 258.06 C133.97 258.05 133.15 258.05 132.29 258.04 C126.62 257.87 126.62 257.87 124.39 256.35 C122.59 253.77 122.74 251.93 122.75 248.8 C122.74 247.02 122.74 247.02 122.74 245.2 C122.75 243.89 122.76 242.58 122.77 241.23 C122.77 239.84 122.77 238.45 122.77 237.06 C122.77 233.29 122.79 229.52 122.81 225.74 C122.83 221.8 122.83 217.85 122.83 213.91 C122.84 206.44 122.87 198.97 122.9 191.5 C122.94 181.41 122.95 171.32 122.97 161.23 C123 145.32 123.06 129.42 123.11 113.52 C98.36 113.52 73.61 113.52 48.11 113.52 C48.17 123.57 48.23 133.61 48.29 143.97 C48.31 150.32 48.34 156.68 48.36 163.04 C48.39 173.13 48.42 183.23 48.49 193.33 C48.54 200.68 48.57 208.03 48.58 215.38 C48.59 219.28 48.6 223.17 48.64 227.06 C48.67 230.73 48.68 234.39 48.68 238.06 C48.68 240.04 48.71 242.03 48.73 244.01 C48.68 252.67 48.68 252.67 45.88 256.82 C42.97 258.6 41.57 259.13 38.2 259.06 C36.78 259.05 36.78 259.05 35.33 259.03 C33.81 258.98 33.81 258.98 32.26 258.93 C30.69 258.9 30.69 258.9 29.09 258.87 C26.87 258.82 24.66 258.76 22.45 258.69 C19.06 258.58 15.67 258.52 12.28 258.47 C10.13 258.42 7.98 258.36 5.83 258.3 C4.81 258.29 3.8 258.27 2.75 258.25 C1.81 258.22 0.87 258.18 -0.11 258.14 C-0.94 258.12 -1.77 258.09 -2.62 258.07 C-5.9 257.27 -6.88 256.27 -8.89 253.52 C-9.5 250.22 -9.43 246.95 -9.4 243.61 C-9.4 242.59 -9.41 241.58 -9.42 240.53 C-9.43 237.11 -9.42 233.69 -9.41 230.27 C-9.41 227.82 -9.42 225.37 -9.43 222.93 C-9.44 216.96 -9.44 211 -9.43 205.04 C-9.42 200.19 -9.42 195.35 -9.42 190.5 C-9.42 189.81 -9.43 189.12 -9.43 188.41 C-9.43 187.01 -9.43 185.61 -9.43 184.21 C-9.44 171.08 -9.43 157.94 -9.41 144.8 C-9.39 133.53 -9.39 122.26 -9.41 110.98 C-9.43 97.9 -9.44 84.81 -9.43 71.72 C-9.43 70.33 -9.43 68.93 -9.42 67.53 C-9.42 66.85 -9.42 66.16 -9.42 65.45 C-9.42 60.61 -9.42 55.77 -9.43 50.93 C-9.45 44.42 -9.44 37.9 -9.41 31.39 C-9.41 29 -9.41 26.6 -9.42 24.21 C-9.43 20.95 -9.42 17.69 -9.4 14.42 C-9.41 13.47 -9.41 12.52 -9.42 11.53 C-9.35 5.15 -9.35 5.15 -7 1.93 C-4.46 0.23 -3.04 0.01 0 0 Z " fill="currentColor" transform="translate(1105.888671875,207.482421875)"/>
++<path d="M0 0 C0.73 -0.01 1.45 -0.01 2.2 -0.02 C4.64 -0.03 7.08 -0.02 9.52 -0.01 C11.27 -0.02 13.01 -0.02 14.76 -0.03 C19.51 -0.05 24.26 -0.04 29.01 -0.03 C33.97 -0.02 38.94 -0.03 43.9 -0.03 C52.24 -0.04 60.58 -0.03 68.92 -0.01 C78.57 0.01 88.21 0 97.86 -0.02 C106.13 -0.04 114.41 -0.04 122.69 -0.03 C127.63 -0.02 132.58 -0.02 137.52 -0.04 C142.17 -0.05 146.82 -0.04 151.47 -0.02 C153.18 -0.01 154.88 -0.01 156.59 -0.02 C158.92 -0.03 161.25 -0.02 163.58 0 C164.88 0 166.18 0 167.53 0 C170.79 0.51 170.79 0.51 173.21 2.06 C175.37 5.4 175.34 8.36 175.3 12.21 C175.3 12.99 175.31 13.77 175.32 14.58 C175.33 17.2 175.32 19.81 175.31 22.43 C175.31 24.31 175.32 26.18 175.33 28.06 C175.35 33.16 175.34 38.25 175.33 43.35 C175.32 48.68 175.32 54.01 175.33 59.34 C175.34 68.29 175.33 77.24 175.31 86.19 C175.29 96.55 175.3 106.9 175.32 117.26 C175.34 126.14 175.34 135.02 175.33 143.91 C175.32 149.22 175.32 154.53 175.33 159.83 C175.35 164.83 175.34 169.82 175.31 174.81 C175.31 176.64 175.31 178.47 175.32 180.31 C175.33 182.81 175.32 185.3 175.3 187.8 C175.31 188.53 175.31 189.26 175.32 190.01 C175.27 193.23 174.96 195.24 173.21 197.96 C169.88 200.09 167.52 200.01 163.58 200.02 C162.85 200.02 162.12 200.03 161.37 200.03 C158.93 200.05 156.5 200.04 154.06 200.03 C152.31 200.03 150.56 200.04 148.81 200.05 C144.07 200.07 139.32 200.06 134.57 200.05 C129.61 200.04 124.64 200.04 119.67 200.05 C111.33 200.06 103 200.05 94.66 200.03 C85.01 200.01 75.37 200.01 65.72 200.04 C57.44 200.05 49.17 200.06 40.89 200.05 C35.94 200.04 31 200.04 26.05 200.05 C21.4 200.06 16.76 200.06 12.11 200.03 C10.4 200.03 8.69 200.03 6.98 200.04 C4.66 200.05 2.33 200.04 0 200.02 C-1.3 200.01 -2.61 200.01 -3.95 200.01 C-7.21 199.51 -7.21 199.51 -9.63 197.96 C-11.79 194.61 -11.77 191.66 -11.72 187.8 C-11.73 187.02 -11.73 186.24 -11.74 185.44 C-11.75 182.82 -11.74 180.2 -11.73 177.58 C-11.73 175.71 -11.74 173.83 -11.75 171.96 C-11.77 166.86 -11.76 161.76 -11.75 156.67 C-11.74 151.34 -11.75 146.01 -11.75 140.68 C-11.76 131.72 -11.75 122.77 -11.73 113.82 C-11.71 103.47 -11.72 93.11 -11.74 82.76 C-11.76 73.88 -11.76 64.99 -11.75 56.11 C-11.74 50.8 -11.74 45.49 -11.76 40.18 C-11.77 35.19 -11.76 30.2 -11.74 25.21 C-11.73 23.38 -11.73 21.54 -11.74 19.71 C-11.75 17.21 -11.74 14.71 -11.72 12.21 C-11.73 11.48 -11.74 10.76 -11.75 10 C-11.7 6.79 -11.39 4.78 -9.63 2.06 C-6.3 -0.08 -3.95 0 0 0 Z M43.79 54.51 C43.79 86.19 43.79 117.87 43.79 150.51 C68.87 150.51 93.95 150.51 119.79 150.51 C119.79 118.83 119.79 87.15 119.79 54.51 C94.71 54.51 69.63 54.51 43.79 54.51 Z " fill="currentColor" transform="translate(456.211669921875,265.4920654296875)"/>
++<path d="M0 0 C1.45 -0.02 1.45 -0.02 2.93 -0.04 C3.97 -0.03 5.01 -0.02 6.08 -0.01 C7.15 -0.02 8.22 -0.02 9.33 -0.03 C11.6 -0.03 13.86 -0.02 16.13 -0 C19.6 0.02 23.07 -0 26.54 -0.03 C28.74 -0.03 30.94 -0.02 33.14 -0.01 C34.18 -0.02 35.22 -0.03 36.29 -0.04 C37.26 -0.03 38.23 -0.01 39.22 0 C40.5 0 40.5 0 41.8 0.01 C45.07 0.73 46.08 1.85 48.11 4.52 C48.5 7.39 48.64 9.87 48.59 12.74 C48.6 13.58 48.6 14.42 48.6 15.28 C48.61 18.09 48.59 20.89 48.57 23.7 C48.56 25.71 48.56 27.72 48.57 29.73 C48.57 35.19 48.54 40.65 48.52 46.12 C48.49 51.82 48.49 57.53 48.48 63.24 C48.47 74.05 48.44 84.85 48.4 95.66 C48.35 107.97 48.33 120.27 48.31 132.58 C48.27 157.89 48.2 183.2 48.11 208.52 C48.79 208.5 49.46 208.48 50.16 208.45 C53.23 208.37 56.29 208.32 59.36 208.27 C60.42 208.23 61.49 208.2 62.58 208.17 C63.61 208.15 64.63 208.14 65.69 208.13 C66.63 208.11 67.57 208.09 68.55 208.06 C71.87 208.65 73.03 209.93 75.11 212.52 C75.62 214.53 75.62 214.53 75.63 216.67 C75.64 217.48 75.65 218.29 75.67 219.12 C75.66 219.98 75.65 220.85 75.64 221.74 C75.65 223.08 75.65 223.08 75.65 224.45 C75.66 226.34 75.65 228.23 75.63 230.12 C75.61 233.01 75.63 235.9 75.66 238.79 C75.66 240.62 75.65 242.46 75.64 244.3 C75.65 245.16 75.66 246.03 75.67 246.92 C75.65 247.72 75.64 248.53 75.63 249.36 C75.63 250.07 75.62 250.78 75.62 251.51 C74.85 254.55 73.63 255.68 71.11 257.52 C68.51 257.91 66.34 258.07 63.74 258.04 C62.64 258.05 62.64 258.05 61.52 258.06 C59.09 258.07 56.66 258.06 54.24 258.05 C52.55 258.05 50.86 258.06 49.17 258.06 C45.63 258.07 42.1 258.06 38.56 258.04 C34.03 258.02 29.49 258.03 24.96 258.05 C21.47 258.07 17.99 258.06 14.5 258.05 C12.83 258.05 11.16 258.05 9.49 258.06 C7.15 258.07 4.82 258.06 2.48 258.04 C1.79 258.04 1.1 258.05 0.39 258.06 C-2.58 258.01 -4.56 257.73 -7.07 256.11 C-9.87 252.12 -9.44 248.37 -9.4 243.61 C-9.4 242.59 -9.41 241.58 -9.42 240.53 C-9.43 237.11 -9.42 233.69 -9.41 230.27 C-9.41 227.82 -9.42 225.37 -9.43 222.93 C-9.44 216.96 -9.44 211 -9.43 205.04 C-9.42 200.19 -9.42 195.35 -9.42 190.5 C-9.42 189.81 -9.43 189.12 -9.43 188.41 C-9.43 187.01 -9.43 185.61 -9.43 184.21 C-9.44 171.08 -9.43 157.94 -9.41 144.8 C-9.39 133.53 -9.39 122.26 -9.41 110.98 C-9.43 97.9 -9.44 84.81 -9.43 71.72 C-9.43 70.33 -9.43 68.93 -9.42 67.53 C-9.42 66.85 -9.42 66.16 -9.42 65.45 C-9.42 60.61 -9.42 55.77 -9.43 50.93 C-9.45 44.42 -9.44 37.9 -9.41 31.39 C-9.41 29 -9.41 26.6 -9.42 24.21 C-9.43 20.95 -9.42 17.69 -9.4 14.42 C-9.41 13.47 -9.41 12.52 -9.42 11.53 C-9.35 5.15 -9.35 5.15 -7 1.93 C-4.46 0.23 -3.04 0.01 0 0 Z " fill="currentColor" transform="translate(345.888671875,207.482421875)"/>
++<path d="M0 0 C0.95 -0.01 1.9 -0.03 2.87 -0.04 C4.4 -0.03 4.4 -0.03 5.95 -0.01 C7 -0.02 8.05 -0.02 9.14 -0.03 C11.35 -0.03 13.57 -0.02 15.79 -0 C19.19 0.02 22.59 -0 25.98 -0.03 C28.14 -0.03 30.3 -0.02 32.45 -0.01 C33.47 -0.02 34.49 -0.03 35.53 -0.04 C36.96 -0.02 36.96 -0.02 38.41 0 C39.24 0 40.07 0.01 40.93 0.01 C44.17 0.73 45.19 1.87 47.2 4.52 C47.59 7.39 47.73 9.87 47.68 12.74 C47.69 13.58 47.69 14.42 47.69 15.28 C47.7 18.09 47.68 20.89 47.66 23.7 C47.66 25.71 47.66 27.72 47.66 29.73 C47.66 35.19 47.64 40.65 47.61 46.12 C47.58 51.82 47.58 57.53 47.58 63.24 C47.56 74.05 47.53 84.85 47.49 95.66 C47.45 107.97 47.42 120.27 47.4 132.58 C47.36 157.89 47.29 183.2 47.2 208.52 C47.88 208.5 48.55 208.48 49.25 208.45 C52.32 208.37 55.39 208.32 58.45 208.27 C59.52 208.23 60.58 208.2 61.68 208.17 C62.7 208.15 63.73 208.14 64.78 208.13 C65.72 208.11 66.67 208.09 67.64 208.06 C70.96 208.65 72.12 209.93 74.2 212.52 C74.67 214.53 74.67 214.53 74.63 216.67 C74.62 217.48 74.61 218.29 74.61 219.12 C74.56 220.41 74.56 220.41 74.52 221.74 C74.5 222.63 74.48 223.53 74.46 224.45 C74.42 226.34 74.36 228.23 74.3 230.12 C74.2 233.01 74.15 235.9 74.11 238.79 C74.06 240.62 74.01 242.46 73.95 244.3 C73.94 245.16 73.93 246.03 73.91 246.92 C73.88 247.72 73.85 248.53 73.81 249.36 C73.78 250.42 73.78 250.42 73.75 251.51 C72.93 254.52 71.71 255.68 69.2 257.52 C65.94 258.03 65.94 258.03 62.02 258.04 C61.3 258.04 60.59 258.05 59.85 258.06 C57.49 258.07 55.13 258.06 52.77 258.05 C51.12 258.05 49.48 258.06 47.83 258.06 C44.39 258.07 40.95 258.06 37.5 258.04 C33.09 258.02 28.68 258.03 24.27 258.05 C20.88 258.07 17.48 258.06 14.09 258.05 C12.46 258.05 10.83 258.05 9.21 258.06 C6.93 258.07 4.66 258.06 2.39 258.04 C1.09 258.03 -0.2 258.03 -1.53 258.03 C-4.8 257.52 -4.8 257.52 -6.97 256.11 C-9.78 252.13 -9.35 248.37 -9.3 243.61 C-9.31 242.59 -9.32 241.58 -9.32 240.53 C-9.34 237.11 -9.33 233.69 -9.31 230.27 C-9.32 227.82 -9.33 225.37 -9.34 222.93 C-9.35 216.96 -9.35 211 -9.34 205.04 C-9.33 200.19 -9.33 195.35 -9.33 190.5 C-9.33 189.81 -9.33 189.12 -9.33 188.41 C-9.34 187.01 -9.34 185.61 -9.34 184.21 C-9.35 171.08 -9.34 157.94 -9.31 144.8 C-9.3 133.53 -9.3 122.26 -9.32 110.98 C-9.34 97.9 -9.35 84.81 -9.34 71.72 C-9.33 70.33 -9.33 68.93 -9.33 67.53 C-9.33 66.85 -9.33 66.16 -9.33 65.45 C-9.33 60.61 -9.33 55.77 -9.34 50.93 C-9.35 44.42 -9.35 37.9 -9.32 31.39 C-9.32 29 -9.32 26.6 -9.33 24.21 C-9.34 20.95 -9.32 17.69 -9.3 14.42 C-9.31 13.47 -9.32 12.52 -9.33 11.53 C-9.26 5.15 -9.26 5.15 -6.91 1.93 C-4.4 0.25 -3.01 0.01 0 0 Z " fill="currentColor" transform="translate(1544.796875,207.482421875)"/>
++</svg>
+\ No newline at end of file
+diff --git a/packages/ui/src/components/logo.stories.tsx b/packages/ui/src/components/logo.stories.tsx
+index 3f5dd9cef7..d93ab64f73 100644
+--- a/packages/ui/src/components/logo.stories.tsx
++++ b/packages/ui/src/components/logo.stories.tsx
+@@ -2,7 +2,7 @@
+ import * as mod from "./logo"
+ 
+ const docs = `### Overview
+-OpenCode logo assets: mark, splash, and wordmark.
++Loophole logo assets: mark, splash, and wordmark.
+ 
+ Use Mark for compact spaces, Logo for headers, Splash for hero sections.
+ 
+diff --git a/packages/ui/src/components/logo.tsx b/packages/ui/src/components/logo.tsx
+index 35b4e44427..1664beff44 100644
+--- a/packages/ui/src/components/logo.tsx
++++ b/packages/ui/src/components/logo.tsx
+@@ -1,4 +1,5 @@
+ import { type ComponentProps } from "solid-js"
++import wordmarkMarkup from "../assets/logo/wordmark.svg?raw"
+ 
+ export const Mark = (props: { class?: string }) => {
+   return (
+@@ -35,28 +36,10 @@ export const Logo = (props: { class?: string }) => {
+   return (
+     <svg
+       xmlns="http://www.w3.org/2000/svg"
+-      viewBox="0 0 234 42"
++      viewBox="0 0 2170 725"
+       fill="none"
+       classList={{ [props.class ?? ""]: !!props.class }}
+-    >
+-      <g>
+-        <path d="M18 30H6V18H18V30Z" fill="var(--icon-weak-base)" />
+-        <path d="M18 12H6V30H18V12ZM24 36H0V6H24V36Z" fill="var(--icon-base)" />
+-        <path d="M48 30H36V18H48V30Z" fill="var(--icon-weak-base)" />
+-        <path d="M36 30H48V12H36V30ZM54 36H36V42H30V6H54V36Z" fill="var(--icon-base)" />
+-        <path d="M84 24V30H66V24H84Z" fill="var(--icon-weak-base)" />
+-        <path d="M84 24H66V30H84V36H60V6H84V24ZM66 18H78V12H66V18Z" fill="var(--icon-base)" />
+-        <path d="M108 36H96V18H108V36Z" fill="var(--icon-weak-base)" />
+-        <path d="M108 12H96V36H90V6H108V12ZM114 36H108V12H114V36Z" fill="var(--icon-base)" />
+-        <path d="M144 30H126V18H144V30Z" fill="var(--icon-weak-base)" />
+-        <path d="M144 12H126V30H144V36H120V6H144V12Z" fill="var(--icon-strong-base)" />
+-        <path d="M168 30H156V18H168V30Z" fill="var(--icon-weak-base)" />
+-        <path d="M168 12H156V30H168V12ZM174 36H150V6H174V36Z" fill="var(--icon-strong-base)" />
+-        <path d="M198 30H186V18H198V30Z" fill="var(--icon-weak-base)" />
+-        <path d="M198 12H186V30H198V12ZM204 36H180V6H198V0H204V36Z" fill="var(--icon-strong-base)" />
+-        <path d="M234 24V30H216V24H234Z" fill="var(--icon-weak-base)" />
+-        <path d="M216 12V18H228V12H216ZM234 24H216V30H234V36H210V6H234V24Z" fill="var(--icon-strong-base)" />
+-      </g>
+-    </svg>
++      innerHTML={wordmarkMarkup}
++    />
+   )
+ }
 diff --git a/packages/util/src/global.ts b/packages/util/src/global.ts
 index 5fe51f8281..1544015d58 100644
 --- a/packages/util/src/global.ts
