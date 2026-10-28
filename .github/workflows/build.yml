@@ -1,6 +1,11 @@
 name: Build
 
+# Test builds only: nothing here publishes or releases. Output goes to the run's artifacts.
 on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
   workflow_dispatch:
 
 jobs:
@@ -19,14 +24,13 @@ jobs:
         env:
           TARGET: ${{ github.workspace }}/loophole-build
 
-      # NOTE: skeleton - validate the build commands before enabling releases.
       - name: Install dependencies
         run: cd loophole-build && bun install
 
       - name: Build CLI
-        run: cd loophole-build && bun run --cwd packages/cli script/build.ts
+        run: cd loophole-build && bun run --cwd packages/cli build
 
-      - name: Upload CLI artifact
+      - name: Upload CLI artifact (test build only)
         uses: actions/upload-artifact@v4
         with:
           name: loophole-cli-windows
