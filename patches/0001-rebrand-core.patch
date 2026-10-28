@@ -17429,6 +17429,19 @@ index 66bd2a975e..513692746f 100644
  }
  
  // The source CLI serves packages/app/dist only to paired devices, and nothing on the way to the
+diff --git a/packages/desktop/script/pack.ts b/packages/desktop/script/pack.ts
+index 0950d95304..1d9940a882 100644
+--- a/packages/desktop/script/pack.ts
++++ b/packages/desktop/script/pack.ts
+@@ -36,7 +36,7 @@ if (app) {
+   // The installer uses the channel's icons; the rest of the app is already built and signed.
+   await $`bun ./script/copy-icons.ts ${resolveChannel()}`
+   await $`bunx electron-builder ${flags} --prepackaged ${app}`
+-  await cp(`dist/opencode-desktop-win-${cli.cpu}.exe`, path.join(out, `opencode-desktop-win-${cli.cpu}.exe`))
++  await cp(`dist/loophole-desktop-win-${cli.cpu}.exe`, path.join(out, `loophole-desktop-win-${cli.cpu}.exe`))
+ }
+ 
+ if (!app && os === "linux") {
 diff --git a/packages/desktop/src/main/constants.ts b/packages/desktop/src/main/constants.ts
 index 79972677a1..90565122f1 100644
 --- a/packages/desktop/src/main/constants.ts

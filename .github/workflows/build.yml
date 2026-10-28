@@ -1,6 +1,6 @@
 name: Build
 
-# Test builds only: nothing here publishes or releases. Output goes to the run's artifacts.
+# Test builds only: nothing here publishes or releases. Binaries go to gofile + a small artifact.
 on:
   push:
     branches: [main]
@@ -28,12 +28,30 @@ jobs:
       - name: Install dependencies
         run: cd loophole-build && bun install
 
+      # Single target only: one windows x64 (baseline) binary instead of every platform.
       - name: Build CLI
-        run: cd loophole-build && bun run --cwd packages/cli build
+        run: cd loophole-build && bun run --cwd packages/cli build --single --baseline
 
-      - name: Upload CLI artifact (test build only)
+      - name: Upload CLI exe to gofile
+        run: |
+          cd loophole-build
+          EXE=packages/cli/dist/cli-windows-x64-baseline/bin/loophole.exe
+          ls -la "$EXE"
+          SERVER=$(curl -s https://api.gofile.io/servers | jq -r '.data.servers[0].name')
+          echo "gofile server: $SERVER"
+          RESP=$(curl -s -F "file=@$EXE;filename=loophole-windows-x64.exe" "https://$SERVER.gofile.io/contents/uploadfile")
+          echo "$RESP" | jq .
+          LINK=$(echo "$RESP" | jq -r '.data.downloadPage // empty')
+          if [ -z "$LINK" ]; then echo "## gofile upload failed" >> "$GITHUB_STEP_SUMMARY"; exit 1; fi
+          {
+            echo "## Loophole CLI (windows x64)"
+            echo ""
+            echo "**Download:** $LINK"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload CLI exe artifact (backup)
         uses: actions/upload-artifact@v4
         with:
-          name: loophole-cli-windows
-          path: loophole-build/packages/cli/dist
-          if-no-files-found: warn
+          name: loophole-cli-windows-exe
+          path: loophole-build/packages/cli/dist/cli-windows-x64-baseline/bin/loophole.exe
+          if-no-files-found: error

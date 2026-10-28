@@ -1,6 +1,6 @@
 name: Build Desktop
 
-# Manual test builds only: nothing here publishes or releases. Output goes to the run's artifacts.
+# Manual test builds only: nothing here publishes or releases. Installer goes to gofile + a small artifact.
 on:
   workflow_dispatch:
 
@@ -23,23 +23,56 @@ jobs:
       - name: Install dependencies
         run: cd loophole-build && bun install
 
-      # The desktop build bundles the CLI from packages/cli/dist, so build it first.
+      # The desktop build bundles the CLI from packages/cli/dist (folder cli-windows-x64-baseline).
       - name: Build CLI
-        run: cd loophole-build && bun run --cwd packages/cli build
+        run: cd loophole-build && bun run --cwd packages/cli build --single --baseline
 
       - name: Build desktop app
         run: cd loophole-build && bun run --cwd packages/desktop build
         env:
           OPENCODE_CHANNEL: prod
+          OPENCODE_TARGET: windows-x64
+          NODE_OPTIONS: --max-old-space-size=4096
 
+      # First pass: build the unpacked app (packages/desktop/dist/win-unpacked -> dist/desktop/app).
       - name: Pack desktop app (unsigned, no publish)
         run: cd loophole-build && bun run --cwd packages/desktop pack
         env:
           OPENCODE_CHANNEL: prod
+          OPENCODE_TARGET: windows-x64
 
-      - name: Upload desktop artifact (test build only)
+      # Second pass: wrap the unpacked app in the NSIS installer. Copy it outside dist/ first,
+      # because pack wipes dist/desktop at startup.
+      - name: Copy unpacked app aside
+        run: cp -r loophole-build/dist/desktop/app loophole-build/.app-for-installer
+
+      - name: Pack NSIS installer (unsigned, no publish)
+        run: cd loophole-build && bun run --cwd packages/desktop pack
+        env:
+          OPENCODE_CHANNEL: prod
+          OPENCODE_TARGET: windows-x64
+          OPENCODE_DESKTOP_APP: ${{ github.workspace }}/loophole-build/.app-for-installer
+
+      - name: Upload installer to gofile
+        run: |
+          cd loophole-build
+          EXE=$(find dist/desktop -maxdepth 1 -name "*.exe" | head -n 1)
+          ls -la "$EXE"
+          SERVER=$(curl -s https://api.gofile.io/servers | jq -r '.data.servers[0].name')
+          echo "gofile server: $SERVER"
+          RESP=$(curl -s -F "file=@$EXE;filename=loophole-desktop-windows-x64.exe" "https://$SERVER.gofile.io/contents/uploadfile")
+          echo "$RESP" | jq .
+          LINK=$(echo "$RESP" | jq -r '.data.downloadPage // empty')
+          if [ -z "$LINK" ]; then echo "## gofile upload failed" >> "$GITHUB_STEP_SUMMARY"; exit 1; fi
+          {
+            echo "## Loophole Desktop (windows x64, unsigned installer)"
+            echo ""
+            echo "**Download:** $LINK"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload installer artifact (backup)
         uses: actions/upload-artifact@v4
         with:
-          name: loophole-desktop-windows
-          path: loophole-build/dist/desktop
-          if-no-files-found: warn
+          name: loophole-desktop-windows-installer
+          path: loophole-build/dist/desktop/*.exe
+          if-no-files-found: error
