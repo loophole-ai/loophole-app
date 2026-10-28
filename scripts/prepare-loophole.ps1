@@ -11,6 +11,7 @@
 param(
     [string]$Target,
     [string]$UpstreamUrl = "https://github.com/anomalyco/opencode.git",
+    [string]$Source,
     [string]$Commit
 )
 
