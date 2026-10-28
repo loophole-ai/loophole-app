@@ -26,8 +26,9 @@ if (-not $Commit) { throw "upstream/opencode.json has no commit" }
 if (-not $Target) { $Target = Join-Path (Split-Path $repoRoot -Parent) "loophole-build" }
 if (Test-Path $Target) { throw "Target already exists: $Target (delete it or pick another -Target)" }
 
-Write-Host "Cloning $UpstreamUrl -> $Target"
-git clone --no-checkout --filter=blob:none $UpstreamUrl $Target
+Write-Host "Cloning $(if ($Source) { $Source } else { $UpstreamUrl }) -> $Target"
+$cloneFrom = if ($Source) { $Source } else { $UpstreamUrl }
+git clone --no-checkout $(if ($Source) { "--filter=blob:none" }) $cloneFrom $Target
 if ($LASTEXITCODE -ne 0) { throw "clone failed" }
 
 Write-Host "Checking out upstream commit $Commit"
