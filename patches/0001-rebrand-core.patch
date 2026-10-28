@@ -17365,6 +17365,28 @@ index 7afac1cfe7..d9278decd1 100644
  
      return existsSync(version) ? readFileSync(version, "utf8").trim() : String(statSync(cli).size)
    }
+diff --git a/packages/desktop/script/beta-notes.ts b/packages/desktop/script/beta-notes.ts
+index 50ee920056..fd5322de54 100644
+--- a/packages/desktop/script/beta-notes.ts
++++ b/packages/desktop/script/beta-notes.ts
+@@ -36,7 +36,7 @@ const FIELD = "\x1f"
+ 
+ const RECORD = "\x1e"
+ 
+-const REPOSITORY = { owner: "anomalyco", name: "opencode" }
++const REPOSITORY = { owner: "loophole-ai", name: "loophole-app" }
+ 
+ /** Pull requests per GitHub query; the newest 200 commits take at most two. */
+ const BATCH = 100
+@@ -259,7 +259,7 @@ async function pullRequests(numbers: number[], token: string, request: Request)
+ 
+   const response = await request("https://api.github.com/graphql", {
+     method: "POST",
+-    headers: { authorization: `bearer ${token}`, "content-type": "application/json", "user-agent": "opencode-desktop" },
++    headers: { authorization: `bearer ${token}`, "content-type": "application/json", "user-agent": "loophole-desktop" },
+     body: JSON.stringify({ query }),
+     signal: AbortSignal.timeout(10_000),
+   })
 diff --git a/packages/desktop/script/copy-metainfo.ts b/packages/desktop/script/copy-metainfo.ts
 index 0ad4b3e426..050eb4e97d 100644
 --- a/packages/desktop/script/copy-metainfo.ts
@@ -17430,7 +17452,7 @@ index 66bd2a975e..513692746f 100644
  
  // The source CLI serves packages/app/dist only to paired devices, and nothing on the way to the
 diff --git a/packages/desktop/script/pack.ts b/packages/desktop/script/pack.ts
-index 0950d95304..1d9940a882 100644
+index 0950d95304..9258b0f570 100644
 --- a/packages/desktop/script/pack.ts
 +++ b/packages/desktop/script/pack.ts
 @@ -36,7 +36,7 @@ if (app) {
@@ -17442,6 +17464,59 @@ index 0950d95304..1d9940a882 100644
  }
  
  if (!app && os === "linux") {
+@@ -52,7 +52,7 @@ if (!app && os === "mac") {
+ 
+   if (bundles.length !== 1) throw new Error(`Expected one .app bundle in ${parent}, found ${bundles.join(", ")}`)
+   await writeUpdateConfig(path.join(parent, bundles[0], "Contents", "Resources"))
+-  await $`tar -cf ${path.join(out, `opencode-desktop-mac-${cli.cpu}.app.tar`)} -C ${parent} ${bundles[0]}`
++  await $`tar -cf ${path.join(out, `loophole-desktop-mac-${cli.cpu}.app.tar`)} -C ${parent} ${bundles[0]}`
+ }
+ 
+ if (!app && os === "win") {
+diff --git a/packages/desktop/script/utils.ts b/packages/desktop/script/utils.ts
+index c81406b42f..999a213b47 100644
+--- a/packages/desktop/script/utils.ts
++++ b/packages/desktop/script/utils.ts
+@@ -83,10 +83,10 @@ export function nodePtyPackage(target?: string) {
+   return `@lydell/node-pty-${cli.os}-${cli.cpu}`
+ }
+ 
+-export async function downloadCliToResources(version = CLI_VERSION, dest = windowsify("resources/opencode-cli")) {
++export async function downloadCliToResources(version = CLI_VERSION, dest = windowsify("resources/loophole-cli")) {
+   const { $ } = await import("bun")
+   const cli = getCurrentCli()
+-  const directory = await mkdtemp(join(tmpdir(), "opencode-cli-"))
++  const directory = await mkdtemp(join(tmpdir(), "loophole-cli-"))
+ 
+   try {
+     await $`bun install --no-save --cwd ${directory} ${`${cli.package}@${version}`} ${`--os=${cli.os}`} ${`--cpu=${cli.cpu}`}`
+@@ -98,7 +98,7 @@ export async function downloadCliToResources(version = CLI_VERSION, dest = windo
+   console.log(`Copied ${cli.package}@${version} to ${dest}`)
+ }
+ 
+-export async function copyBuiltCliToResources(root: string, dest = windowsify("resources/opencode-cli")) {
++export async function copyBuiltCliToResources(root: string, dest = windowsify("resources/loophole-cli")) {
+   const cli = getCurrentCli()
+   const directory = cli.package.replace("@opencode/", "")
+   await copyCliToResources(join(root, directory), dest)
+@@ -109,7 +109,7 @@ export async function copyBuiltCliToResources(root: string, dest = windowsify("r
+ // 200 MB binary on first launch.
+ async function copyCliToResources(pkg: string, dest: string) {
+   const cli = getCurrentCli()
+-  await copyFile(join(pkg, "bin", cli.os === "win32" ? "opencode.exe" : "opencode"), dest)
++  await copyFile(join(pkg, "bin", cli.os === "win32" ? "loophole.exe" : "loophole"), dest)
+   await prepareCli(dest)
+ 
+   const manifest = Option.getOrUndefined(
+@@ -121,7 +121,7 @@ async function copyCliToResources(pkg: string, dest: string) {
+ }
+ 
+ export function versionFile(cli: string) {
+-  return join(dirname(cli), "opencode-cli.version")
++  return join(dirname(cli), "loophole-cli.version")
+ }
+ 
+ async function prepareCli(dest: string) {
 diff --git a/packages/desktop/src/main/constants.ts b/packages/desktop/src/main/constants.ts
 index 79972677a1..90565122f1 100644
 --- a/packages/desktop/src/main/constants.ts
