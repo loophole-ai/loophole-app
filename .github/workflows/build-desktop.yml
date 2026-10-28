@@ -1,0 +1,45 @@
+name: Build Desktop
+
+# Manual test builds only: nothing here publishes or releases. Output goes to the run's artifacts.
+on:
+  workflow_dispatch:
+
+jobs:
+  build-desktop-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Prepare patched tree
+        run: bash scripts/prepare-loophole.sh
+        env:
+          TARGET: ${{ github.workspace }}/loophole-build
+
+      - name: Install dependencies
+        run: cd loophole-build && bun install
+
+      # The desktop build bundles the CLI from packages/cli/dist, so build it first.
+      - name: Build CLI
+        run: cd loophole-build && bun run --cwd packages/cli build
+
+      - name: Build desktop app
+        run: cd loophole-build && bun run --cwd packages/desktop build
+        env:
+          OPENCODE_CHANNEL: prod
+
+      - name: Pack desktop app (unsigned, no publish)
+        run: cd loophole-build && bun run --cwd packages/desktop pack
+        env:
+          OPENCODE_CHANNEL: prod
+
+      - name: Upload desktop artifact (test build only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: loophole-desktop-windows
+          path: loophole-build/dist/desktop
+          if-no-files-found: warn
