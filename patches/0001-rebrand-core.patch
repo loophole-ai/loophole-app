@@ -17630,7 +17630,7 @@ index df043c9b96..8eabb69852 100644
        if (urls.length) {
          runFork(Effect.logInfo("deep link received via second-instance", { urls }))
 diff --git a/packages/desktop/src/main/native/logging.ts b/packages/desktop/src/main/native/logging.ts
-index 415b22286d..3a9c2df2ec 100644
+index 415b22286d..e494501f4e 100644
 --- a/packages/desktop/src/main/native/logging.ts
 +++ b/packages/desktop/src/main/native/logging.ts
 @@ -1,4 +1,4 @@
@@ -17639,6 +17639,15 @@ index 415b22286d..3a9c2df2ec 100644
  
  import log from "electron-log/main.js"
  import { app, crashReporter, netLog, shell } from "electron"
+@@ -149,7 +149,7 @@ function exportDebugLogsEffect(fs: FileSystem.FileSystem, path: Path.Path) {
+       )
+     }
+ 
+-    const output = path.join(app.getPath("downloads"), `opencode-debug-${stamp()}.zip`)
++    const output = path.join(app.getPath("downloads"), `loophole-debug-${stamp()}.zip`)
+ 
+     return yield* Effect.gen(function* () {
+       yield* Effect.logInfo("exporting debug logs", { output })
 @@ -241,7 +241,9 @@ function manifest(path: Path.Path) {
  function serverLogRoots(path: Path.Path) {
    const xdgData = process.env.XDG_DATA_HOME || path.join(homedir(), ".local", "share")
@@ -17651,31 +17660,28 @@ index 415b22286d..3a9c2df2ec 100644
  
  type Entry = { name: string; path: string; offset: number } | { name: string; data: Uint8Array }
 diff --git a/packages/desktop/src/main/service/background-service.ts b/packages/desktop/src/main/service/background-service.ts
-index f6002ba6bb..ef5d5fe12d 100644
+index f6002ba6bb..fee7664371 100644
 --- a/packages/desktop/src/main/service/background-service.ts
 +++ b/packages/desktop/src/main/service/background-service.ts
-@@ -45,6 +45,21 @@ const connect = Effect.fn("BackgroundService.connect")(function* (mode: "initial
+@@ -45,12 +45,16 @@ const connect = Effect.fn("BackgroundService.connect")(function* (mode: "initial
  
    if (isolated) process.env.XDG_STATE_HOME = app.getPath("userData")
    const client = yield* Effect.promise(() => import("@opencode/client/service"))
+-
 +  // The CLI names its registration file after its channel, and a compiled binary reads that channel
 +  // from the binary itself, so both sides have to settle on one. Pinning it here also covers the dev
 +  // path, where the CLI is run from source and would otherwise take a different channel than the
 +  // bundled build, leaving ensure() waiting on a file the sidecar never writes.
 +  process.env.OPENCODE_CHANNEL = CHANNEL
-+  const home = join(homedir(), ".local", "state")
-+  const state = isolated ? app.getPath("userData") : (process.env.XDG_STATE_HOME ?? home)
-+  const file =
-+    process.env.OPENCODE_DESKTOP_SERVER_CHANNEL === "local"
-+      ? join(state, "loophole", "service-local.json")
-+      : join(
-+          state,
-+          "loophole",
-+          CHANNEL === "dev" || CHANNEL === "beta" ? "service.json" : `service-${CHANNEL}.json`,
-+        )
- 
    const file =
      process.env.OPENCODE_DESKTOP_SERVER_CHANNEL === "local"
+       ? path.join(
+           process.env.XDG_STATE_HOME ?? path.join(app.getPath("home"), ".local", "state"),
+-          "opencode",
++          "loophole",
+           "service-local.json",
+         )
+       : undefined
 diff --git a/packages/desktop/src/main/service/cli-stages.test.ts b/packages/desktop/src/main/service/cli-stages.test.ts
 index f9b05339d7..f3cf5d68d7 100644
 --- a/packages/desktop/src/main/service/cli-stages.test.ts
