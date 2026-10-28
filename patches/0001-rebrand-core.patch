@@ -17844,7 +17844,7 @@ index bb66822bae..accb9dac59 100644
        }
      >
 diff --git a/packages/script/src/index.ts b/packages/script/src/index.ts
-index 6af860b9f0..3c5015dace 100644
+index 6af860b9f0..48d18ac09a 100644
 --- a/packages/script/src/index.ts
 +++ b/packages/script/src/index.ts
 @@ -17,13 +17,20 @@ if (!semver.satisfies(process.versions.bun, expectedBunVersionRange)) {
@@ -17868,9 +17868,12 @@ index 6af860b9f0..3c5015dace 100644
    const branch = await $`git branch --show-current`.text().then((x) => x.trim())
    if (!branch) return "detached"
    const channel = branch.replace(/[^a-zA-Z0-9._-]/g, "-")
-@@ -35,18 +42,25 @@ const IS_PREVIEW = CHANNEL !== "latest"
+@@ -33,20 +40,27 @@ const CHANNEL = await (async () => {
+ const IS_PREVIEW = CHANNEL !== "latest"
+ 
  // The release workflow's plan job owns release versions; builds only read them.
- const VERSION = (() => {
+-const VERSION = (() => {
++const VERSION = await (async () => {
    if (env.OPENCODE_VERSION) return env.OPENCODE_VERSION
 -  if (!IS_PREVIEW) throw new Error("OPENCODE_VERSION is required for latest-channel builds")
 -  return `0.0.0-${CHANNEL}-${previewBuildNumber()}`
