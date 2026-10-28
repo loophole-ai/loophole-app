@@ -1,7 +1,6 @@
 # Loophole
 
-Loophole is a patch distribution on top of [opencode](https://github.com/anomalyco/opencode) —
-the same model VSCodium uses for VS Code. This repository contains **no opencode code**:
+Loophole is a patch distribution on top of [opencode](https://github.com/anomalyco/opencode). This repository contains **no opencode code**:
 only the patches that turn upstream opencode into Loophole, plus the scripts that apply them.
 
 ## Layout
