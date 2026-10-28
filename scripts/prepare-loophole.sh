@@ -34,6 +34,8 @@ git -C "$TARGET" config core.fileMode false
 # apply patches in series order
 while IFS= read -r patch; do
   [ -z "$patch" ] && continue
+  patch="${patch%$'\r'}"
+  [ -z "$patch" ] && continue
   echo "applying $patch"
   git -C "$TARGET" apply --index --whitespace=nowarn "$ROOT/patches/$patch"
 done < "$ROOT/patches/series"
