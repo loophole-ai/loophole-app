@@ -1,0 +1,243 @@
+diff --git a/packages/app/src/shell/commands/desktop-menu.ts b/packages/app/src/shell/commands/desktop-menu.ts
+index d256a42bec..b2da5bc5a9 100644
+--- a/packages/app/src/shell/commands/desktop-menu.ts
++++ b/packages/app/src/shell/commands/desktop-menu.ts
+@@ -272,19 +272,19 @@ export const DESKTOP_MENU: DesktopMenu[] = [
+     id: "help",
+     labelKey: "desktop.menu.help",
+     items: [
+-      { type: "item", labelKey: "desktop.menu.documentation", href: "https://opencode.ai/v2/docs" },
+-      { type: "item", labelKey: "desktop.menu.supportForum", href: "https://discord.com/invite/opencode" },
++      { type: "item", labelKey: "desktop.menu.documentation", href: "https://www.loopholeeditor.in/docs" },
++      { type: "item", labelKey: "desktop.menu.supportForum", href: "https://discord.gg/JXP3Wgu6Xk" },
+       { type: "item", labelKey: "desktop.menu.exportLogs", command: "logs.export" },
+       { type: "separator" },
+       {
+         type: "item",
+         labelKey: "desktop.menu.shareFeedback",
+-        href: "https://github.com/anomalyco/opencode/issues/new?template=feature_request.yml",
++        href: "https://github.com/loophole-ai/loophole-app/issues/new?template=feature_request.yml",
+       },
+       {
+         type: "item",
+         labelKey: "desktop.menu.reportBug",
+-        href: "https://github.com/anomalyco/opencode/issues/new?template=bug_report.yml",
++        href: "https://github.com/loophole-ai/loophole-app/issues/new?template=bug_report.yml",
+       },
+     ],
+   },
+diff --git a/packages/desktop/electron-builder.config.ts b/packages/desktop/electron-builder.config.ts
+index 7c090083cb..7d4b55c48b 100644
+--- a/packages/desktop/electron-builder.config.ts
++++ b/packages/desktop/electron-builder.config.ts
+@@ -9,12 +9,9 @@ import { CLI_BINARIES, getCurrentCli, nodePtyPackage } from "./script/utils"
+ 
+ const packageDir = path.dirname(fileURLToPath(import.meta.url))
+ 
+-// The Electron 42 packaging update briefly installed Linux launchers/icons under
+-// "opencode-desktop". Keep that hidden desktop entry around so existing GNOME/KDE
+-// pins still resolve after the canonical app id changes back to ai.opencode.desktop.
+-const legacyDesktopEntry = path.join(packageDir, "resources", "linux", "opencode-desktop.desktop")
++const rootDir = path.resolve(packageDir, "../..")
+ 
+-const legacyDesktopEntryFpm = `${legacyDesktopEntry}=/usr/share/applications/opencode-desktop.desktop`
++const signScript = path.join(rootDir, "script", "sign-windows.ps1")
+ 
+ // rpmbuild adds /usr/lib/.build-id links for every ELF file. The bundled Electron
+ // binaries are byte-identical across apps on the same Electron version, so those
+@@ -23,12 +20,35 @@ const legacyDesktopEntryFpm = `${legacyDesktopEntry}=/usr/share/applications/ope
+ // fpm only accepts flags before the first src=dest mapping, so keep this first.
+ const rpmNoBuildIdLinksFpm = "--rpm-rpmbuild-define=_build_id_links none"
+ 
++
+ const metainfoFpm = (appId: string) =>
+   `${path.join(packageDir, "resources", `${appId}.metainfo.xml`)}=/usr/share/metainfo/${appId}.metainfo.xml`
+ 
+-// Dev and beta package every commit, so they trade about 5% (deb) and 17% (rpm) larger files for xz -1, which
+-// compresses the payload about 3x faster than the deb default (-3) and 5x faster than the rpm default (-9).
+-const previewCompressionFpm = (target: "deb" | "rpm") => [`--${target}-compression-level`, "1"]
++async function signWindows(configuration: { path: string }) {
++  if (process.platform !== "win32") return
++
++  if (process.env.GITHUB_ACTIONS !== "true") return
++
++  await execFileAsync(
++    "pwsh",
++    ["-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", signScript, configuration.path],
++    { cwd: rootDir, windowsHide: true },
++  )
++}
++
++function macSignOptions(options: CustomMacSignOptions): CustomMacSignOptions {
++  return {
++    ...options,
++    optionsForFile: (file) => {
++      const defaults = options.optionsForFile?.(file)
++
++      if (file !== path.join(options.app, "Contents/Resources/loophole-cli")) return defaults ?? {}
++
++      // The Bun CLI loads bun-pty's native library; Electron and its helpers do not need this exception.
++      return { ...defaults, entitlements: path.join(packageDir, "resources/entitlements.cli.plist") }
++    },
++  }
++}
+ 
+ function resolveChannel() {
+   const raw = process.env.OPENCODE_CHANNEL
+@@ -41,9 +61,9 @@ function resolveChannel() {
+ }
+ 
+ const APP_IDS = {
+-  dev: "ai.opencode.desktop.dev",
+-  beta: "ai.opencode.desktop.beta",
+-  prod: "ai.opencode.desktop",
++  dev: "ai.loophole.desktop.dev",
++  beta: "ai.loophole.desktop.beta",
++  prod: "ai.loophole.desktop",
+ } as const
+ 
+ // libappimage (used by AppImageLauncher) resolves the .desktop entry inside an
+@@ -64,7 +84,7 @@ const getBase = (appId: string): Configuration => {
+   const desktopName = `${appId}.desktop`
+ 
+   return {
+-    artifactName: "opencode-desktop-${os}-${arch}.${ext}",
++    artifactName: "loophole-desktop-${os}-${arch}.${ext}",
+     directories: {
+       output: "dist",
+       buildResources: "resources",
+@@ -81,7 +101,7 @@ const getBase = (appId: string): Configuration => {
+     files: [
+       "out/**/*",
+       "resources/**/*",
+-      "!resources/opencode-cli*",
++      "!resources/loophole-cli*",
+       // Keep only the target platform's node-pty prebuild when cross-packaging with --cpu=*.
+       ...CLI_BINARIES.filter((item) => item.os !== target.os || item.cpu !== target.cpu).map(
+         (item) => `!**/node_modules/@lydell/node-pty-${item.os}-${item.cpu}{,/**/*}`,
+@@ -105,7 +125,7 @@ const getBase = (appId: string): Configuration => {
+       {
+         from: "resources/",
+         to: "",
+-        filter: ["opencode-cli", "opencode-cli.exe", "opencode-cli.version"],
++        filter: ["loophole-cli", "loophole-cli.exe", "loophole-cli.version"],
+       },
+     ],
+     afterPack: async (context) => {
+@@ -116,13 +136,13 @@ const getBase = (appId: string): Configuration => {
+ 
+       if (arch !== target.cpu) throw new Error(`Packaging ${arch} Electron with the ${target.target} CLI`)
+       const resources = context.packager.getResourcesDir(context.appOutDir)
+-      const cli = path.join(resources, context.electronPlatformName === "win32" ? "opencode-cli.exe" : "opencode-cli")
++      const cli = path.join(resources, context.electronPlatformName === "win32" ? "loophole-cli.exe" : "loophole-cli")
+ 
+       const file = await stat(cli)
+ 
+       if (!file.isFile() || file.size === 0) throw new Error(`Bundled CLI must be a non-empty file: ${cli}`)
+       await NativeArch.verify(cli, arch)
+-      const version = path.join(path.dirname(cli), "opencode-cli.version")
++      const version = path.join(path.dirname(cli), "loophole-cli.version")
+ 
+       if ((await stat(version)).size === 0) throw new Error(`Bundled CLI version must be a non-empty file: ${version}`)
+ 
+@@ -161,8 +181,8 @@ const getBase = (appId: string): Configuration => {
+       target: ["dmg", "zip"],
+     },
+     protocols: {
+-      name: "OpenCode",
+-      schemes: ["opencode"],
++      name: "Loophole",
++      schemes: ["loophole"],
+     },
+     win: {
+       icon: `resources/icons/icon.ico`,
+@@ -206,17 +226,9 @@ export function getConfig() {
+       return {
+         ...base,
+         appId,
+-        productName: "OpenCode Dev",
+-        publish: {
+-          provider: "generic",
+-          url: "https://opencode.ai/update/api/dev/desktop/opencode/",
+-          channel: "latest",
+-        },
+-        deb: { fpm: [...previewCompressionFpm("deb"), metainfoFpm(appId)] },
+-        rpm: {
+-          packageName: "opencode-dev",
+-          fpm: [rpmNoBuildIdLinksFpm, ...previewCompressionFpm("rpm"), metainfoFpm(appId)],
+-        },
++        productName: "Loophole Desktop Dev",
++        deb: { fpm: [metainfoFpm(appId)] },
++        rpm: { packageName: "loophole-dev", fpm: [rpmNoBuildIdLinksFpm, metainfoFpm(appId)] },
+       }
+     }
+ 
+@@ -224,18 +236,15 @@ export function getConfig() {
+       return {
+         ...base,
+         appId,
+-        productName: "OpenCode Beta",
+-        protocols: { name: "OpenCode Beta", schemes: ["opencode"] },
++        productName: "Loophole Desktop Beta",
++        protocols: { name: "Loophole Beta", schemes: ["loophole"] },
+         publish: {
+           provider: "generic",
+-          url: "https://opencode.ai/update/api/beta/desktop/opencode/",
++          url: "https://github.com/loophole-ai/desktop/releases/latest/download",
+           channel: "latest",
+         },
+-        deb: { fpm: [...previewCompressionFpm("deb"), metainfoFpm(appId)] },
+-        rpm: {
+-          packageName: "opencode-beta",
+-          fpm: [rpmNoBuildIdLinksFpm, ...previewCompressionFpm("rpm"), metainfoFpm(appId)],
+-        },
++        deb: { fpm: [metainfoFpm(appId)] },
++        rpm: { packageName: "loophole-beta", fpm: [rpmNoBuildIdLinksFpm, metainfoFpm(appId)] },
+       }
+     }
+ 
+@@ -243,15 +252,15 @@ export function getConfig() {
+       return {
+         ...base,
+         appId,
+-        productName: "OpenCode",
+-        protocols: { name: "OpenCode", schemes: ["opencode"] },
++        productName: "Loophole Desktop",
++        protocols: { name: "Loophole", schemes: ["loophole"] },
+         publish: {
+           provider: "generic",
+-          url: "https://opencode.ai/update/api/latest/desktop/opencode/",
++          url: "https://github.com/loophole-ai/desktop/releases/latest/download",
+           channel: "latest",
+         },
+-        deb: { fpm: [metainfoFpm(appId), legacyDesktopEntryFpm] },
+-        rpm: { packageName: "opencode", fpm: [rpmNoBuildIdLinksFpm, metainfoFpm(appId), legacyDesktopEntryFpm] },
++        deb: { fpm: [metainfoFpm(appId)] },
++        rpm: { packageName: "loophole", fpm: [rpmNoBuildIdLinksFpm, metainfoFpm(appId)] },
+       }
+     }
+   }
+diff --git a/packages/desktop/package.json b/packages/desktop/package.json
+index 8d2f76a4a4..5f82351bd5 100644
+--- a/packages/desktop/package.json
++++ b/packages/desktop/package.json
+@@ -1,13 +1,13 @@
+ {
+-  "name": "@opencode/desktop",
++  "name": "@loophole-ai/desktop",
+   "private": true,
+-  "version": "2.2.0",
++  "version": "1.0.5",
+   "type": "module",
+-  "license": "MIT",
+-  "homepage": "https://opencode.ai",
++  "license": "AGPL-3.0",
++  "homepage": "https://github.com/loophole-ai/loophole-app",
+   "author": {
+-    "name": "OpenCode",
+-    "email": "hello@opencode.ai"
++    "name": "Loophole",
++    "email": "hello@loophole.ai"
+   },
+   "scripts": {
+     "typecheck": "bun check --no-script -b",

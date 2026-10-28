@@ -1,0 +1,3623 @@
+diff --git a/CONTRIBUTING.md b/CONTRIBUTING.md
+index 1795a8eab0..5a18867abe 100644
+--- a/CONTRIBUTING.md
++++ b/CONTRIBUTING.md
+@@ -1,4 +1,4 @@
+-# Contributing to OpenCode
++# Contributing to Loophole
+ 
+ The changes most likely to be accepted are:
+ 
+@@ -9,7 +9,7 @@ The changes most likely to be accepted are:
+ - Missing standard behavior
+ - Documentation improvements
+ 
+-UI and core product features require design review before implementation. If you are unsure whether a change fits, ask a maintainer or choose an issue labeled [`help wanted`](https://github.com/anomalyco/opencode/issues?q=is%3Aissue%20state%3Aopen%20label%3Ahelp-wanted), [`good first issue`](https://github.com/anomalyco/opencode/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22), [`bug`](https://github.com/anomalyco/opencode/issues?q=is%3Aissue%20state%3Aopen%20label%3Abug), or [`perf`](https://github.com/anomalyco/opencode/issues?q=is%3Aopen%20is%3Aissue%20label%3A%22perf%22).
++UI and core product features require design review before implementation. If you are unsure whether a change fits, ask a maintainer or choose an issue labeled [`help wanted`](https://github.com/loophole-ai/loophole-app/issues?q=is%3Aissue%20state%3Aopen%20label%3Ahelp-wanted), [`good first issue`](https://github.com/loophole-ai/loophole-app/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22), [`bug`](https://github.com/loophole-ai/loophole-app/issues?q=is%3Aissue%20state%3Aopen%20label%3Abug), or [`perf`](https://github.com/loophole-ai/loophole-app/issues?q=is%3Aopen%20is%3Aissue%20label%3A%22perf%22).
+ 
+ Want to take on an issue? Leave a comment and a maintainer may assign it unless it is already being worked on.
+ 
+@@ -18,11 +18,11 @@ Want to take on an issue? Leave a comment and a maintainer may assign it unless
+ 
+ ## Adding Providers
+ 
+-New providers should rarely require OpenCode changes. Add the provider to [models.dev](https://github.com/anomalyco/models.dev) first.
++New providers should rarely require Loophole changes. Add the provider to [models.dev](https://github.com/anomalyco/models.dev) first.
+ 
+ ## Development
+ 
+-OpenCode requires Bun 1.3 or newer. From the repository root:
++Loophole requires Bun 1.3 or newer. From the repository root:
+ 
+ ```bash
+ bun install
+@@ -31,7 +31,7 @@ bun dev [directory]
+ 
+ `bun dev` runs the V2 CLI and TUI. Pass a directory to open another project, or `.` to open this repository.
+ 
+-To test a development TUI against your installed OpenCode V2 background service and live sessions:
++To test a development TUI against your installed Loophole V2 background service and live sessions:
+ 
+ ```bash
+ bun run dev:live [directory]
+@@ -79,7 +79,7 @@ Follow the repository [style guide](./AGENTS.md).
+ 
+ Bug fixes, chores, and tests must reference an existing issue. Documentation, refactor, and feature PRs are exempt from the automated linked-issue check. When required, use `Fixes #123` or `Closes #123` in the PR description.
+ 
+-Before implementing new functionality, open a feature request describing the problem, why it belongs in OpenCode, and your proposed approach if you have one. Wait for design approval before opening the implementation PR.
++Before implementing new functionality, open a feature request describing the problem, why it belongs in Loophole, and your proposed approach if you have one. Wait for design approval before opening the implementation PR.
+ 
+ Base branches on `dev` and complete the provided pull request template.
+ 
+@@ -107,6 +107,6 @@ Examples:
+ 
+ ## Issues
+ 
+-Bug reports and feature requests must use their issue templates. Blank issues are not allowed; ask support and how-to questions in the [Discord community](https://discord.gg/opencode).
++Bug reports and feature requests must use their issue templates. Blank issues are not allowed; ask support and how-to questions in the [issue tracker](https://github.com/loophole-ai/loophole-app/issues).
+ 
+ Automated checks flag missing templates, placeholder text, AI-generated walls of text, and missing meaningful content. You have two hours to correct a flagged issue before it closes automatically. Ask a maintainer if an issue was flagged incorrectly.
+diff --git a/LICENSE b/LICENSE
+index 6439474bee..be3f7b28e5 100644
+--- a/LICENSE
++++ b/LICENSE
+@@ -1,21 +1,661 @@
+-MIT License
+-
+-Copyright (c) 2025 opencode
+-
+-Permission is hereby granted, free of charge, to any person obtaining a copy
+-of this software and associated documentation files (the "Software"), to deal
+-in the Software without restriction, including without limitation the rights
+-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-copies of the Software, and to permit persons to whom the Software is
+-furnished to do so, subject to the following conditions:
+-
+-The above copyright notice and this permission notice shall be included in all
+-copies or substantial portions of the Software.
+-
+-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+-SOFTWARE.
++                    GNU AFFERO GENERAL PUBLIC LICENSE
++                       Version 3, 19 November 2007
++
++ Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
++ Everyone is permitted to copy and distribute verbatim copies
++ of this license document, but changing it is not allowed.
++
++                            Preamble
++
++  The GNU Affero General Public License is a free, copyleft license for
++software and other kinds of works, specifically designed to ensure
++cooperation with the community in the case of network server software.
++
++  The licenses for most software and other practical works are designed
++to take away your freedom to share and change the works.  By contrast,
++our General Public Licenses are intended to guarantee your freedom to
++share and change all versions of a program--to make sure it remains free
++software for all its users.
++
++  When we speak of free software, we are referring to freedom, not
++price.  Our General Public Licenses are designed to make sure that you
++have the freedom to distribute copies of free software (and charge for
++them if you wish), that you receive source code or can get it if you
++want it, that you can change the software or use pieces of it in new
++free programs, and that you know you can do these things.
++
++  Developers that use our General Public Licenses protect your rights
++with two steps: (1) assert copyright on the software, and (2) offer
++you this License which gives you legal permission to copy, distribute
++and/or modify the software.
++
++  A secondary benefit of defending all users' freedom is that
++improvements made in alternate versions of the program, if they
++receive widespread use, become available for other developers to
++incorporate.  Many developers of free software are heartened and
++encouraged by the resulting cooperation.  However, in the case of
++software used on network servers, this result may fail to come about.
++The GNU General Public License permits making a modified version and
++letting the public access it on a server without ever releasing its
++source code to the public.
++
++  The GNU Affero General Public License is designed specifically to
++ensure that, in such cases, the modified source code becomes available
++to the community.  It requires the operator of a network server to
++provide the source code of the modified version running there to the
++users of that server.  Therefore, public use of a modified version, on
++a publicly accessible server, gives the public access to the source
++code of the modified version.
++
++  An older license, called the Affero General Public License and
++published by Affero, was designed to accomplish similar goals.  This is
++a different license, not a version of the Affero GPL, but Affero has
++released a new version of the Affero GPL which permits relicensing under
++this license.
++
++  The precise terms and conditions for copying, distribution and
++modification follow.
++
++                       TERMS AND CONDITIONS
++
++  0. Definitions.
++
++  "This License" refers to version 3 of the GNU Affero General Public License.
++
++  "Copyright" also means copyright-like laws that apply to other kinds of
++works, such as semiconductor masks.
++
++  "The Program" refers to any copyrightable work licensed under this
++License.  Each licensee is addressed as "you".  "Licensees" and
++"recipients" may be individuals or organizations.
++
++  To "modify" a work means to copy from or adapt all or part of the work
++in a fashion requiring copyright permission, other than the making of an
++exact copy.  The resulting work is called a "modified version" of the
++earlier work or a work "based on" the earlier work.
++
++  A "covered work" means either the unmodified Program or a work based
++on the Program.
++
++  To "propagate" a work means to do anything with it that, without
++permission, would make you directly or secondarily liable for
++infringement under applicable copyright law, except executing it on a
++computer or modifying a private copy.  Propagation includes copying,
++distribution (with or without modification), making available to the
++public, and in some countries other activities as well.
++
++  To "convey" a work means any kind of propagation that enables other
++parties to make or receive copies.  Mere interaction with a user through
++a computer network, with no transfer of a copy, is not conveying.
++
++  An interactive user interface displays "Appropriate Legal Notices"
++to the extent that it includes a convenient and prominently visible
++feature that (1) displays an appropriate copyright notice, and (2)
++tells the user that there is no warranty for the work (except to the
++extent that warranties are provided), that licensees may convey the
++work under this License, and how to view a copy of this License.  If
++the interface presents a list of user commands or options, such as a
++menu, a prominent item in the list meets this criterion.
++
++  1. Source Code.
++
++  The "source code" for a work means the preferred form of the work
++for making modifications to it.  "Object code" means any non-source
++form of a work.
++
++  A "Standard Interface" means an interface that either is an official
++standard defined by a recognized standards body, or, in the case of
++interfaces specified for a particular programming language, one that
++is widely used among developers working in that language.
++
++  The "System Libraries" of an executable work include anything, other
++than the work as a whole, that (a) is included in the normal form of
++packaging a Major Component, but which is not part of that Major
++Component, and (b) serves only to enable use of the work with that
++Major Component, or to implement a Standard Interface for which an
++implementation is available to the public in source code form.  A
++"Major Component", in this context, means a major essential component
++(kernel, window system, and so on) of the specific operating system
++(if any) on which the executable work runs, or a compiler used to
++produce the work, or an object code interpreter used to run it.
++
++  The "Corresponding Source" for a work in object code form means all
++the source code needed to generate, install, and (for an executable
++work) run the object code and to modify the work, including scripts to
++control those activities.  However, it does not include the work's
++System Libraries, or general-purpose tools or generally available free
++programs which are used unmodified in performing those activities but
++which are not part of the work.  For example, Corresponding Source
++includes interface definition files associated with source files for
++the work, and the source code for shared libraries and dynamically
++linked subprograms that the work is specifically designed to require,
++such as by intimate data communication or control flow between those
++subprograms and other parts of the work.
++
++  The Corresponding Source need not include anything that users
++can regenerate automatically from other parts of the Corresponding
++Source.
++
++  The Corresponding Source for a work in source code form is that
++same work.
++
++  2. Basic Permissions.
++
++  All rights granted under this License are granted for the term of
++copyright on the Program, and are irrevocable provided the stated
++conditions are met.  This License explicitly affirms your unlimited
++permission to run the unmodified Program.  The output from running a
++covered work is covered by this License only if the output, given its
++content, constitutes a covered work.  This License acknowledges your
++rights of fair use or other equivalent, as provided by copyright law.
++
++  You may make, run and propagate covered works that you do not
++convey, without conditions so long as your license otherwise remains
++in force.  You may convey covered works to others for the sole purpose
++of having them make modifications exclusively for you, or provide you
++with facilities for running those works, provided that you comply with
++the terms of this License in conveying all material for which you do
++not control copyright.  Those thus making or running the covered works
++for you must do so exclusively on your behalf, under your direction
++and control, on terms that prohibit them from making any copies of
++your copyrighted material outside their relationship with you.
++
++  Conveying under any other circumstances is permitted solely under
++the conditions stated below.  Sublicensing is not allowed; section 10
++makes it unnecessary.
++
++  3. Protecting Users' Legal Rights From Anti-Circumvention Law.
++
++  No covered work shall be deemed part of an effective technological
++measure under any applicable law fulfilling obligations under article
++11 of the WIPO copyright treaty adopted on 20 December 1996, or
++similar laws prohibiting or restricting circumvention of such
++measures.
++
++  When you convey a covered work, you waive any legal power to forbid
++circumvention of technological measures to the extent such circumvention
++is effected by exercising rights under this License with respect to
++the covered work, and you disclaim any intention to limit operation or
++modification of the work as a means of enforcing, against the work's
++users, your or third parties' legal rights to forbid circumvention of
++technological measures.
++
++  4. Conveying Verbatim Copies.
++
++  You may convey verbatim copies of the Program's source code as you
++receive it, in any medium, provided that you conspicuously and
++appropriately publish on each copy an appropriate copyright notice;
++keep intact all notices stating that this License and any
++non-permissive terms added in accord with section 7 apply to the code;
++keep intact all notices of the absence of any warranty; and give all
++recipients a copy of this License along with the Program.
++
++  You may charge any price or no price for each copy that you convey,
++and you may offer support or warranty protection for a fee.
++
++  5. Conveying Modified Source Versions.
++
++  You may convey a work based on the Program, or the modifications to
++produce it from the Program, in the form of source code under the
++terms of section 4, provided that you also meet all of these conditions:
++
++    a) The work must carry prominent notices stating that you modified
++    it, and giving a relevant date.
++
++    b) The work must carry prominent notices stating that it is
++    released under this License and any conditions added under section
++    7.  This requirement modifies the requirement in section 4 to
++    "keep intact all notices".
++
++    c) You must license the entire work, as a whole, under this
++    License to anyone who comes into possession of a copy.  This
++    License will therefore apply, along with any applicable section 7
++    additional terms, to the whole of the work, and all its parts,
++    regardless of how they are packaged.  This License gives no
++    permission to license the work in any other way, but it does not
++    invalidate such permission if you have separately received it.
++
++    d) If the work has interactive user interfaces, each must display
++    Appropriate Legal Notices; however, if the Program has interactive
++    interfaces that do not display Appropriate Legal Notices, your
++    work need not make them do so.
++
++  A compilation of a covered work with other separate and independent
++works, which are not by their nature extensions of the covered work,
++and which are not combined with it such as to form a larger program,
++in or on a volume of a storage or distribution medium, is called an
++"aggregate" if the compilation and its resulting copyright are not
++used to limit the access or legal rights of the compilation's users
++beyond what the individual works permit.  Inclusion of a covered work
++in an aggregate does not cause this License to apply to the other
++parts of the aggregate.
++
++  6. Conveying Non-Source Forms.
++
++  You may convey a covered work in object code form under the terms
++of sections 4 and 5, provided that you also convey the
++machine-readable Corresponding Source under the terms of this License,
++in one of these ways:
++
++    a) Convey the object code in, or embodied in, a physical product
++    (including a physical distribution medium), accompanied by the
++    Corresponding Source fixed on a durable physical medium
++    customarily used for software interchange.
++
++    b) Convey the object code in, or embodied in, a physical product
++    (including a physical distribution medium), accompanied by a
++    written offer, valid for at least three years and valid for as
++    long as you offer spare parts or customer support for that product
++    model, to give anyone who possesses the object code either (1) a
++    copy of the Corresponding Source for all the software in the
++    product that is covered by this License, on a durable physical
++    medium customarily used for software interchange, for a price no
++    more than your reasonable cost of physically performing this
++    conveying of source, or (2) access to copy the
++    Corresponding Source from a network server at no charge.
++
++    c) Convey individual copies of the object code with a copy of the
++    written offer to provide the Corresponding Source.  This
++    alternative is allowed only occasionally and noncommercially, and
++    only if you received the object code with such an offer, in accord
++    with subsection 6b.
++
++    d) Convey the object code by offering access from a designated
++    place (gratis or for a charge), and offer equivalent access to the
++    Corresponding Source in the same way through the same place at no
++    further charge.  You need not require recipients to copy the
++    Corresponding Source along with the object code.  If the place to
++    copy the object code is a network server, the Corresponding Source
++    may be on a different server (operated by you or a third party)
++    that supports equivalent copying facilities, provided you maintain
++    clear directions next to the object code saying where to find the
++    Corresponding Source.  Regardless of what server hosts the
++    Corresponding Source, you remain obligated to ensure that it is
++    available for as long as needed to satisfy these requirements.
++
++    e) Convey the object code using peer-to-peer transmission, provided
++    you inform other peers where the object code and Corresponding
++    Source of the work are being offered to the general public at no
++    charge under subsection 6d.
++
++  A separable portion of the object code, whose source code is excluded
++from the Corresponding Source as a System Library, need not be
++included in conveying the object code work.
++
++  A "User Product" is either (1) a "consumer product", which means any
++tangible personal property which is normally used for personal, family,
++or household purposes, or (2) anything designed or sold for incorporation
++into a dwelling.  In determining whether a product is a consumer product,
++doubtful cases shall be resolved in favor of coverage.  For a particular
++product received by a particular user, "normally used" refers to a
++typical or common use of that class of product, regardless of the status
++of the particular user or of the way in which the particular user
++actually uses, or expects or is expected to use, the product.  A product
++is a consumer product regardless of whether the product has substantial
++commercial, industrial or non-consumer uses, unless such uses represent
++the only significant mode of use of the product.
++
++  "Installation Information" for a User Product means any methods,
++procedures, authorization keys, or other information required to install
++and execute modified versions of a covered work in that User Product from
++a modified version of its Corresponding Source.  The information must
++suffice to ensure that the continued functioning of the modified object
++code is in no case prevented or interfered with solely because
++modification has been made.
++
++  If you convey an object code work under this section in, or with, or
++specifically for use in, a User Product, and the conveying occurs as
++part of a transaction in which the right of possession and use of the
++User Product is transferred to the recipient in perpetuity or for a
++fixed term (regardless of how the transaction is characterized), the
++Corresponding Source conveyed under this section must be accompanied
++by the Installation Information.  But this requirement does not apply
++if neither you nor any third party retains the ability to install
++modified object code on the User Product (for example, the work has
++been installed in ROM).
++
++  The requirement to provide Installation Information does not include a
++requirement to continue to provide support service, warranty, or updates
++for a work that has been modified or installed by the recipient, or for
++the User Product in which it has been modified or installed.  Access to a
++network may be denied when the modification itself materially and
++adversely affects the operation of the network or violates the rules and
++protocols for communication across the network.
++
++  Corresponding Source conveyed, and Installation Information provided,
++in accord with this section must be in a format that is publicly
++documented (and with an implementation available to the public in
++source code form), and must require no special password or key for
++unpacking, reading or copying.
++
++  7. Additional Terms.
++
++  "Additional permissions" are terms that supplement the terms of this
++License by making exceptions from one or more of its conditions.
++Additional permissions that are applicable to the entire Program shall
++be treated as though they were included in this License, to the extent
++that they are valid under applicable law.  If additional permissions
++apply only to part of the Program, that part may be used separately
++under those permissions, but the entire Program remains governed by
++this License without regard to the additional permissions.
++
++  When you convey a copy of a covered work, you may at your option
++remove any additional permissions from that copy, or from any part of
++it.  (Additional permissions may be written to require their own
++removal in certain cases when you modify the work.)  You may place
++additional permissions on material, added by you to a covered work,
++for which you have or can give appropriate copyright permission.
++
++  Notwithstanding any other provision of this License, for material you
++add to a covered work, you may (if authorized by the copyright holders of
++that material) supplement the terms of this License with terms:
++
++    a) Disclaiming warranty or limiting liability differently from the
++    terms of sections 15 and 16 of this License; or
++
++    b) Requiring preservation of specified reasonable legal notices or
++    author attributions in that material or in the Appropriate Legal
++    Notices displayed by works containing it; or
++
++    c) Prohibiting misrepresentation of the origin of that material, or
++    requiring that modified versions of such material be marked in
++    reasonable ways as different from the original version; or
++
++    d) Limiting the use for publicity purposes of names of licensors or
++    authors of the material; or
++
++    e) Declining to grant rights under trademark law for use of some
++    trade names, trademarks, or service marks; or
++
++    f) Requiring indemnification of licensors and authors of that
++    material by anyone who conveys the material (or modified versions of
++    it) with contractual assumptions of liability to the recipient, for
++    any liability that these contractual assumptions directly impose on
++    those licensors and authors.
++
++  All other non-permissive additional terms are considered "further
++restrictions" within the meaning of section 10.  If the Program as you
++received it, or any part of it, contains a notice stating that it is
++governed by this License along with a term that is a further
++restriction, you may remove that term.  If a license document contains
++a further restriction but permits relicensing or conveying under this
++License, you may add to a covered work material governed by the terms
++of that license document, provided that the further restriction does
++not survive such relicensing or conveying.
++
++  If you add terms to a covered work in accord with this section, you
++must place, in the relevant source files, a statement of the
++additional terms that apply to those files, or a notice indicating
++where to find the applicable terms.
++
++  Additional terms, permissive or non-permissive, may be stated in the
++form of a separately written license, or stated as exceptions;
++the above requirements apply either way.
++
++  8. Termination.
++
++  You may not propagate or modify a covered work except as expressly
++provided under this License.  Any attempt otherwise to propagate or
++modify it is void, and will automatically terminate your rights under
++this License (including any patent licenses granted under the third
++paragraph of section 11).
++
++  However, if you cease all violation of this License, then your
++license from a particular copyright holder is reinstated (a)
++provisionally, unless and until the copyright holder explicitly and
++finally terminates your license, and (b) permanently, if the copyright
++holder fails to notify you of the violation by some reasonable means
++prior to 60 days after the cessation.
++
++  Moreover, your license from a particular copyright holder is
++reinstated permanently if the copyright holder notifies you of the
++violation by some reasonable means, this is the first time you have
++received notice of violation of this License (for any work) from that
++copyright holder, and you cure the violation prior to 30 days after
++your receipt of the notice.
++
++  Termination of your rights under this section does not terminate the
++licenses of parties who have received copies or rights from you under
++this License.  If your rights have been terminated and not permanently
++reinstated, you do not qualify to receive new licenses for the same
++material under section 10.
++
++  9. Acceptance Not Required for Having Copies.
++
++  You are not required to accept this License in order to receive or
++run a copy of the Program.  Ancillary propagation of a covered work
++occurring solely as a consequence of using peer-to-peer transmission
++to receive a copy likewise does not require acceptance.  However,
++nothing other than this License grants you permission to propagate or
++modify any covered work.  These actions infringe copyright if you do
++not accept this License.  Therefore, by modifying or propagating a
++covered work, you indicate your acceptance of this License to do so.
++
++  10. Automatic Licensing of Downstream Recipients.
++
++  Each time you convey a covered work, the recipient automatically
++receives a license from the original licensors, to run, modify and
++propagate that work, subject to this License.  You are not responsible
++for enforcing compliance by third parties with this License.
++
++  An "entity transaction" is a transaction transferring control of an
++organization, or substantially all assets of one, or subdividing an
++organization, or merging organizations.  If propagation of a covered
++work results from an entity transaction, each party to that
++transaction who receives a copy of the work also receives whatever
++licenses to the work the party's predecessor in interest had or could
++give under the previous paragraph, plus a right to possession of the
++Corresponding Source of the work from the predecessor in interest, if
++the predecessor has it or can get it with reasonable efforts.
++
++  You may not impose any further restrictions on the exercise of the
++rights granted or affirmed under this License.  For example, you may
++not impose a license fee, royalty, or other charge for exercise of
++rights granted under this License, and you may not initiate litigation
++(including a cross-claim or counterclaim in a lawsuit) alleging that
++any patent claim is infringed by making, using, selling, offering for
++sale, or importing the Program or any portion of it.
++
++  11. Patents.
++
++  A "contributor" is a copyright holder who authorizes use under this
++License of the Program or a work on which the Program is based.  The
++work thus licensed is called the contributor's "contributor version".
++
++  A contributor's "essential patent claims" are all patent claims
++owned or controlled by the contributor, whether already acquired or
++hereafter acquired, that would be infringed by some manner, permitted
++by this License, of making, using, or selling its contributor version,
++but do not include claims that would be infringed only as a
++consequence of further modification of the contributor version.  For
++purposes of this definition, "control" includes the right to grant
++patent sublicenses in a manner consistent with the requirements of
++this License.
++
++  Each contributor grants you a non-exclusive, worldwide, royalty-free
++patent license under the contributor's essential patent claims, to
++make, use, sell, offer for sale, import and otherwise run, modify and
++propagate the contents of its contributor version.
++
++  In the following three paragraphs, a "patent license" is any express
++agreement or commitment, however denominated, not to enforce a patent
++(such as an express permission to practice a patent or covenant not to
++sue for patent infringement).  To "grant" such a patent license to a
++party means to make such an agreement or commitment not to enforce a
++patent against the party.
++
++  If you convey a covered work, knowingly relying on a patent license,
++and the Corresponding Source of the work is not available for anyone
++to copy, free of charge and under the terms of this License, through a
++publicly available network server or other readily accessible means,
++then you must either (1) cause the Corresponding Source to be so
++available, or (2) arrange to deprive yourself of the benefit of the
++patent license for this particular work, or (3) arrange, in a manner
++consistent with the requirements of this License, to extend the patent
++license to downstream recipients.  "Knowingly relying" means you have
++actual knowledge that, but for the patent license, your conveying the
++covered work in a country, or your recipient's use of the covered work
++in a country, would infringe one or more identifiable patents in that
++country that you have reason to believe are valid.
++
++  If, pursuant to or in connection with a single transaction or
++arrangement, you convey, or propagate by procuring conveyance of, a
++covered work, and grant a patent license to some of the parties
++receiving the covered work authorizing them to use, propagate, modify
++or convey a specific copy of the covered work, then the patent license
++you grant is automatically extended to all recipients of the covered
++work and works based on it.
++
++  A patent license is "discriminatory" if it does not include within
++the scope of its coverage, prohibits the exercise of, or is
++conditioned on the non-exercise of one or more of the rights that are
++specifically granted under this License.  You may not convey a covered
++work if you are a party to an arrangement with a third party that is
++in the business of distributing software, under which you make payment
++to the third party based on the extent of your activity of conveying
++the work, and under which the third party grants, to any of the
++parties who would receive the covered work from you, a discriminatory
++patent license (a) in connection with copies of the covered work
++conveyed by you (or copies made from those copies), or (b) primarily
++for and in connection with specific products or compilations that
++contain the covered work, unless you entered into that arrangement,
++or that patent license was granted, prior to 28 March 2007.
++
++  Nothing in this License shall be construed as excluding or limiting
++any implied license or other defenses to infringement that may
++otherwise be available to you under applicable patent law.
++
++  12. No Surrender of Others' Freedom.
++
++  If conditions are imposed on you (whether by court order, agreement or
++otherwise) that contradict the conditions of this License, they do not
++excuse you from the conditions of this License.  If you cannot convey a
++covered work so as to satisfy simultaneously your obligations under this
++License and any other pertinent obligations, then as a consequence you may
++not convey it at all.  For example, if you agree to terms that obligate you
++to collect a royalty for further conveying from those to whom you convey
++the Program, the only way you could satisfy both those terms and this
++License would be to refrain entirely from conveying the Program.
++
++  13. Remote Network Interaction; Use with the GNU General Public License.
++
++  Notwithstanding any other provision of this License, if you modify the
++Program, your modified version must prominently offer all users
++interacting with it remotely through a computer network (if your version
++supports such interaction) an opportunity to receive the Corresponding
++Source of your version by providing access to the Corresponding Source
++from a network server at no charge, through some standard or customary
++means of facilitating copying of software.  This Corresponding Source
++shall include the Corresponding Source for any work covered by version 3
++of the GNU General Public License that is incorporated pursuant to the
++following paragraph.
++
++  Notwithstanding any other provision of this License, you have
++permission to link or combine any covered work with a work licensed
++under version 3 of the GNU General Public License into a single
++combined work, and to convey the resulting work.  The terms of this
++License will continue to apply to the part which is the covered work,
++but the work with which it is combined will remain governed by version
++3 of the GNU General Public License.
++
++  14. Revised Versions of this License.
++
++  The Free Software Foundation may publish revised and/or new versions of
++the GNU Affero General Public License from time to time.  Such new versions
++will be similar in spirit to the present version, but may differ in detail to
++address new problems or concerns.
++
++  Each version is given a distinguishing version number.  If the
++Program specifies that a certain numbered version of the GNU Affero General
++Public License "or any later version" applies to it, you have the
++option of following the terms and conditions either of that numbered
++version or of any later version published by the Free Software
++Foundation.  If the Program does not specify a version number of the
++GNU Affero General Public License, you may choose any version ever published
++by the Free Software Foundation.
++
++  If the Program specifies that a proxy can decide which future
++versions of the GNU Affero General Public License can be used, that proxy's
++public statement of acceptance of a version permanently authorizes you
++to choose that version for the Program.
++
++  Later license versions may give you additional or different
++permissions.  However, no additional obligations are imposed on any
++author or copyright holder as a result of your choosing to follow a
++later version.
++
++  15. Disclaimer of Warranty.
++
++  THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY
++APPLICABLE LAW.  EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT
++HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY
++OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO,
++THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
++PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM
++IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF
++ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
++
++  16. Limitation of Liability.
++
++  IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
++WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MODIFIES AND/OR CONVEYS
++THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES, INCLUDING ANY
++GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE
++USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED TO LOSS OF
++DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD
++PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER PROGRAMS),
++EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF
++SUCH DAMAGES.
++
++  17. Interpretation of Sections 15 and 16.
++
++  If the disclaimer of warranty and limitation of liability provided
++above cannot be given local legal effect according to their terms,
++reviewing courts shall apply local law that most closely approximates
++an absolute waiver of all civil liability in connection with the
++Program, unless a warranty or assumption of liability accompanies a
++copy of the Program in return for a fee.
++
++                     END OF TERMS AND CONDITIONS
++
++            How to Apply These Terms to Your New Programs
++
++  If you develop a new program, and you want it to be of the greatest
++possible use to the public, the best way to achieve this is to make it
++free software which everyone can redistribute and change under these terms.
++
++  To do so, attach the following notices to the program.  It is safest
++to attach them to the start of each source file to most effectively
++state the exclusion of warranty; and each file should have at least
++the "copyright" line and a pointer to where the full notice is found.
++
++    <one line to give the program's name and a brief idea of what it does.>
++    Copyright (C) <year>  <name of author>
++
++    This program is free software: you can redistribute it and/or modify
++    it under the terms of the GNU Affero General Public License as published by
++    the Free Software Foundation, either version 3 of the License, or
++    (at your option) any later version.
++
++    This program is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++    GNU Affero General Public License for more details.
++
++    You should have received a copy of the GNU Affero General Public License
++    along with this program.  If not, see <https://www.gnu.org/licenses/>.
++
++Also add information on how to contact you by electronic and paper mail.
++
++  If your software can interact with users remotely through a computer
++network, you should also make sure that it provides a way for users to
++get its source.  For example, if your program is a web application, its
++interface could display a "Source" link that leads users to an archive
++of the code.  There are many ways you could offer source, and different
++solutions will be better for different programs; see section 13 for the
++specific requirements.
++
++  You should also get your employer (if you work as a programmer) or school,
++if any, to sign a "copyright disclaimer" for the program, if necessary.
++For more information on this, and how to apply and follow the GNU AGPL, see
++<https://www.gnu.org/licenses/>.
+diff --git a/LICENSE-opencode.md b/LICENSE-opencode.md
+new file mode 100644
+index 0000000000..6439474bee
+--- /dev/null
++++ b/LICENSE-opencode.md
+@@ -0,0 +1,21 @@
++MIT License
++
++Copyright (c) 2025 opencode
++
++Permission is hereby granted, free of charge, to any person obtaining a copy
++of this software and associated documentation files (the "Software"), to deal
++in the Software without restriction, including without limitation the rights
++to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++copies of the Software, and to permit persons to whom the Software is
++furnished to do so, subject to the following conditions:
++
++The above copyright notice and this permission notice shall be included in all
++copies or substantial portions of the Software.
++
++THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++SOFTWARE.
+diff --git a/NOTICE.md b/NOTICE.md
+new file mode 100644
+index 0000000000..dfaa2114c3
+--- /dev/null
++++ b/NOTICE.md
+@@ -0,0 +1,19 @@
++Loophole Notice 
++Copyright (C) 2026 Loophole AI
++
++This project is licensed under the GNU Affero General Public License,
++version 3 (AGPL-3.0). See the LICENSE file for the full text.
++
++This project includes and is derived from OpenCode
++(https://github.com/anomalyco/opencode), which is licensed under the
++MIT License. Copyright (c) 2025 opencode. The original
++MIT license text is reproduced in LICENSE-opencode.md. Portions of this
++project that originate from OpenCode remain subject to that license,
++and its copyright and permission notice must be retained.
++
++Modifications and additions made by Loophole AI are licensed
++under AGPL-3.0.
++
++"OpenCode" and related names and logos are trademarks of their
++respective owners. This project is not affiliated with or endorsed by
++the OpenCode project or its authors.
+\ No newline at end of file
+diff --git a/README.ar.md b/README.ar.md
+deleted file mode 100644
+index 79b79db0bb..0000000000
+--- a/README.ar.md
++++ /dev/null
+@@ -1,114 +0,0 @@
+-<p align="center">
+-  <a href="https://opencode.ai">
+-    <picture>
+-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="شعار OpenCode">
+-    </picture>
+-  </a>
+-</p>
+-<p align="center">وكيل برمجة بالذكاء الاصطناعي مفتوح المصدر.</p>
+-<p align="center">
+-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
+-</p>
+-
+-<p align="center">
+-  <a href="README.md">English</a> |
+-  <a href="README.zh.md">简体中文</a> |
+-  <a href="README.zht.md">繁體中文</a> |
+-  <a href="README.ko.md">한국어</a> |
+-  <a href="README.de.md">Deutsch</a> |
+-  <a href="README.es.md">Español</a> |
+-  <a href="README.fr.md">Français</a> |
+-  <a href="README.it.md">Italiano</a> |
+-  <a href="README.da.md">Dansk</a> |
+-  <a href="README.ja.md">日本語</a> |
+-  <a href="README.pl.md">Polski</a> |
+-  <a href="README.ru.md">Русский</a> |
+-  <a href="README.bs.md">Bosanski</a> |
+-  <a href="README.ar.md">العربية</a> |
+-  <a href="README.no.md">Norsk</a> |
+-  <a href="README.br.md">Português (Brasil)</a> |
+-  <a href="README.th.md">ไทย</a> |
+-  <a href="README.tr.md">Türkçe</a> |
+-  <a href="README.uk.md">Українська</a> |
+-  <a href="README.bn.md">বাংলা</a> |
+-  <a href="README.gr.md">Ελληνικά</a> |
+-  <a href="README.vi.md">Tiếng Việt</a>
+-</p>
+-
+-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+-
+----
+-
+-### التثبيت
+-
+-```bash
+-# YOLO
+-curl -fsSL https://opencode.ai/v2/install | bash
+-
+-# مديري الحزم
+-npm i -g @opencode/cli@latest      # او bun/pnpm/yarn
+-brew install anomalyco/tap/opencode-v2 # macOS و Linux (موصى به، دائما محدث)
+-brew install opencode              # macOS و Linux (صيغة brew الرسمية، تحديث اقل)
+-sudo pacman -S opencode            # Arch Linux (Stable)
+-paru -S opencode-beta              # Arch Linux (Latest from AUR)
+-mise use -g opencode               # اي نظام
+-nix run github:anomalyco/opencode  # Nix
+-```
+-
+-> [!TIP]
+-> احذف الاصدارات الاقدم من 0.1.x قبل التثبيت.
+-
+-### تطبيق سطح المكتب (BETA)
+-
+-يتوفر OpenCode ايضا كتطبيق سطح مكتب. قم بالتنزيل من [opencode.ai/download](https://opencode.ai/download).
+-
+-| المنصة                | التنزيل                            |
+-| --------------------- | ---------------------------------- |
+-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
+-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
+-| Windows               | `opencode-desktop-win-x64.exe`     |
+-| Linux                 | `.deb` او `.rpm` او AppImage       |
+-
+-```bash
+-# macOS (Homebrew)
+-brew install --cask opencode-desktop
+-```
+-
+-#### مجلد التثبيت
+-
+-يثبت سكربت التثبيت OpenCode في `$HOME/.opencode/bin`.
+-
+-### Agents
+-
+-يتضمن OpenCode وكيليْن (Agents) مدمجين يمكنك التبديل بينهما باستخدام زر `Tab`.
+-
+-- **build** - الافتراضي، وكيل بصلاحيات كاملة لاعمال التطوير
+-- **plan** - وكيل للقراءة فقط للتحليل واستكشاف الكود
+-  - يرفض تعديل الملفات افتراضيا
+-  - يطلب الاذن قبل تشغيل اوامر bash
+-  - مثالي لاستكشاف قواعد كود غير مألوفة او لتخطيط التغييرات
+-
+-بالاضافة الى ذلك يوجد وكيل فرعي **general** للبحث المعقد والمهام متعددة الخطوات.
+-يستخدم داخليا ويمكن استدعاؤه بكتابة `@general` في الرسائل.
+-
+-تعرف على المزيد حول [agents](https://opencode.ai/v2/docs/agents).
+-
+-### التوثيق
+-
+-لمزيد من المعلومات حول كيفية ضبط OpenCode، [**راجع التوثيق**](https://opencode.ai/v2/docs).
+-
+-### المساهمة
+-
+-اذا كنت مهتما بالمساهمة في OpenCode، يرجى قراءة [contributing docs](./CONTRIBUTING.md) قبل ارسال pull request.
+-
+-### البناء فوق OpenCode
+-
+-اذا كنت تعمل على مشروع مرتبط بـ OpenCode ويستخدم "opencode" كجزء من اسمه (مثل "opencode-dashboard" او "opencode-mobile")، يرجى اضافة ملاحظة في README توضح انه ليس مبنيا بواسطة فريق OpenCode ولا يرتبط بنا بأي شكل.
+-
+----
+-
+-**انضم الى مجتمعنا** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+diff --git a/README.bn.md b/README.bn.md
+deleted file mode 100644
+index f684723d14..0000000000
+--- a/README.bn.md
++++ /dev/null
+@@ -1,114 +0,0 @@
+-<p align="center">
+-  <a href="https://opencode.ai">
+-    <picture>
+-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+-    </picture>
+-  </a>
+-</p>
+-<p align="center">ওপেন সোর্স এআই কোডিং এজেন্ট।</p>
+-<p align="center">
+-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
+-</p>
+-
+-<p align="center">
+-  <a href="README.md">English</a> |
+-  <a href="README.zh.md">简体中文</a> |
+-  <a href="README.zht.md">繁體中文</a> |
+-  <a href="README.ko.md">한국어</a> |
+-  <a href="README.de.md">Deutsch</a> |
+-  <a href="README.es.md">Español</a> |
+-  <a href="README.fr.md">Français</a> |
+-  <a href="README.it.md">Italiano</a> |
+-  <a href="README.da.md">Dansk</a> |
+-  <a href="README.ja.md">日本語</a> |
+-  <a href="README.pl.md">Polski</a> |
+-  <a href="README.ru.md">Русский</a> |
+-  <a href="README.bs.md">Bosanski</a> |
+-  <a href="README.ar.md">العربية</a> |
+-  <a href="README.no.md">Norsk</a> |
+-  <a href="README.br.md">Português (Brasil)</a> |
+-  <a href="README.th.md">ไทย</a> |
+-  <a href="README.tr.md">Türkçe</a> |
+-  <a href="README.uk.md">Українська</a> |
+-  <a href="README.bn.md">বাংলা</a> |
+-  <a href="README.gr.md">Ελληνικά</a> |
+-  <a href="README.vi.md">Tiếng Việt</a>
+-</p>
+-
+-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+-
+----
+-
+-### ইনস্টলেশন (Installation)
+-
+-```bash
+-# YOLO
+-curl -fsSL https://opencode.ai/v2/install | bash
+-
+-# Package managers
+-npm i -g @opencode/cli@latest      # or bun/pnpm/yarn
+-brew install anomalyco/tap/opencode-v2 # macOS and Linux (recommended, always up to date)
+-brew install opencode              # macOS and Linux (official brew formula, updated less)
+-sudo pacman -S opencode            # Arch Linux (Stable)
+-paru -S opencode-beta              # Arch Linux (Latest from AUR)
+-mise use -g opencode               # Any OS
+-nix run github:anomalyco/opencode  # Nix
+-```
+-
+-> [!TIP]
+-> ইনস্টল করার আগে ০.১.x এর চেয়ে পুরোনো ভার্সনগুলো মুছে ফেলুন।
+-
+-### ডেস্কটপ অ্যাপ (BETA)
+-
+-OpenCode ডেস্কটপ অ্যাপ্লিকেশন হিসেবেও উপলব্ধ। [opencode.ai/download](https://opencode.ai/download) থেকে ডাউনলোড করুন।
+-
+-| প্ল্যাটফর্ম           | ডাউনলোড                            |
+-| --------------------- | ---------------------------------- |
+-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
+-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
+-| Windows               | `opencode-desktop-win-x64.exe`     |
+-| Linux                 | `.deb`, `.rpm`, or `.AppImage`     |
+-
+-```bash
+-# macOS (Homebrew)
+-brew install --cask opencode-desktop
+-```
+-
+-#### ইনস্টলেশন ডিরেক্টরি (Installation Directory)
+-
+-ইনস্টল স্ক্রিপ্টটি `$HOME/.opencode/bin`-এ OpenCode ইনস্টল করে।
+-
+-### এজেন্টস (Agents)
+-
+-OpenCode এ দুটি বিল্ট-ইন এজেন্ট রয়েছে যা আপনি `Tab` কি(key) দিয়ে পরিবর্তন করতে পারবেন।
+-
+-- **build** - ডিফল্ট, ডেভেলপমেন্টের কাজের জন্য সম্পূর্ণ অ্যাক্সেসযুক্ত এজেন্ট
+-- **plan** - বিশ্লেষণ এবং কোড এক্সপ্লোরেশনের জন্য রিড-ওনলি এজেন্ট
+-  - ডিফল্টভাবে ফাইল এডিট করতে দেয় না
+-  - ব্যাশ কমান্ড চালানোর আগে অনুমতি চায়
+-  - অপরিচিত কোডবেস এক্সপ্লোর করা বা পরিবর্তনের পরিকল্পনা করার জন্য আদর্শ
+-
+-এছাড়াও জটিল অনুসন্ধান এবং মাল্টিস্টেপ টাস্কের জন্য একটি **general** সাবএজেন্ট অন্তর্ভুক্ত রয়েছে।
+-এটি অভ্যন্তরীণভাবে ব্যবহৃত হয় এবং মেসেজে `@general` লিখে ব্যবহার করা যেতে পারে।
+-
+-এজেন্টদের সম্পর্কে আরও জানুন: [docs](https://opencode.ai/v2/docs/agents)।
+-
+-### ডকুমেন্টেশন (Documentation)
+-
+-কিভাবে OpenCode কনফিগার করবেন সে সম্পর্কে আরও তথ্যের জন্য, [**আমাদের ডকস দেখুন**](https://opencode.ai/v2/docs)।
+-
+-### অবদান (Contributing)
+-
+-আপনি যদি OpenCode এ অবদান রাখতে চান, অনুগ্রহ করে একটি পুল রিকোয়েস্ট সাবমিট করার আগে আমাদের [কন্ট্রিবিউটিং ডকস](./CONTRIBUTING.md) পড়ে নিন।
+-
+-### OpenCode এর উপর বিল্ডিং (Building on OpenCode)
+-
+-আপনি যদি এমন প্রজেক্টে কাজ করেন যা OpenCode এর সাথে সম্পর্কিত এবং প্রজেক্টের নামের অংশ হিসেবে "opencode" ব্যবহার করেন, উদাহরণস্বরূপ "opencode-dashboard" বা "opencode-mobile", তবে দয়া করে আপনার README তে একটি নোট যোগ করে স্পষ্ট করুন যে এই প্রজেক্টটি OpenCode দল দ্বারা তৈরি হয়নি এবং আমাদের সাথে এর কোনো সরাসরি সম্পর্ক নেই।
+-
+----
+-
+-**আমাদের কমিউনিটিতে যুক্ত হোন** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+diff --git a/README.br.md b/README.br.md
+deleted file mode 100644
+index dd0ad403b7..0000000000
+--- a/README.br.md
++++ /dev/null
+@@ -1,114 +0,0 @@
+-<p align="center">
+-  <a href="https://opencode.ai">
+-    <picture>
+-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="Logo do OpenCode">
+-    </picture>
+-  </a>
+-</p>
+-<p align="center">O agente de programação com IA de código aberto.</p>
+-<p align="center">
+-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
+-</p>
+-
+-<p align="center">
+-  <a href="README.md">English</a> |
+-  <a href="README.zh.md">简体中文</a> |
+-  <a href="README.zht.md">繁體中文</a> |
+-  <a href="README.ko.md">한국어</a> |
+-  <a href="README.de.md">Deutsch</a> |
+-  <a href="README.es.md">Español</a> |
+-  <a href="README.fr.md">Français</a> |
+-  <a href="README.it.md">Italiano</a> |
+-  <a href="README.da.md">Dansk</a> |
+-  <a href="README.ja.md">日本語</a> |
+-  <a href="README.pl.md">Polski</a> |
+-  <a href="README.ru.md">Русский</a> |
+-  <a href="README.bs.md">Bosanski</a> |
+-  <a href="README.ar.md">العربية</a> |
+-  <a href="README.no.md">Norsk</a> |
+-  <a href="README.br.md">Português (Brasil)</a> |
+-  <a href="README.th.md">ไทย</a> |
+-  <a href="README.tr.md">Türkçe</a> |
+-  <a href="README.uk.md">Українська</a> |
+-  <a href="README.bn.md">বাংলা</a> |
+-  <a href="README.gr.md">Ελληνικά</a> |
+-  <a href="README.vi.md">Tiếng Việt</a>
+-</p>
+-
+-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+-
+----
+-
+-### Instalação
+-
+-```bash
+-# YOLO
+-curl -fsSL https://opencode.ai/v2/install | bash
+-
+-# Gerenciadores de pacotes
+-npm i -g @opencode/cli@latest      # ou bun/pnpm/yarn
+-brew install anomalyco/tap/opencode-v2 # macOS e Linux (recomendado, sempre atualizado)
+-brew install opencode              # macOS e Linux (fórmula oficial do brew, atualiza menos)
+-sudo pacman -S opencode            # Arch Linux (Stable)
+-paru -S opencode-beta              # Arch Linux (Latest from AUR)
+-mise use -g opencode               # qualquer sistema
+-nix run github:anomalyco/opencode  # Nix
+-```
+-
+-> [!TIP]
+-> Remova versões anteriores a 0.1.x antes de instalar.
+-
+-### App desktop (BETA)
+-
+-O OpenCode também está disponível como aplicativo desktop. Baixe em [opencode.ai/download](https://opencode.ai/download).
+-
+-| Plataforma            | Download                           |
+-| --------------------- | ---------------------------------- |
+-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
+-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
+-| Windows               | `opencode-desktop-win-x64.exe`     |
+-| Linux                 | `.deb`, `.rpm` ou AppImage         |
+-
+-```bash
+-# macOS (Homebrew)
+-brew install --cask opencode-desktop
+-```
+-
+-#### Diretório de instalação
+-
+-O script de instalação instala o OpenCode em `$HOME/.opencode/bin`.
+-
+-### Agents
+-
+-O OpenCode inclui dois agents integrados, que você pode alternar com a tecla `Tab`.
+-
+-- **build** - Padrão, agent com acesso total para trabalho de desenvolvimento
+-- **plan** - Agent somente leitura para análise e exploração de código
+-  - Nega edições de arquivos por padrão
+-  - Pede permissão antes de executar comandos bash
+-  - Ideal para explorar codebases desconhecidas ou planejar mudanças
+-
+-Também há um subagent **general** para buscas complexas e tarefas em várias etapas.
+-Ele é usado internamente e pode ser invocado com `@general` nas mensagens.
+-
+-Saiba mais sobre [agents](https://opencode.ai/v2/docs/agents).
+-
+-### Documentação
+-
+-Para mais informações sobre como configurar o OpenCode, [**veja nossa documentação**](https://opencode.ai/v2/docs).
+-
+-### Contribuir
+-
+-Se você tem interesse em contribuir com o OpenCode, leia os [contributing docs](./CONTRIBUTING.md) antes de enviar um pull request.
+-
+-### Construindo com OpenCode
+-
+-Se você estiver trabalhando em um projeto relacionado ao OpenCode e estiver usando "opencode" como parte do nome (por exemplo, "opencode-dashboard" ou "opencode-mobile"), adicione uma nota no README para deixar claro que não foi construído pela equipe do OpenCode e não é afiliado a nós de nenhuma forma.
+-
+----
+-
+-**Junte-se à nossa comunidade** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+diff --git a/README.bs.md b/README.bs.md
+deleted file mode 100644
+index a5bc0324a9..0000000000
+--- a/README.bs.md
++++ /dev/null
+@@ -1,114 +0,0 @@
+-<p align="center">
+-  <a href="https://opencode.ai">
+-    <picture>
+-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+-    </picture>
+-  </a>
+-</p>
+-<p align="center">OpenCode je open source AI agent za programiranje.</p>
+-<p align="center">
+-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
+-</p>
+-
+-<p align="center">
+-  <a href="README.md">English</a> |
+-  <a href="README.zh.md">简体中文</a> |
+-  <a href="README.zht.md">繁體中文</a> |
+-  <a href="README.ko.md">한국어</a> |
+-  <a href="README.de.md">Deutsch</a> |
+-  <a href="README.es.md">Español</a> |
+-  <a href="README.fr.md">Français</a> |
+-  <a href="README.it.md">Italiano</a> |
+-  <a href="README.da.md">Dansk</a> |
+-  <a href="README.ja.md">日本語</a> |
+-  <a href="README.pl.md">Polski</a> |
+-  <a href="README.ru.md">Русский</a> |
+-  <a href="README.bs.md">Bosanski</a> |
+-  <a href="README.ar.md">العربية</a> |
+-  <a href="README.no.md">Norsk</a> |
+-  <a href="README.br.md">Português (Brasil)</a> |
+-  <a href="README.th.md">ไทย</a> |
+-  <a href="README.tr.md">Türkçe</a> |
+-  <a href="README.uk.md">Українська</a> |
+-  <a href="README.bn.md">বাংলা</a> |
+-  <a href="README.gr.md">Ελληνικά</a> |
+-  <a href="README.vi.md">Tiếng Việt</a>
+-</p>
+-
+-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+-
+----
+-
+-### Instalacija
+-
+-```bash
+-# YOLO
+-curl -fsSL https://opencode.ai/v2/install | bash
+-
+-# Package manageri
+-npm i -g @opencode/cli@latest      # ili bun/pnpm/yarn
+-brew install anomalyco/tap/opencode-v2 # macOS i Linux (preporučeno, uvijek ažurno)
+-brew install opencode              # macOS i Linux (zvanična brew formula, rjeđe se ažurira)
+-sudo pacman -S opencode            # Arch Linux (Stable)
+-paru -S opencode-beta              # Arch Linux (Latest from AUR)
+-mise use -g opencode               # Bilo koji OS
+-nix run github:anomalyco/opencode  # Nix
+-```
+-
+-> [!TIP]
+-> Ukloni verzije starije od 0.1.x prije instalacije.
+-
+-### Desktop aplikacija (BETA)
+-
+-OpenCode je dostupan i kao desktop aplikacija. Preuzmi je sa [opencode.ai/download](https://opencode.ai/download).
+-
+-| Platforma             | Preuzimanje                        |
+-| --------------------- | ---------------------------------- |
+-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
+-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
+-| Windows               | `opencode-desktop-win-x64.exe`     |
+-| Linux                 | `.deb`, `.rpm`, ili AppImage       |
+-
+-```bash
+-# macOS (Homebrew)
+-brew install --cask opencode-desktop
+-```
+-
+-#### Instalacijski direktorij
+-
+-Instalacijska skripta instalira OpenCode u `$HOME/.opencode/bin`.
+-
+-### Agenti
+-
+-OpenCode uključuje dva ugrađena agenta između kojih možeš prebacivati tasterom `Tab`.
+-
+-- **build** - Podrazumijevani agent sa punim pristupom za razvoj
+-- **plan** - Agent samo za čitanje za analizu i istraživanje koda
+-  - Podrazumijevano zabranjuje izmjene datoteka
+-  - Traži dozvolu prije pokretanja bash komandi
+-  - Idealan za istraživanje nepoznatih codebase-ova ili planiranje izmjena
+-
+-Uključen je i **general** pod-agent za složene pretrage i višekoračne zadatke.
+-Koristi se interno i može se pozvati pomoću `@general` u porukama.
+-
+-Saznaj više o [agentima](https://opencode.ai/v2/docs/agents).
+-
+-### Dokumentacija
+-
+-Za više informacija o konfiguraciji OpenCode-a, [**pogledaj dokumentaciju**](https://opencode.ai/v2/docs).
+-
+-### Doprinosi
+-
+-Ako želiš doprinositi OpenCode-u, pročitaj [upute za doprinošenje](./CONTRIBUTING.md) prije slanja pull requesta.
+-
+-### Gradnja na OpenCode-u
+-
+-Ako radiš na projektu koji je povezan s OpenCode-om i koristi "opencode" kao dio naziva, npr. "opencode-dashboard" ili "opencode-mobile", dodaj napomenu u svoj README da projekat nije napravio OpenCode tim i da nije povezan s nama.
+-
+----
+-
+-**Pridruži se našoj zajednici** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+diff --git a/README.da.md b/README.da.md
+deleted file mode 100644
+index a4596c025c..0000000000
+--- a/README.da.md
++++ /dev/null
+@@ -1,114 +0,0 @@
+-<p align="center">
+-  <a href="https://opencode.ai">
+-    <picture>
+-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+-    </picture>
+-  </a>
+-</p>
+-<p align="center">Den open source AI-kodeagent.</p>
+-<p align="center">
+-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
+-</p>
+-
+-<p align="center">
+-  <a href="README.md">English</a> |
+-  <a href="README.zh.md">简体中文</a> |
+-  <a href="README.zht.md">繁體中文</a> |
+-  <a href="README.ko.md">한국어</a> |
+-  <a href="README.de.md">Deutsch</a> |
+-  <a href="README.es.md">Español</a> |
+-  <a href="README.fr.md">Français</a> |
+-  <a href="README.it.md">Italiano</a> |
+-  <a href="README.da.md">Dansk</a> |
+-  <a href="README.ja.md">日本語</a> |
+-  <a href="README.pl.md">Polski</a> |
+-  <a href="README.ru.md">Русский</a> |
+-  <a href="README.bs.md">Bosanski</a> |
+-  <a href="README.ar.md">العربية</a> |
+-  <a href="README.no.md">Norsk</a> |
+-  <a href="README.br.md">Português (Brasil)</a> |
+-  <a href="README.th.md">ไทย</a> |
+-  <a href="README.tr.md">Türkçe</a> |
+-  <a href="README.uk.md">Українська</a> |
+-  <a href="README.bn.md">বাংলা</a> |
+-  <a href="README.gr.md">Ελληνικά</a> |
+-  <a href="README.vi.md">Tiếng Việt</a>
+-</p>
+-
+-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+-
+----
+-
+-### Installation
+-
+-```bash
+-# YOLO
+-curl -fsSL https://opencode.ai/v2/install | bash
+-
+-# Pakkehåndteringer
+-npm i -g @opencode/cli@latest      # eller bun/pnpm/yarn
+-brew install anomalyco/tap/opencode-v2 # macOS og Linux (anbefalet, altid up to date)
+-brew install opencode              # macOS og Linux (officiel brew formula, opdateres sjældnere)
+-sudo pacman -S opencode            # Arch Linux (Stable)
+-paru -S opencode-beta              # Arch Linux (Latest from AUR)
+-mise use -g opencode               # alle OS
+-nix run github:anomalyco/opencode  # Nix
+-```
+-
+-> [!TIP]
+-> Fjern versioner ældre end 0.1.x før installation.
+-
+-### Desktop-app (BETA)
+-
+-OpenCode findes også som desktop-app. Download fra [opencode.ai/download](https://opencode.ai/download).
+-
+-| Platform              | Download                           |
+-| --------------------- | ---------------------------------- |
+-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
+-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
+-| Windows               | `opencode-desktop-win-x64.exe`     |
+-| Linux                 | `.deb`, `.rpm`, eller AppImage     |
+-
+-```bash
+-# macOS (Homebrew)
+-brew install --cask opencode-desktop
+-```
+-
+-#### Installationsmappe
+-
+-Installationsscriptet installerer OpenCode i `$HOME/.opencode/bin`.
+-
+-### Agents
+-
+-OpenCode har to indbyggede agents, som du kan skifte mellem med `Tab`-tasten.
+-
+-- **build** - Standard, agent med fuld adgang til udviklingsarbejde
+-- **plan** - Skrivebeskyttet agent til analyse og kodeudforskning
+-  - Afviser filredigering som standard
+-  - Spørger om tilladelse før bash-kommandoer
+-  - Ideel til at udforske ukendte kodebaser eller planlægge ændringer
+-
+-Derudover findes der en **general**-subagent til komplekse søgninger og flertrinsopgaver.
+-Den bruges internt og kan kaldes via `@general` i beskeder.
+-
+-Læs mere om [agents](https://opencode.ai/v2/docs/agents).
+-
+-### Dokumentation
+-
+-For mere info om konfiguration af OpenCode, [**se vores docs**](https://opencode.ai/v2/docs).
+-
+-### Bidrag
+-
+-Hvis du vil bidrage til OpenCode, så læs vores [contributing docs](./CONTRIBUTING.md) før du sender en pull request.
+-
+-### Bygget på OpenCode
+-
+-Hvis du arbejder på et projekt der er relateret til OpenCode og bruger "opencode" som en del af navnet; f.eks. "opencode-dashboard" eller "opencode-mobile", så tilføj en note i din README, der tydeliggør at projektet ikke er bygget af OpenCode-teamet og ikke er tilknyttet os på nogen måde.
+-
+----
+-
+-**Bliv en del af vores community** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+diff --git a/README.de.md b/README.de.md
+deleted file mode 100644
+index 042c2b4281..0000000000
+--- a/README.de.md
++++ /dev/null
+@@ -1,114 +0,0 @@
+-<p align="center">
+-  <a href="https://opencode.ai">
+-    <picture>
+-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+-    </picture>
+-  </a>
+-</p>
+-<p align="center">Der Open-Source KI-Coding-Agent.</p>
+-<p align="center">
+-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
+-</p>
+-
+-<p align="center">
+-  <a href="README.md">English</a> |
+-  <a href="README.zh.md">简体中文</a> |
+-  <a href="README.zht.md">繁體中文</a> |
+-  <a href="README.ko.md">한국어</a> |
+-  <a href="README.de.md">Deutsch</a> |
+-  <a href="README.es.md">Español</a> |
+-  <a href="README.fr.md">Français</a> |
+-  <a href="README.it.md">Italiano</a> |
+-  <a href="README.da.md">Dansk</a> |
+-  <a href="README.ja.md">日本語</a> |
+-  <a href="README.pl.md">Polski</a> |
+-  <a href="README.ru.md">Русский</a> |
+-  <a href="README.bs.md">Bosanski</a> |
+-  <a href="README.ar.md">العربية</a> |
+-  <a href="README.no.md">Norsk</a> |
+-  <a href="README.br.md">Português (Brasil)</a> |
+-  <a href="README.th.md">ไทย</a> |
+-  <a href="README.tr.md">Türkçe</a> |
+-  <a href="README.uk.md">Українська</a> |
+-  <a href="README.bn.md">বাংলা</a> |
+-  <a href="README.gr.md">Ελληνικά</a> |
+-  <a href="README.vi.md">Tiếng Việt</a>
+-</p>
+-
+-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+-
+----
+-
+-### Installation
+-
+-```bash
+-# YOLO
+-curl -fsSL https://opencode.ai/v2/install | bash
+-
+-# Paketmanager
+-npm i -g @opencode/cli@latest      # oder bun/pnpm/yarn
+-brew install anomalyco/tap/opencode-v2 # macOS und Linux (empfohlen, immer aktuell)
+-brew install opencode              # macOS und Linux (offizielle Brew-Formula, seltener aktualisiert)
+-sudo pacman -S opencode            # Arch Linux (Stable)
+-paru -S opencode-beta              # Arch Linux (Latest from AUR)
+-mise use -g opencode               # jedes Betriebssystem
+-nix run github:anomalyco/opencode  # Nix
+-```
+-
+-> [!TIP]
+-> Entferne Versionen älter als 0.1.x vor der Installation.
+-
+-### Desktop-App (BETA)
+-
+-OpenCode ist auch als Desktop-Anwendung verfügbar. Lade sie von [opencode.ai/download](https://opencode.ai/download) herunter.
+-
+-| Plattform             | Download                           |
+-| --------------------- | ---------------------------------- |
+-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
+-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
+-| Windows               | `opencode-desktop-win-x64.exe`     |
+-| Linux                 | `.deb`, `.rpm` oder AppImage       |
+-
+-```bash
+-# macOS (Homebrew)
+-brew install --cask opencode-desktop
+-```
+-
+-#### Installationsverzeichnis
+-
+-Das Installationsskript installiert OpenCode in `$HOME/.opencode/bin`.
+-
+-### Agents
+-
+-OpenCode enthält zwei eingebaute Agents, zwischen denen du mit der `Tab`-Taste wechseln kannst.
+-
+-- **build** - Standard-Agent mit vollem Zugriff für Entwicklungsarbeit
+-- **plan** - Nur-Lese-Agent für Analyse und Code-Exploration
+-  - Verweigert Datei-Edits standardmäßig
+-  - Fragt vor dem Ausführen von bash-Befehlen nach
+-  - Ideal zum Erkunden unbekannter Codebases oder zum Planen von Änderungen
+-
+-Außerdem ist ein **general**-Subagent für komplexe Suchen und mehrstufige Aufgaben enthalten.
+-Dieser wird intern genutzt und kann in Nachrichten mit `@general` aufgerufen werden.
+-
+-Mehr dazu unter [Agents](https://opencode.ai/v2/docs/agents).
+-
+-### Dokumentation
+-
+-Mehr Infos zur Konfiguration von OpenCode findest du in unseren [**Docs**](https://opencode.ai/v2/docs).
+-
+-### Beitragen
+-
+-Wenn du zu OpenCode beitragen möchtest, lies bitte unsere [Contributing Docs](./CONTRIBUTING.md), bevor du einen Pull Request einreichst.
+-
+-### Auf OpenCode aufbauen
+-
+-Wenn du an einem Projekt arbeitest, das mit OpenCode zusammenhängt und "opencode" als Teil seines Namens verwendet (z.B. "opencode-dashboard" oder "opencode-mobile"), füge bitte einen Hinweis in deine README ein, dass es nicht vom OpenCode-Team gebaut wird und nicht in irgendeiner Weise mit uns verbunden ist.
+-
+----
+-
+-**Tritt unserer Community bei** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+diff --git a/README.es.md b/README.es.md
+deleted file mode 100644
+index 129619b7a0..0000000000
+--- a/README.es.md
++++ /dev/null
+@@ -1,114 +0,0 @@
+-<p align="center">
+-  <a href="https://opencode.ai">
+-    <picture>
+-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+-    </picture>
+-  </a>
+-</p>
+-<p align="center">El agente de programación con IA de código abierto.</p>
+-<p align="center">
+-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
+-</p>
+-
+-<p align="center">
+-  <a href="README.md">English</a> |
+-  <a href="README.zh.md">简体中文</a> |
+-  <a href="README.zht.md">繁體中文</a> |
+-  <a href="README.ko.md">한국어</a> |
+-  <a href="README.de.md">Deutsch</a> |
+-  <a href="README.es.md">Español</a> |
+-  <a href="README.fr.md">Français</a> |
+-  <a href="README.it.md">Italiano</a> |
+-  <a href="README.da.md">Dansk</a> |
+-  <a href="README.ja.md">日本語</a> |
+-  <a href="README.pl.md">Polski</a> |
+-  <a href="README.ru.md">Русский</a> |
+-  <a href="README.bs.md">Bosanski</a> |
+-  <a href="README.ar.md">العربية</a> |
+-  <a href="README.no.md">Norsk</a> |
+-  <a href="README.br.md">Português (Brasil)</a> |
+-  <a href="README.th.md">ไทย</a> |
+-  <a href="README.tr.md">Türkçe</a> |
+-  <a href="README.uk.md">Українська</a> |
+-  <a href="README.bn.md">বাংলা</a> |
+-  <a href="README.gr.md">Ελληνικά</a> |
+-  <a href="README.vi.md">Tiếng Việt</a>
+-</p>
+-
+-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+-
+----
+-
+-### Instalación
+-
+-```bash
+-# YOLO
+-curl -fsSL https://opencode.ai/v2/install | bash
+-
+-# Gestores de paquetes
+-npm i -g @opencode/cli@latest      # o bun/pnpm/yarn
+-brew install anomalyco/tap/opencode-v2 # macOS y Linux (recomendado, siempre al día)
+-brew install opencode              # macOS y Linux (fórmula oficial de brew, se actualiza menos)
+-sudo pacman -S opencode            # Arch Linux (Stable)
+-paru -S opencode-beta              # Arch Linux (Latest from AUR)
+-mise use -g opencode               # cualquier sistema
+-nix run github:anomalyco/opencode  # Nix
+-```
+-
+-> [!TIP]
+-> Elimina versiones anteriores a 0.1.x antes de instalar.
+-
+-### App de escritorio (BETA)
+-
+-OpenCode también está disponible como aplicación de escritorio. Descárgala desde [opencode.ai/download](https://opencode.ai/download).
+-
+-| Plataforma            | Descarga                           |
+-| --------------------- | ---------------------------------- |
+-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
+-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
+-| Windows               | `opencode-desktop-win-x64.exe`     |
+-| Linux                 | `.deb`, `.rpm`, o AppImage         |
+-
+-```bash
+-# macOS (Homebrew)
+-brew install --cask opencode-desktop
+-```
+-
+-#### Directorio de instalación
+-
+-El script de instalación instala OpenCode en `$HOME/.opencode/bin`.
+-
+-### Agentes
+-
+-OpenCode incluye dos agentes integrados que puedes alternar con la tecla `Tab`.
+-
+-- **build** - Por defecto, agente con acceso completo para tareas de desarrollo
+-- **plan** - Agente de solo lectura para análisis y exploración de código
+-  - Deniega ediciones de archivos por defecto
+-  - Pide permiso antes de ejecutar comandos bash
+-  - Ideal para explorar codebases desconocidas o planificar cambios
+-
+-Además, incluye un subagente **general** para búsquedas complejas y tareas de varios pasos.
+-Se usa internamente y se puede invocar con `@general` en los mensajes.
+-
+-Más información sobre [agentes](https://opencode.ai/v2/docs/agents).
+-
+-### Documentación
+-
+-Para más información sobre cómo configurar OpenCode, [**ve a nuestra documentación**](https://opencode.ai/v2/docs).
+-
+-### Contribuir
+-
+-Si te interesa contribuir a OpenCode, lee nuestras [docs de contribución](./CONTRIBUTING.md) antes de enviar un pull request.
+-
+-### Proyectos basados en OpenCode
+-
+-Si estás trabajando en un proyecto basado en OpenCode y usas "opencode" como parte del nombre, por ejemplo, "opencode-dashboard" u "opencode-mobile", agrega una nota en tu README para aclarar que no está hecho por el equipo de OpenCode y que no está afiliado con nosotros de ninguna manera.
+-
+----
+-
+-**Únete a nuestra comunidad** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+diff --git a/README.fr.md b/README.fr.md
+deleted file mode 100644
+index cab6c14b15..0000000000
+--- a/README.fr.md
++++ /dev/null
+@@ -1,114 +0,0 @@
+-<p align="center">
+-  <a href="https://opencode.ai">
+-    <picture>
+-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="Logo OpenCode">
+-    </picture>
+-  </a>
+-</p>
+-<p align="center">L'agent de codage IA open source.</p>
+-<p align="center">
+-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
+-</p>
+-
+-<p align="center">
+-  <a href="README.md">English</a> |
+-  <a href="README.zh.md">简体中文</a> |
+-  <a href="README.zht.md">繁體中文</a> |
+-  <a href="README.ko.md">한국어</a> |
+-  <a href="README.de.md">Deutsch</a> |
+-  <a href="README.es.md">Español</a> |
+-  <a href="README.fr.md">Français</a> |
+-  <a href="README.it.md">Italiano</a> |
+-  <a href="README.da.md">Dansk</a> |
+-  <a href="README.ja.md">日本語</a> |
+-  <a href="README.pl.md">Polski</a> |
+-  <a href="README.ru.md">Русский</a> |
+-  <a href="README.bs.md">Bosanski</a> |
+-  <a href="README.ar.md">العربية</a> |
+-  <a href="README.no.md">Norsk</a> |
+-  <a href="README.br.md">Português (Brasil)</a> |
+-  <a href="README.th.md">ไทย</a> |
+-  <a href="README.tr.md">Türkçe</a> |
+-  <a href="README.uk.md">Українська</a> |
+-  <a href="README.bn.md">বাংলা</a> |
+-  <a href="README.gr.md">Ελληνικά</a> |
+-  <a href="README.vi.md">Tiếng Việt</a>
+-</p>
+-
+-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+-
+----
+-
+-### Installation
+-
+-```bash
+-# YOLO
+-curl -fsSL https://opencode.ai/v2/install | bash
+-
+-# Gestionnaires de paquets
+-npm i -g @opencode/cli@latest      # ou bun/pnpm/yarn
+-brew install anomalyco/tap/opencode-v2 # macOS et Linux (recommandé, toujours à jour)
+-brew install opencode              # macOS et Linux (formule officielle brew, mise à jour moins fréquente)
+-sudo pacman -S opencode            # Arch Linux (Stable)
+-paru -S opencode-beta              # Arch Linux (Latest from AUR)
+-mise use -g opencode               # n'importe quel OS
+-nix run github:anomalyco/opencode  # Nix
+-```
+-
+-> [!TIP]
+-> Supprimez les versions antérieures à 0.1.x avant d'installer.
+-
+-### Application de bureau (BETA)
+-
+-OpenCode est aussi disponible en application de bureau. Téléchargez-la depuis [opencode.ai/download](https://opencode.ai/download).
+-
+-| Plateforme            | Téléchargement                     |
+-| --------------------- | ---------------------------------- |
+-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
+-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
+-| Windows               | `opencode-desktop-win-x64.exe`     |
+-| Linux                 | `.deb`, `.rpm`, ou AppImage        |
+-
+-```bash
+-# macOS (Homebrew)
+-brew install --cask opencode-desktop
+-```
+-
+-#### Répertoire d'installation
+-
+-Le script d'installation installe OpenCode dans `$HOME/.opencode/bin`.
+-
+-### Agents
+-
+-OpenCode inclut deux agents intégrés que vous pouvez basculer avec la touche `Tab`.
+-
+-- **build** - Par défaut, agent avec accès complet pour le travail de développement
+-- **plan** - Agent en lecture seule pour l'analyse et l'exploration du code
+-  - Refuse les modifications de fichiers par défaut
+-  - Demande l'autorisation avant d'exécuter des commandes bash
+-  - Idéal pour explorer une base de code inconnue ou planifier des changements
+-
+-Un sous-agent **general** est aussi inclus pour les recherches complexes et les tâches en plusieurs étapes.
+-Il est utilisé en interne et peut être invoqué via `@general` dans les messages.
+-
+-En savoir plus sur les [agents](https://opencode.ai/v2/docs/agents).
+-
+-### Documentation
+-
+-Pour plus d'informations sur la configuration d'OpenCode, [**consultez notre documentation**](https://opencode.ai/v2/docs).
+-
+-### Contribuer
+-
+-Si vous souhaitez contribuer à OpenCode, lisez nos [docs de contribution](./CONTRIBUTING.md) avant de soumettre une pull request.
+-
+-### Construire avec OpenCode
+-
+-Si vous travaillez sur un projet lié à OpenCode et que vous utilisez "opencode" dans le nom du projet (par exemple, "opencode-dashboard" ou "opencode-mobile"), ajoutez une note dans votre README pour préciser qu'il n'est pas construit par l'équipe OpenCode et qu'il n'est pas affilié à nous.
+-
+----
+-
+-**Rejoignez notre communauté** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+diff --git a/README.gr.md b/README.gr.md
+deleted file mode 100644
+index 4eb428ba74..0000000000
+--- a/README.gr.md
++++ /dev/null
+@@ -1,114 +0,0 @@
+-<p align="center">
+-  <a href="https://opencode.ai">
+-    <picture>
+-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+-    </picture>
+-  </a>
+-</p>
+-<p align="center">Ο πράκτορας τεχνητής νοημοσύνης ανοικτού κώδικα για προγραμματισμό.</p>
+-<p align="center">
+-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
+-</p>
+-
+-<p align="center">
+-  <a href="README.md">English</a> |
+-  <a href="README.zh.md">简体中文</a> |
+-  <a href="README.zht.md">繁體中文</a> |
+-  <a href="README.ko.md">한국어</a> |
+-  <a href="README.de.md">Deutsch</a> |
+-  <a href="README.es.md">Español</a> |
+-  <a href="README.fr.md">Français</a> |
+-  <a href="README.it.md">Italiano</a> |
+-  <a href="README.da.md">Dansk</a> |
+-  <a href="README.ja.md">日本語</a> |
+-  <a href="README.pl.md">Polski</a> |
+-  <a href="README.ru.md">Русский</a> |
+-  <a href="README.bs.md">Bosanski</a> |
+-  <a href="README.ar.md">العربية</a> |
+-  <a href="README.no.md">Norsk</a> |
+-  <a href="README.br.md">Português (Brasil)</a> |
+-  <a href="README.th.md">ไทย</a> |
+-  <a href="README.tr.md">Türkçe</a> |
+-  <a href="README.uk.md">Українська</a> |
+-  <a href="README.bn.md">বাংলা</a> |
+-  <a href="README.gr.md">Ελληνικά</a> |
+-  <a href="README.vi.md">Tiếng Việt</a>
+-</p>
+-
+-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+-
+----
+-
+-### Εγκατάσταση
+-
+-```bash
+-# YOLO
+-curl -fsSL https://opencode.ai/v2/install | bash
+-
+-# Διαχειριστές πακέτων
+-npm i -g @opencode/cli@latest      # ή bun/pnpm/yarn
+-brew install anomalyco/tap/opencode-v2 # macOS και Linux (προτείνεται, πάντα ενημερωμένο)
+-brew install opencode              # macOS και Linux (επίσημος τύπος brew, λιγότερο συχνές ενημερώσεις)
+-sudo pacman -S opencode            # Arch Linux (Σταθερό)
+-paru -S opencode-beta              # Arch Linux (Τελευταία έκδοση από AUR)
+-mise use -g opencode               # Οποιοδήποτε λειτουργικό σύστημα
+-nix run github:anomalyco/opencode  # Nix
+-```
+-
+-> [!TIP]
+-> Αφαίρεσε παλαιότερες εκδόσεις από τη 0.1.x πριν από την εγκατάσταση.
+-
+-### Εφαρμογή Desktop (BETA)
+-
+-Το OpenCode είναι επίσης διαθέσιμο ως εφαρμογή. Κατέβασε το από το [opencode.ai/download](https://opencode.ai/download).
+-
+-| Πλατφόρμα             | Λήψη                               |
+-| --------------------- | ---------------------------------- |
+-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
+-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
+-| Windows               | `opencode-desktop-win-x64.exe`     |
+-| Linux                 | `.deb`, `.rpm`, ή AppImage         |
+-
+-```bash
+-# macOS (Homebrew)
+-brew install --cask opencode-desktop
+-```
+-
+-#### Κατάλογος Εγκατάστασης
+-
+-Το script εγκατάστασης εγκαθιστά το OpenCode στο `$HOME/.opencode/bin`.
+-
+-### Πράκτορες
+-
+-Το OpenCode περιλαμβάνει δύο ενσωματωμένους πράκτορες μεταξύ των οποίων μπορείτε να εναλλάσσεστε με το πλήκτρο `Tab`.
+-
+-- **build** - Προεπιλεγμένος πράκτορας με πλήρη πρόσβαση για εργασία πάνω σε κώδικα
+-- **plan** - Πράκτορας μόνο ανάγνωσης για ανάλυση και εξερεύνηση κώδικα
+-  - Αρνείται την επεξεργασία αρχείων από προεπιλογή
+-  - Ζητά άδεια πριν εκτελέσει εντολές bash
+-  - Ιδανικός για εξερεύνηση άγνωστων αρχείων πηγαίου κώδικα ή σχεδιασμό αλλαγών
+-
+-Περιλαμβάνεται επίσης ένας **general** υποπράκτορας για σύνθετες αναζητήσεις και πολυβηματικές διεργασίες.
+-Χρησιμοποιείται εσωτερικά και μπορεί να κληθεί χρησιμοποιώντας `@general` στα μηνύματα.
+-
+-Μάθετε περισσότερα για τους [πράκτορες](https://opencode.ai/v2/docs/agents).
+-
+-### Οδηγός Χρήσης
+-
+-Για περισσότερες πληροφορίες σχετικά με τη ρύθμιση του OpenCode, [**πλοηγήσου στον οδηγό χρήσης μας**](https://opencode.ai/v2/docs).
+-
+-### Συνεισφορά
+-
+-Εάν ενδιαφέρεσαι να συνεισφέρεις στο OpenCode, διαβάστε τα [οδηγό χρήσης συνεισφοράς](./CONTRIBUTING.md) πριν υποβάλεις ένα pull request.
+-
+-### Δημιουργία πάνω στο OpenCode
+-
+-Εάν εργάζεσαι σε ένα έργο σχετικό με το OpenCode και χρησιμοποιείτε το "opencode" ως μέρος του ονόματός του, για παράδειγμα "opencode-dashboard" ή "opencode-mobile", πρόσθεσε μια σημείωση στο README σας για να διευκρινίσεις ότι δεν είναι κατασκευασμένο από την ομάδα του OpenCode και δεν έχει καμία σχέση με εμάς.
+-
+----
+-
+-**Γίνε μέλος της κοινότητάς μας** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+diff --git a/README.it.md b/README.it.md
+deleted file mode 100644
+index 6d34ba6429..0000000000
+--- a/README.it.md
++++ /dev/null
+@@ -1,114 +0,0 @@
+-<p align="center">
+-  <a href="https://opencode.ai">
+-    <picture>
+-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="Logo OpenCode">
+-    </picture>
+-  </a>
+-</p>
+-<p align="center">L’agente di coding AI open source.</p>
+-<p align="center">
+-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
+-</p>
+-
+-<p align="center">
+-  <a href="README.md">English</a> |
+-  <a href="README.zh.md">简体中文</a> |
+-  <a href="README.zht.md">繁體中文</a> |
+-  <a href="README.ko.md">한국어</a> |
+-  <a href="README.de.md">Deutsch</a> |
+-  <a href="README.es.md">Español</a> |
+-  <a href="README.fr.md">Français</a> |
+-  <a href="README.it.md">Italiano</a> |
+-  <a href="README.da.md">Dansk</a> |
+-  <a href="README.ja.md">日本語</a> |
+-  <a href="README.pl.md">Polski</a> |
+-  <a href="README.ru.md">Русский</a> |
+-  <a href="README.bs.md">Bosanski</a> |
+-  <a href="README.ar.md">العربية</a> |
+-  <a href="README.no.md">Norsk</a> |
+-  <a href="README.br.md">Português (Brasil)</a> |
+-  <a href="README.th.md">ไทย</a> |
+-  <a href="README.tr.md">Türkçe</a> |
+-  <a href="README.uk.md">Українська</a> |
+-  <a href="README.bn.md">বাংলা</a> |
+-  <a href="README.gr.md">Ελληνικά</a> |
+-  <a href="README.vi.md">Tiếng Việt</a>
+-</p>
+-
+-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+-
+----
+-
+-### Installazione
+-
+-```bash
+-# YOLO
+-curl -fsSL https://opencode.ai/v2/install | bash
+-
+-# Package manager
+-npm i -g @opencode/cli@latest      # oppure bun/pnpm/yarn
+-brew install anomalyco/tap/opencode-v2 # macOS e Linux (consigliato, sempre aggiornato)
+-brew install opencode              # macOS e Linux (formula brew ufficiale, aggiornata meno spesso)
+-sudo pacman -S opencode            # Arch Linux (Stable)
+-paru -S opencode-beta              # Arch Linux (Latest from AUR)
+-mise use -g opencode               # Qualsiasi OS
+-nix run github:anomalyco/opencode  # Nix
+-```
+-
+-> [!TIP]
+-> Rimuovi le versioni precedenti alla 0.1.x prima di installare.
+-
+-### App Desktop (BETA)
+-
+-OpenCode è disponibile anche come applicazione desktop. Puoi scaricarla da [opencode.ai/download](https://opencode.ai/download).
+-
+-| Piattaforma           | Download                           |
+-| --------------------- | ---------------------------------- |
+-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
+-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
+-| Windows               | `opencode-desktop-win-x64.exe`     |
+-| Linux                 | `.deb`, `.rpm`, oppure AppImage    |
+-
+-```bash
+-# macOS (Homebrew)
+-brew install --cask opencode-desktop
+-```
+-
+-#### Directory di installazione
+-
+-Lo script di installazione installa OpenCode in `$HOME/.opencode/bin`.
+-
+-### Agenti
+-
+-OpenCode include due agenti integrati tra cui puoi passare usando il tasto `Tab`.
+-
+-- **build** – Predefinito, agente con accesso completo per il lavoro di sviluppo
+-- **plan** – Agente in sola lettura per analisi ed esplorazione del codice
+-  - Nega le modifiche ai file per impostazione predefinita
+-  - Chiede il permesso prima di eseguire comandi bash
+-  - Ideale per esplorare codebase sconosciute o pianificare modifiche
+-
+-È inoltre incluso un sotto-agente **general** per ricerche complesse e attività multi-step.
+-Viene utilizzato internamente e può essere invocato usando `@general` nei messaggi.
+-
+-Scopri di più sugli [agenti](https://opencode.ai/v2/docs/agents).
+-
+-### Documentazione
+-
+-Per maggiori informazioni su come configurare OpenCode, [**consulta la nostra documentazione**](https://opencode.ai/v2/docs).
+-
+-### Contribuire
+-
+-Se sei interessato a contribuire a OpenCode, leggi la nostra [guida alla contribuzione](./CONTRIBUTING.md) prima di inviare una pull request.
+-
+-### Costruire su OpenCode
+-
+-Se stai lavorando a un progetto correlato a OpenCode e che utilizza “opencode” come parte del nome (ad esempio “opencode-dashboard” o “opencode-mobile”), aggiungi una nota nel tuo README per chiarire che non è sviluppato dal team OpenCode e che non è affiliato in alcun modo con noi.
+-
+----
+-
+-**Unisciti alla nostra community** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+diff --git a/README.ja.md b/README.ja.md
+deleted file mode 100644
+index 751fc8714c..0000000000
+--- a/README.ja.md
++++ /dev/null
+@@ -1,114 +0,0 @@
+-<p align="center">
+-  <a href="https://opencode.ai">
+-    <picture>
+-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+-    </picture>
+-  </a>
+-</p>
+-<p align="center">オープンソースのAIコーディングエージェント。</p>
+-<p align="center">
+-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
+-</p>
+-
+-<p align="center">
+-  <a href="README.md">English</a> |
+-  <a href="README.zh.md">简体中文</a> |
+-  <a href="README.zht.md">繁體中文</a> |
+-  <a href="README.ko.md">한국어</a> |
+-  <a href="README.de.md">Deutsch</a> |
+-  <a href="README.es.md">Español</a> |
+-  <a href="README.fr.md">Français</a> |
+-  <a href="README.it.md">Italiano</a> |
+-  <a href="README.da.md">Dansk</a> |
+-  <a href="README.ja.md">日本語</a> |
+-  <a href="README.pl.md">Polski</a> |
+-  <a href="README.ru.md">Русский</a> |
+-  <a href="README.bs.md">Bosanski</a> |
+-  <a href="README.ar.md">العربية</a> |
+-  <a href="README.no.md">Norsk</a> |
+-  <a href="README.br.md">Português (Brasil)</a> |
+-  <a href="README.th.md">ไทย</a> |
+-  <a href="README.tr.md">Türkçe</a> |
+-  <a href="README.uk.md">Українська</a> |
+-  <a href="README.bn.md">বাংলা</a> |
+-  <a href="README.gr.md">Ελληνικά</a> |
+-  <a href="README.vi.md">Tiếng Việt</a>
+-</p>
+-
+-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+-
+----
+-
+-### インストール
+-
+-```bash
+-# YOLO
+-curl -fsSL https://opencode.ai/v2/install | bash
+-
+-# パッケージマネージャー
+-npm i -g @opencode/cli@latest      # bun/pnpm/yarn でもOK
+-brew install anomalyco/tap/opencode-v2 # macOS と Linux（推奨。常に最新）
+-brew install opencode              # macOS と Linux（公式 brew formula。更新頻度は低め）
+-sudo pacman -S opencode            # Arch Linux (Stable)
+-paru -S opencode-beta              # Arch Linux (Latest from AUR)
+-mise use -g opencode               # どのOSでも
+-nix run github:anomalyco/opencode  # Nix
+-```
+-
+-> [!TIP]
+-> インストール前に 0.1.x より古いバージョンを削除してください。
+-
+-### デスクトップアプリ (BETA)
+-
+-OpenCode はデスクトップアプリとしても利用できます。[opencode.ai/download](https://opencode.ai/download) からダウンロードしてください。
+-
+-| プラットフォーム      | ダウンロード                       |
+-| --------------------- | ---------------------------------- |
+-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
+-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
+-| Windows               | `opencode-desktop-win-x64.exe`     |
+-| Linux                 | `.deb`、`.rpm`、または AppImage    |
+-
+-```bash
+-# macOS (Homebrew)
+-brew install --cask opencode-desktop
+-```
+-
+-#### インストールディレクトリ
+-
+-インストールスクリプトは、OpenCode を `$HOME/.opencode/bin` にインストールします。
+-
+-### Agents
+-
+-OpenCode には組み込みの Agent が2つあり、`Tab` キーで切り替えられます。
+-
+-- **build** - デフォルト。開発向けのフルアクセス Agent
+-- **plan** - 分析とコード探索向けの読み取り専用 Agent
+-  - デフォルトでファイル編集を拒否
+-  - bash コマンド実行前に確認
+-  - 未知のコードベース探索や変更計画に最適
+-
+-また、複雑な検索やマルチステップのタスク向けに **general** サブ Agent も含まれています。
+-内部的に使用されており、メッセージで `@general` と入力して呼び出せます。
+-
+-[agents](https://opencode.ai/v2/docs/agents) の詳細はこちら。
+-
+-### ドキュメント
+-
+-OpenCode の設定については [**ドキュメント**](https://opencode.ai/v2/docs) を参照してください。
+-
+-### コントリビュート
+-
+-OpenCode に貢献したい場合は、Pull Request を送る前に [contributing docs](./CONTRIBUTING.md) を読んでください。
+-
+-### OpenCode の上に構築する
+-
+-OpenCode に関連するプロジェクトで、名前に "opencode"（例: "opencode-dashboard" や "opencode-mobile"）を含める場合は、そのプロジェクトが OpenCode チームによって作られたものではなく、いかなる形でも関係がないことを README に明記してください。
+-
+----
+-
+-**コミュニティに参加** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+diff --git a/README.ko.md b/README.ko.md
+deleted file mode 100644
+index 0d69b9eed6..0000000000
+--- a/README.ko.md
++++ /dev/null
+@@ -1,114 +0,0 @@
+-<p align="center">
+-  <a href="https://opencode.ai">
+-    <picture>
+-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+-    </picture>
+-  </a>
+-</p>
+-<p align="center">오픈 소스 AI 코딩 에이전트.</p>
+-<p align="center">
+-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
+-</p>
+-
+-<p align="center">
+-  <a href="README.md">English</a> |
+-  <a href="README.zh.md">简体中文</a> |
+-  <a href="README.zht.md">繁體中文</a> |
+-  <a href="README.ko.md">한국어</a> |
+-  <a href="README.de.md">Deutsch</a> |
+-  <a href="README.es.md">Español</a> |
+-  <a href="README.fr.md">Français</a> |
+-  <a href="README.it.md">Italiano</a> |
+-  <a href="README.da.md">Dansk</a> |
+-  <a href="README.ja.md">日本語</a> |
+-  <a href="README.pl.md">Polski</a> |
+-  <a href="README.ru.md">Русский</a> |
+-  <a href="README.bs.md">Bosanski</a> |
+-  <a href="README.ar.md">العربية</a> |
+-  <a href="README.no.md">Norsk</a> |
+-  <a href="README.br.md">Português (Brasil)</a> |
+-  <a href="README.th.md">ไทย</a> |
+-  <a href="README.tr.md">Türkçe</a> |
+-  <a href="README.uk.md">Українська</a> |
+-  <a href="README.bn.md">বাংলা</a> |
+-  <a href="README.gr.md">Ελληνικά</a> |
+-  <a href="README.vi.md">Tiếng Việt</a>
+-</p>
+-
+-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+-
+----
+-
+-### 설치
+-
+-```bash
+-# YOLO
+-curl -fsSL https://opencode.ai/v2/install | bash
+-
+-# 패키지 매니저
+-npm i -g @opencode/cli@latest      # bun/pnpm/yarn 도 가능
+-brew install anomalyco/tap/opencode-v2 # macOS 및 Linux (권장, 항상 최신)
+-brew install opencode              # macOS 및 Linux (공식 brew formula, 업데이트 빈도 낮음)
+-sudo pacman -S opencode            # Arch Linux (Stable)
+-paru -S opencode-beta              # Arch Linux (Latest from AUR)
+-mise use -g opencode               # 어떤 OS든
+-nix run github:anomalyco/opencode  # Nix
+-```
+-
+-> [!TIP]
+-> 설치 전에 0.1.x 보다 오래된 버전을 제거하세요.
+-
+-### 데스크톱 앱 (BETA)
+-
+-OpenCode 는 데스크톱 앱으로도 제공됩니다. [opencode.ai/download](https://opencode.ai/download) 에서 다운로드하세요.
+-
+-| 플랫폼                | 다운로드                           |
+-| --------------------- | ---------------------------------- |
+-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
+-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
+-| Windows               | `opencode-desktop-win-x64.exe`     |
+-| Linux                 | `.deb`, `.rpm`, 또는 AppImage      |
+-
+-```bash
+-# macOS (Homebrew)
+-brew install --cask opencode-desktop
+-```
+-
+-#### 설치 디렉터리
+-
+-설치 스크립트는 OpenCode를 `$HOME/.opencode/bin`에 설치합니다.
+-
+-### Agents
+-
+-OpenCode 에는 내장 에이전트 2개가 있으며 `Tab` 키로 전환할 수 있습니다.
+-
+-- **build** - 기본값, 개발 작업을 위한 전체 권한 에이전트
+-- **plan** - 분석 및 코드 탐색을 위한 읽기 전용 에이전트
+-  - 기본적으로 파일 편집을 거부
+-  - bash 명령 실행 전에 권한을 요청
+-  - 낯선 코드베이스를 탐색하거나 변경을 계획할 때 적합
+-
+-또한 복잡한 검색과 여러 단계 작업을 위한 **general** 서브 에이전트가 포함되어 있습니다.
+-내부적으로 사용되며, 메시지에서 `@general` 로 호출할 수 있습니다.
+-
+-[agents](https://opencode.ai/v2/docs/agents) 에 대해 더 알아보세요.
+-
+-### 문서
+-
+-OpenCode 설정에 대한 자세한 내용은 [**문서**](https://opencode.ai/v2/docs) 를 참고하세요.
+-
+-### 기여하기
+-
+-OpenCode 에 기여하고 싶다면, Pull Request 를 제출하기 전에 [contributing docs](./CONTRIBUTING.md) 를 읽어주세요.
+-
+-### OpenCode 기반으로 만들기
+-
+-OpenCode 와 관련된 프로젝트를 진행하면서 이름에 "opencode"(예: "opencode-dashboard" 또는 "opencode-mobile") 를 포함한다면, README 에 해당 프로젝트가 OpenCode 팀이 만든 것이 아니며 어떤 방식으로도 우리와 제휴되어 있지 않다는 점을 명시해 주세요.
+-
+----
+-
+-**커뮤니티에 참여하기** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+diff --git a/README.md b/README.md
+index 60adea0e39..d997264f7e 100644
+--- a/README.md
++++ b/README.md
+@@ -1,90 +1,45 @@
+ <p align="center">
+-  <a href="https://opencode.ai">
++  <a href="https://github.com/loophole-ai/loophole-app">
+     <picture>
+       <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+       <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
++      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="Loophole logo">
+     </picture>
+   </a>
+ </p>
+ <p align="center">The open source AI coding agent.</p>
+ <p align="center">
+-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
++  <a href="https://github.com/loophole-ai/loophole-app"><img alt="GitHub" src="https://img.shields.io/badge/github-loophole--ai%2Floophole--app-181717?style=flat-square" /></a>
+ </p>
+ 
+-<p align="center">
+-  <a href="README.md">English</a> |
+-  <a href="README.zh.md">简体中文</a> |
+-  <a href="README.zht.md">繁體中文</a> |
+-  <a href="README.ko.md">한국어</a> |
+-  <a href="README.de.md">Deutsch</a> |
+-  <a href="README.es.md">Español</a> |
+-  <a href="README.fr.md">Français</a> |
+-  <a href="README.it.md">Italiano</a> |
+-  <a href="README.da.md">Dansk</a> |
+-  <a href="README.ja.md">日本語</a> |
+-  <a href="README.pl.md">Polski</a> |
+-  <a href="README.ru.md">Русский</a> |
+-  <a href="README.bs.md">Bosanski</a> |
+-  <a href="README.ar.md">العربية</a> |
+-  <a href="README.no.md">Norsk</a> |
+-  <a href="README.br.md">Português (Brasil)</a> |
+-  <a href="README.th.md">ไทย</a> |
+-  <a href="README.tr.md">Türkçe</a> |
+-  <a href="README.uk.md">Українська</a> |
+-  <a href="README.bn.md">বাংলা</a> |
+-  <a href="README.gr.md">Ελληνικά</a> |
+-  <a href="README.vi.md">Tiếng Việt</a>
+-</p>
+-
+-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
++[![Loophole Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://github.com/loophole-ai/loophole-app)
+ 
+ ---
+ 
+ ### Installation
+ 
++Loophole is distributed as source. Build it with Bun 1.3 or newer:
++
+ ```bash
+-# YOLO
+-curl -fsSL https://opencode.ai/v2/install | bash
+-
+-# Package managers
+-npm i -g @opencode/cli@latest      # or bun/pnpm/yarn
+-brew install anomalyco/tap/opencode-v2 # macOS and Linux (recommended, always up to date)
+-brew install opencode              # macOS and Linux (official brew formula, updated less)
+-sudo pacman -S opencode            # Arch Linux (Stable)
+-paru -S opencode-beta              # Arch Linux (Latest from AUR)
+-mise use -g opencode               # Any OS
+-nix run github:anomalyco/opencode  # Nix
++bun install
++bun run dev
+ ```
+ 
+-> [!TIP]
+-> Remove versions older than 0.1.x before installing.
++`bun run dev` starts the CLI and terminal UI. Pass a directory to open another project.
+ 
+-### Desktop App (BETA)
++Prebuilt binaries and desktop builds, when published, are available from the [releases page](https://github.com/loophole-ai/loophole-app/releases).
+ 
+-OpenCode is also available as a desktop application. Download it from [opencode.ai/download](https://opencode.ai/download).
++### Desktop App (BETA)
+ 
+-| Platform              | Download                           |
+-| --------------------- | ---------------------------------- |
+-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
+-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
+-| Windows               | `opencode-desktop-win-x64.exe`     |
+-| Linux                 | `.deb`, `.rpm`, or `.AppImage`     |
++Loophole also builds an Electron desktop application from this repository:
+ 
+ ```bash
+-# macOS (Homebrew)
+-brew install --cask opencode-desktop
++bun run dev:desktop
+ ```
+ 
+-#### Installation Directory
+-
+-The install script installs OpenCode to `$HOME/.opencode/bin`.
+-
+ ### Agents
+ 
+-OpenCode includes two built-in agents you can switch between with the `Tab` key.
++Loophole includes two built-in agents you can switch between with the `Tab` key.
+ 
+ - **build** - Default, full-access agent for development work
+ - **plan** - Read-only agent for analysis and code exploration
+@@ -95,20 +50,22 @@ OpenCode includes two built-in agents you can switch between with the `Tab` key.
+ Also included is a **general** subagent for complex searches and multistep tasks.
+ This is used internally and can be invoked using `@general` in messages.
+ 
+-Learn more about [agents](https://opencode.ai/v2/docs/agents).
+-
+-### Documentation
+-
+-For more info on how to configure OpenCode, [**head over to our docs**](https://opencode.ai/v2/docs).
++Learn more in the [repository docs](https://github.com/loophole-ai/loophole-app).
+ 
+ ### Contributing
+ 
+-If you're interested in contributing to OpenCode, please read our [contributing docs](./CONTRIBUTING.md) before submitting a pull request.
++If you're interested in contributing to Loophole, please read our [contributing docs](./CONTRIBUTING.md) before submitting a pull request.
+ 
+-### Building on OpenCode
++### License
+ 
+-If you are working on a project that's related to OpenCode and is using "opencode" as part of its name, for example "opencode-dashboard" or "opencode-mobile", please add a note to your README to clarify that it is not built by the OpenCode team and is not affiliated with us in any way.
++Loophole is licensed under the **GNU Affero General Public License, version 3 (AGPL-3.0)**.
++See the [LICENSE](./LICENSE) file for the full license text.
+ 
+----
++Loophole is a fork of [OpenCode](https://github.com/anomalyco/opencode), which is
++licensed under the MIT License. Copyright (c) 2025 opencode. The original MIT
++license text is reproduced in [LICENSE-opencode.md](./LICENSE-opencode.md) and
++must be retained. Attribution details are in [NOTICE.md](./NOTICE.md).
+ 
+-**Join our community** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
++"OpenCode" and related names and logos are trademarks of their respective
++owners. This project is not affiliated with or endorsed by the OpenCode project
++or its authors.
+diff --git a/README.no.md b/README.no.md
+deleted file mode 100644
+index 68b557df3b..0000000000
+--- a/README.no.md
++++ /dev/null
+@@ -1,114 +0,0 @@
+-<p align="center">
+-  <a href="https://opencode.ai">
+-    <picture>
+-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+-    </picture>
+-  </a>
+-</p>
+-<p align="center">AI-kodeagent med åpen kildekode.</p>
+-<p align="center">
+-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
+-</p>
+-
+-<p align="center">
+-  <a href="README.md">English</a> |
+-  <a href="README.zh.md">简体中文</a> |
+-  <a href="README.zht.md">繁體中文</a> |
+-  <a href="README.ko.md">한국어</a> |
+-  <a href="README.de.md">Deutsch</a> |
+-  <a href="README.es.md">Español</a> |
+-  <a href="README.fr.md">Français</a> |
+-  <a href="README.it.md">Italiano</a> |
+-  <a href="README.da.md">Dansk</a> |
+-  <a href="README.ja.md">日本語</a> |
+-  <a href="README.pl.md">Polski</a> |
+-  <a href="README.ru.md">Русский</a> |
+-  <a href="README.bs.md">Bosanski</a> |
+-  <a href="README.ar.md">العربية</a> |
+-  <a href="README.no.md">Norsk</a> |
+-  <a href="README.br.md">Português (Brasil)</a> |
+-  <a href="README.th.md">ไทย</a> |
+-  <a href="README.tr.md">Türkçe</a> |
+-  <a href="README.uk.md">Українська</a> |
+-  <a href="README.bn.md">বাংলা</a> |
+-  <a href="README.gr.md">Ελληνικά</a> |
+-  <a href="README.vi.md">Tiếng Việt</a>
+-</p>
+-
+-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+-
+----
+-
+-### Installasjon
+-
+-```bash
+-# YOLO
+-curl -fsSL https://opencode.ai/v2/install | bash
+-
+-# Pakkehåndterere
+-npm i -g @opencode/cli@latest      # eller bun/pnpm/yarn
+-brew install anomalyco/tap/opencode-v2 # macOS og Linux (anbefalt, alltid oppdatert)
+-brew install opencode              # macOS og Linux (offisiell brew-formel, oppdateres sjeldnere)
+-sudo pacman -S opencode            # Arch Linux (Stable)
+-paru -S opencode-beta              # Arch Linux (Latest from AUR)
+-mise use -g opencode               # alle OS
+-nix run github:anomalyco/opencode  # Nix
+-```
+-
+-> [!TIP]
+-> Fjern versjoner eldre enn 0.1.x før du installerer.
+-
+-### Desktop-app (BETA)
+-
+-OpenCode er også tilgjengelig som en desktop-app. Last ned fra [opencode.ai/download](https://opencode.ai/download).
+-
+-| Plattform             | Nedlasting                         |
+-| --------------------- | ---------------------------------- |
+-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
+-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
+-| Windows               | `opencode-desktop-win-x64.exe`     |
+-| Linux                 | `.deb`, `.rpm` eller AppImage      |
+-
+-```bash
+-# macOS (Homebrew)
+-brew install --cask opencode-desktop
+-```
+-
+-#### Installasjonsmappe
+-
+-Installasjonsskriptet installerer OpenCode i `$HOME/.opencode/bin`.
+-
+-### Agents
+-
+-OpenCode har to innebygde agents du kan bytte mellom med `Tab`-tasten.
+-
+-- **build** - Standard, agent med full tilgang for utviklingsarbeid
+-- **plan** - Skrivebeskyttet agent for analyse og kodeutforsking
+-  - Nekter filendringer som standard
+-  - Spør om tillatelse før bash-kommandoer
+-  - Ideell for å utforske ukjente kodebaser eller planlegge endringer
+-
+-Det finnes også en **general**-subagent for komplekse søk og flertrinnsoppgaver.
+-Den brukes internt og kan kalles via `@general` i meldinger.
+-
+-Les mer om [agents](https://opencode.ai/v2/docs/agents).
+-
+-### Dokumentasjon
+-
+-For mer info om hvordan du konfigurerer OpenCode, [**se dokumentasjonen**](https://opencode.ai/v2/docs).
+-
+-### Bidra
+-
+-Hvis du vil bidra til OpenCode, les [contributing docs](./CONTRIBUTING.md) før du sender en pull request.
+-
+-### Bygge på OpenCode
+-
+-Hvis du jobber med et prosjekt som er relatert til OpenCode og bruker "opencode" som en del av navnet; for eksempel "opencode-dashboard" eller "opencode-mobile", legg inn en merknad i README som presiserer at det ikke er bygget av OpenCode-teamet og ikke er tilknyttet oss på noen måte.
+-
+----
+-
+-**Bli med i fellesskapet** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+diff --git a/README.pl.md b/README.pl.md
+deleted file mode 100644
+index 0618af87d6..0000000000
+--- a/README.pl.md
++++ /dev/null
+@@ -1,114 +0,0 @@
+-<p align="center">
+-  <a href="https://opencode.ai">
+-    <picture>
+-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+-    </picture>
+-  </a>
+-</p>
+-<p align="center">Otwartoźródłowy agent kodujący AI.</p>
+-<p align="center">
+-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
+-</p>
+-
+-<p align="center">
+-  <a href="README.md">English</a> |
+-  <a href="README.zh.md">简体中文</a> |
+-  <a href="README.zht.md">繁體中文</a> |
+-  <a href="README.ko.md">한국어</a> |
+-  <a href="README.de.md">Deutsch</a> |
+-  <a href="README.es.md">Español</a> |
+-  <a href="README.fr.md">Français</a> |
+-  <a href="README.it.md">Italiano</a> |
+-  <a href="README.da.md">Dansk</a> |
+-  <a href="README.ja.md">日本語</a> |
+-  <a href="README.pl.md">Polski</a> |
+-  <a href="README.ru.md">Русский</a> |
+-  <a href="README.bs.md">Bosanski</a> |
+-  <a href="README.ar.md">العربية</a> |
+-  <a href="README.no.md">Norsk</a> |
+-  <a href="README.br.md">Português (Brasil)</a> |
+-  <a href="README.th.md">ไทย</a> |
+-  <a href="README.tr.md">Türkçe</a> |
+-  <a href="README.uk.md">Українська</a> |
+-  <a href="README.bn.md">বাংলা</a> |
+-  <a href="README.gr.md">Ελληνικά</a> |
+-  <a href="README.vi.md">Tiếng Việt</a>
+-</p>
+-
+-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+-
+----
+-
+-### Instalacja
+-
+-```bash
+-# YOLO
+-curl -fsSL https://opencode.ai/v2/install | bash
+-
+-# Menedżery pakietów
+-npm i -g @opencode/cli@latest      # albo bun/pnpm/yarn
+-brew install anomalyco/tap/opencode-v2 # macOS i Linux (polecane, zawsze aktualne)
+-brew install opencode              # macOS i Linux (oficjalna formuła brew, rzadziej aktualizowana)
+-sudo pacman -S opencode            # Arch Linux (Stable)
+-paru -S opencode-beta              # Arch Linux (Latest from AUR)
+-mise use -g opencode               # dowolny system
+-nix run github:anomalyco/opencode  # Nix
+-```
+-
+-> [!TIP]
+-> Przed instalacją usuń wersje starsze niż 0.1.x.
+-
+-### Aplikacja desktopowa (BETA)
+-
+-OpenCode jest także dostępny jako aplikacja desktopowa. Pobierz ją z [opencode.ai/download](https://opencode.ai/download).
+-
+-| Platforma             | Pobieranie                         |
+-| --------------------- | ---------------------------------- |
+-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
+-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
+-| Windows               | `opencode-desktop-win-x64.exe`     |
+-| Linux                 | `.deb`, `.rpm` lub AppImage        |
+-
+-```bash
+-# macOS (Homebrew)
+-brew install --cask opencode-desktop
+-```
+-
+-#### Katalog instalacji
+-
+-Skrypt instalacyjny instaluje OpenCode w `$HOME/.opencode/bin`.
+-
+-### Agents
+-
+-OpenCode zawiera dwóch wbudowanych agentów, między którymi możesz przełączać się klawiszem `Tab`.
+-
+-- **build** - Domyślny agent z pełnym dostępem do pracy developerskiej
+-- **plan** - Agent tylko do odczytu do analizy i eksploracji kodu
+-  - Domyślnie odmawia edycji plików
+-  - Pyta o zgodę przed uruchomieniem komend bash
+-  - Idealny do poznawania nieznanych baz kodu lub planowania zmian
+-
+-Dodatkowo jest subagent **general** do złożonych wyszukiwań i wieloetapowych zadań.
+-Jest używany wewnętrznie i można go wywołać w wiadomościach przez `@general`.
+-
+-Dowiedz się więcej o [agents](https://opencode.ai/v2/docs/agents).
+-
+-### Dokumentacja
+-
+-Więcej informacji o konfiguracji OpenCode znajdziesz w [**dokumentacji**](https://opencode.ai/v2/docs).
+-
+-### Współtworzenie
+-
+-Jeśli chcesz współtworzyć OpenCode, przeczytaj [contributing docs](./CONTRIBUTING.md) przed wysłaniem pull requesta.
+-
+-### Budowanie na OpenCode
+-
+-Jeśli pracujesz nad projektem związanym z OpenCode i używasz "opencode" jako części nazwy (na przykład "opencode-dashboard" lub "opencode-mobile"), dodaj proszę notatkę do swojego README, aby wyjaśnić, że projekt nie jest tworzony przez zespół OpenCode i nie jest z nami w żaden sposób powiązany.
+-
+----
+-
+-**Dołącz do naszej społeczności** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+diff --git a/README.ru.md b/README.ru.md
+deleted file mode 100644
+index e369c7f47d..0000000000
+--- a/README.ru.md
++++ /dev/null
+@@ -1,114 +0,0 @@
+-<p align="center">
+-  <a href="https://opencode.ai">
+-    <picture>
+-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+-    </picture>
+-  </a>
+-</p>
+-<p align="center">Открытый AI-агент для программирования.</p>
+-<p align="center">
+-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
+-</p>
+-
+-<p align="center">
+-  <a href="README.md">English</a> |
+-  <a href="README.zh.md">简体中文</a> |
+-  <a href="README.zht.md">繁體中文</a> |
+-  <a href="README.ko.md">한국어</a> |
+-  <a href="README.de.md">Deutsch</a> |
+-  <a href="README.es.md">Español</a> |
+-  <a href="README.fr.md">Français</a> |
+-  <a href="README.it.md">Italiano</a> |
+-  <a href="README.da.md">Dansk</a> |
+-  <a href="README.ja.md">日本語</a> |
+-  <a href="README.pl.md">Polski</a> |
+-  <a href="README.ru.md">Русский</a> |
+-  <a href="README.bs.md">Bosanski</a> |
+-  <a href="README.ar.md">العربية</a> |
+-  <a href="README.no.md">Norsk</a> |
+-  <a href="README.br.md">Português (Brasil)</a> |
+-  <a href="README.th.md">ไทย</a> |
+-  <a href="README.tr.md">Türkçe</a> |
+-  <a href="README.uk.md">Українська</a> |
+-  <a href="README.bn.md">বাংলা</a> |
+-  <a href="README.gr.md">Ελληνικά</a> |
+-  <a href="README.vi.md">Tiếng Việt</a>
+-</p>
+-
+-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+-
+----
+-
+-### Установка
+-
+-```bash
+-# YOLO
+-curl -fsSL https://opencode.ai/v2/install | bash
+-
+-# Менеджеры пакетов
+-npm i -g @opencode/cli@latest      # или bun/pnpm/yarn
+-brew install anomalyco/tap/opencode-v2 # macOS и Linux (рекомендуем, всегда актуально)
+-brew install opencode              # macOS и Linux (официальная формула brew, обновляется реже)
+-sudo pacman -S opencode            # Arch Linux (Stable)
+-paru -S opencode-beta              # Arch Linux (Latest from AUR)
+-mise use -g opencode               # любая ОС
+-nix run github:anomalyco/opencode  # Nix
+-```
+-
+-> [!TIP]
+-> Перед установкой удалите версии старше 0.1.x.
+-
+-### Десктопное приложение (BETA)
+-
+-OpenCode также доступен как десктопное приложение. Скачайте его с [opencode.ai/download](https://opencode.ai/download).
+-
+-| Платформа             | Загрузка                           |
+-| --------------------- | ---------------------------------- |
+-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
+-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
+-| Windows               | `opencode-desktop-win-x64.exe`     |
+-| Linux                 | `.deb`, `.rpm` или AppImage        |
+-
+-```bash
+-# macOS (Homebrew)
+-brew install --cask opencode-desktop
+-```
+-
+-#### Каталог установки
+-
+-Скрипт установки устанавливает OpenCode в `$HOME/.opencode/bin`.
+-
+-### Agents
+-
+-В OpenCode есть два встроенных агента, между которыми можно переключаться клавишей `Tab`.
+-
+-- **build** - По умолчанию, агент с полным доступом для разработки
+-- **plan** - Агент только для чтения для анализа и изучения кода
+-  - По умолчанию запрещает редактирование файлов
+-  - Запрашивает разрешение перед выполнением bash-команд
+-  - Идеален для изучения незнакомых кодовых баз или планирования изменений
+-
+-Также включен сабагент **general** для сложных поисков и многошаговых задач.
+-Он используется внутренне и может быть вызван в сообщениях через `@general`.
+-
+-Подробнее об [agents](https://opencode.ai/v2/docs/agents).
+-
+-### Документация
+-
+-Больше информации о том, как настроить OpenCode: [**наши docs**](https://opencode.ai/v2/docs).
+-
+-### Вклад
+-
+-Если вы хотите внести вклад в OpenCode, прочитайте [contributing docs](./CONTRIBUTING.md) перед тем, как отправлять pull request.
+-
+-### Разработка на базе OpenCode
+-
+-Если вы делаете проект, связанный с OpenCode, и используете "opencode" как часть имени (например, "opencode-dashboard" или "opencode-mobile"), добавьте примечание в README, чтобы уточнить, что проект не создан командой OpenCode и не аффилирован с нами.
+-
+----
+-
+-**Присоединяйтесь к нашему сообществу** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+diff --git a/README.th.md b/README.th.md
+deleted file mode 100644
+index f1d7a6f356..0000000000
+--- a/README.th.md
++++ /dev/null
+@@ -1,114 +0,0 @@
+-<p align="center">
+-  <a href="https://opencode.ai">
+-    <picture>
+-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+-    </picture>
+-  </a>
+-</p>
+-<p align="center">เอเจนต์การเขียนโค้ดด้วย AI แบบโอเพนซอร์ส</p>
+-<p align="center">
+-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="สถานะการสร้าง" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
+-</p>
+-
+-<p align="center">
+-  <a href="README.md">English</a> |
+-  <a href="README.zh.md">简体中文</a> |
+-  <a href="README.zht.md">繁體中文</a> |
+-  <a href="README.ko.md">한국어</a> |
+-  <a href="README.de.md">Deutsch</a> |
+-  <a href="README.es.md">Español</a> |
+-  <a href="README.fr.md">Français</a> |
+-  <a href="README.it.md">Italiano</a> |
+-  <a href="README.da.md">Dansk</a> |
+-  <a href="README.ja.md">日本語</a> |
+-  <a href="README.pl.md">Polski</a> |
+-  <a href="README.ru.md">Русский</a> |
+-  <a href="README.bs.md">Bosanski</a> |
+-  <a href="README.ar.md">العربية</a> |
+-  <a href="README.no.md">Norsk</a> |
+-  <a href="README.br.md">Português (Brasil)</a> |
+-  <a href="README.th.md">ไทย</a> |
+-  <a href="README.tr.md">Türkçe</a> |
+-  <a href="README.uk.md">Українська</a> |
+-  <a href="README.bn.md">বাংলা</a> |
+-  <a href="README.gr.md">Ελληνικά</a> |
+-  <a href="README.vi.md">Tiếng Việt</a>
+-</p>
+-
+-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+-
+----
+-
+-### การติดตั้ง
+-
+-```bash
+-# YOLO
+-curl -fsSL https://opencode.ai/v2/install | bash
+-
+-# ตัวจัดการแพ็กเกจ
+-npm i -g @opencode/cli@latest      # หรือ bun/pnpm/yarn
+-brew install anomalyco/tap/opencode-v2 # macOS และ Linux (แนะนำ อัปเดตเสมอ)
+-brew install opencode              # macOS และ Linux (brew formula อย่างเป็นทางการ อัปเดตน้อยกว่า)
+-sudo pacman -S opencode            # Arch Linux (Stable)
+-paru -S opencode-beta              # Arch Linux (Latest from AUR)
+-mise use -g opencode               # ระบบปฏิบัติการใดก็ได้
+-nix run github:anomalyco/opencode  # Nix
+-```
+-
+-> [!TIP]
+-> ลบเวอร์ชันที่เก่ากว่า 0.1.x ก่อนติดตั้ง
+-
+-### แอปพลิเคชันเดสก์ท็อป (เบต้า)
+-
+-OpenCode มีให้ใช้งานเป็นแอปพลิเคชันเดสก์ท็อป ดาวน์โหลดจาก [opencode.ai/download](https://opencode.ai/download)
+-
+-| แพลตฟอร์ม             | ดาวน์โหลด                          |
+-| --------------------- | ---------------------------------- |
+-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
+-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
+-| Windows               | `opencode-desktop-win-x64.exe`     |
+-| Linux                 | `.deb`, `.rpm`, หรือ AppImage      |
+-
+-```bash
+-# macOS (Homebrew)
+-brew install --cask opencode-desktop
+-```
+-
+-#### ไดเรกทอรีการติดตั้ง
+-
+-สคริปต์การติดตั้งจะติดตั้ง OpenCode ไว้ที่ `$HOME/.opencode/bin`
+-
+-### เอเจนต์
+-
+-OpenCode รวมเอเจนต์ในตัวสองตัวที่คุณสามารถสลับได้ด้วยปุ่ม `Tab`
+-
+-- **build** - เอเจนต์เริ่มต้น มีสิทธิ์เข้าถึงแบบเต็มสำหรับงานพัฒนา
+-- **plan** - เอเจนต์อ่านอย่างเดียวสำหรับการวิเคราะห์และการสำรวจโค้ด
+-  - ปฏิเสธการแก้ไขไฟล์โดยค่าเริ่มต้น
+-  - ขอสิทธิ์ก่อนเรียกใช้คำสั่ง bash
+-  - เหมาะสำหรับสำรวจโค้ดเบสที่ไม่คุ้นเคยหรือวางแผนการเปลี่ยนแปลง
+-
+-นอกจากนี้ยังมีเอเจนต์ย่อย **general** สำหรับการค้นหาที่ซับซ้อนและงานหลายขั้นตอน
+-ใช้ภายในและสามารถเรียกใช้ได้โดยใช้ `@general` ในข้อความ
+-
+-เรียนรู้เพิ่มเติมเกี่ยวกับ [เอเจนต์](https://opencode.ai/v2/docs/agents)
+-
+-### เอกสารประกอบ
+-
+-สำหรับข้อมูลเพิ่มเติมเกี่ยวกับวิธีกำหนดค่า OpenCode [**ไปที่เอกสารของเรา**](https://opencode.ai/v2/docs)
+-
+-### การมีส่วนร่วม
+-
+-หากคุณสนใจที่จะมีส่วนร่วมใน OpenCode โปรดอ่าน [เอกสารการมีส่วนร่วม](./CONTRIBUTING.md) ก่อนส่ง Pull Request
+-
+-### การสร้างบน OpenCode
+-
+-หากคุณทำงานในโปรเจกต์ที่เกี่ยวข้องกับ OpenCode และใช้ "opencode" เป็นส่วนหนึ่งของชื่อ เช่น "opencode-dashboard" หรือ "opencode-mobile" โปรดเพิ่มหมายเหตุใน README ของคุณเพื่อชี้แจงว่าไม่ได้สร้างโดยทีม OpenCode และไม่ได้เกี่ยวข้องกับเราในทางใด
+-
+----
+-
+-**ร่วมชุมชนของเรา** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+diff --git a/README.tr.md b/README.tr.md
+deleted file mode 100644
+index e009219bac..0000000000
+--- a/README.tr.md
++++ /dev/null
+@@ -1,114 +0,0 @@
+-<p align="center">
+-  <a href="https://opencode.ai">
+-    <picture>
+-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+-    </picture>
+-  </a>
+-</p>
+-<p align="center">Açık kaynaklı yapay zeka kodlama asistanı.</p>
+-<p align="center">
+-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
+-</p>
+-
+-<p align="center">
+-  <a href="README.md">English</a> |
+-  <a href="README.zh.md">简体中文</a> |
+-  <a href="README.zht.md">繁體中文</a> |
+-  <a href="README.ko.md">한국어</a> |
+-  <a href="README.de.md">Deutsch</a> |
+-  <a href="README.es.md">Español</a> |
+-  <a href="README.fr.md">Français</a> |
+-  <a href="README.it.md">Italiano</a> |
+-  <a href="README.da.md">Dansk</a> |
+-  <a href="README.ja.md">日本語</a> |
+-  <a href="README.pl.md">Polski</a> |
+-  <a href="README.ru.md">Русский</a> |
+-  <a href="README.bs.md">Bosanski</a> |
+-  <a href="README.ar.md">العربية</a> |
+-  <a href="README.no.md">Norsk</a> |
+-  <a href="README.br.md">Português (Brasil)</a> |
+-  <a href="README.th.md">ไทย</a> |
+-  <a href="README.tr.md">Türkçe</a> |
+-  <a href="README.uk.md">Українська</a> |
+-  <a href="README.bn.md">বাংলা</a> |
+-  <a href="README.gr.md">Ελληνικά</a> |
+-  <a href="README.vi.md">Tiếng Việt</a>
+-</p>
+-
+-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+-
+----
+-
+-### Kurulum
+-
+-```bash
+-# YOLO
+-curl -fsSL https://opencode.ai/v2/install | bash
+-
+-# Paket yöneticileri
+-npm i -g @opencode/cli@latest      # veya bun/pnpm/yarn
+-brew install anomalyco/tap/opencode-v2 # macOS ve Linux (önerilir, her zaman güncel)
+-brew install opencode              # macOS ve Linux (resmi brew formülü, daha az güncellenir)
+-sudo pacman -S opencode            # Arch Linux (Stable)
+-paru -S opencode-beta              # Arch Linux (Latest from AUR)
+-mise use -g opencode               # Tüm işletim sistemleri
+-nix run github:anomalyco/opencode  # Nix
+-```
+-
+-> [!TIP]
+-> Kurulumdan önce 0.1.x'ten eski sürümleri kaldırın.
+-
+-### Masaüstü Uygulaması (BETA)
+-
+-OpenCode ayrıca masaüstü uygulaması olarak da mevcuttur. [opencode.ai/download](https://opencode.ai/download) adresinden indirebilirsiniz.
+-
+-| Platform              | İndirme                            |
+-| --------------------- | ---------------------------------- |
+-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
+-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
+-| Windows               | `opencode-desktop-win-x64.exe`     |
+-| Linux                 | `.deb`, `.rpm` veya AppImage       |
+-
+-```bash
+-# macOS (Homebrew)
+-brew install --cask opencode-desktop
+-```
+-
+-#### Kurulum Dizini (Installation Directory)
+-
+-Kurulum betiği, OpenCode'u `$HOME/.opencode/bin` dizinine kurar.
+-
+-### Ajanlar
+-
+-OpenCode, `Tab` tuşuyla aralarında geçiş yapabileceğiniz iki yerleşik (built-in) ajan içerir.
+-
+-- **build** - Varsayılan, geliştirme çalışmaları için tam erişimli ajan
+-- **plan** - Analiz ve kod keşfi için salt okunur ajan
+-  - Varsayılan olarak dosya düzenlemelerini reddeder
+-  - Bash komutlarını çalıştırmadan önce izin ister
+-  - Tanımadığınız kod tabanlarını keşfetmek veya değişiklikleri planlamak için ideal
+-
+-Ayrıca, karmaşık aramalar ve çok adımlı görevler için bir **genel** alt ajan bulunmaktadır.
+-Bu dahili olarak kullanılır ve mesajlarda `@general` ile çağrılabilir.
+-
+-[Ajanlar](https://opencode.ai/v2/docs/agents) hakkında daha fazla bilgi edinin.
+-
+-### Dokümantasyon
+-
+-OpenCode'u nasıl yapılandıracağınız hakkında daha fazla bilgi için [**dokümantasyonumuza göz atın**](https://opencode.ai/v2/docs).
+-
+-### Katkıda Bulunma
+-
+-OpenCode'a katkıda bulunmak istiyorsanız, lütfen bir pull request göndermeden önce [katkıda bulunma dokümanlarımızı](./CONTRIBUTING.md) okuyun.
+-
+-### OpenCode Üzerine Geliştirme
+-
+-OpenCode ile ilgili bir proje üzerinde çalışıyorsanız ve projenizin adının bir parçası olarak "opencode" kullanıyorsanız (örneğin, "opencode-dashboard" veya "opencode-mobile"), lütfen README dosyanıza projenin OpenCode ekibi tarafından geliştirilmediğini ve bizimle hiçbir şekilde bağlantılı olmadığını belirten bir not ekleyin.
+-
+----
+-
+-**Topluluğumuza katılın** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+diff --git a/README.uk.md b/README.uk.md
+deleted file mode 100644
+index 6b38e51242..0000000000
+--- a/README.uk.md
++++ /dev/null
+@@ -1,115 +0,0 @@
+-<p align="center">
+-  <a href="https://opencode.ai">
+-    <picture>
+-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+-    </picture>
+-  </a>
+-</p>
+-<p align="center">AI-агент для програмування з відкритим кодом.</p>
+-<p align="center">
+-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
+-</p>
+-
+-<p align="center">
+-  <a href="README.md">English</a> |
+-  <a href="README.zh.md">简体中文</a> |
+-  <a href="README.zht.md">繁體中文</a> |
+-  <a href="README.ko.md">한국어</a> |
+-  <a href="README.de.md">Deutsch</a> |
+-  <a href="README.es.md">Español</a> |
+-  <a href="README.fr.md">Français</a> |
+-  <a href="README.it.md">Italiano</a> |
+-  <a href="README.da.md">Dansk</a> |
+-  <a href="README.ja.md">日本語</a> |
+-  <a href="README.pl.md">Polski</a> |
+-  <a href="README.ru.md">Русский</a> |
+-  <a href="README.bs.md">Bosanski</a> |
+-  <a href="README.ar.md">العربية</a> |
+-  <a href="README.no.md">Norsk</a> |
+-  <a href="README.br.md">Português (Brasil)</a> |
+-  <a href="README.th.md">ไทย</a> |
+-  <a href="README.tr.md">Türkçe</a> |
+-  <a href="README.uk.md">Українська</a> |
+-  <a href="README.bn.md">বাংলা</a> |
+-  <a href="README.gr.md">Ελληνικά</a> |
+-  <a href="README.vi.md">Tiếng Việt</a>
+-</p>
+-
+-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+-
+----
+-
+-### Встановлення
+-
+-```bash
+-# YOLO
+-curl -fsSL https://opencode.ai/v2/install | bash
+-
+-# Менеджери пакетів
+-npm i -g @opencode/cli@latest      # або bun/pnpm/yarn
+-brew install anomalyco/tap/opencode-v2 # macOS і Linux (рекомендовано, завжди актуально)
+-brew install opencode              # macOS і Linux (офіційна формула Homebrew, оновлюється рідше)
+-sudo pacman -S opencode            # Arch Linux (Stable)
+-paru -S opencode-beta              # Arch Linux (Latest from AUR)
+-mise use -g opencode               # Будь-яка ОС
+-nix run github:anomalyco/opencode  # Nix
+-```
+-
+-> [!TIP]
+-> Перед встановленням видаліть версії старші за 0.1.x.
+-
+-### Десктопний застосунок (BETA)
+-
+-OpenCode також доступний як десктопний застосунок. Завантажуйте з [opencode.ai/download](https://opencode.ai/download).
+-
+-| Платформа             | Завантаження                       |
+-| --------------------- | ---------------------------------- |
+-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
+-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
+-| Windows               | `opencode-desktop-win-x64.exe`     |
+-| Linux                 | `.deb`, `.rpm` або AppImage        |
+-
+-```bash
+-# macOS (Homebrew)
+-brew install --cask opencode-desktop
+-```
+-
+-#### Каталог встановлення
+-
+-Скрипт встановлення встановлює OpenCode в `$HOME/.opencode/bin`.
+-
+-### Агенти
+-
+-OpenCode містить два вбудовані агенти, між якими можна перемикатися клавішею `Tab`.
+-
+-- **build** - Агент за замовчуванням із повним доступом для завдань розробки
+-- **plan** - Агент лише для читання для аналізу та дослідження коду
+-  - За замовчуванням забороняє редагування файлів
+-  - Запитує дозвіл перед запуском bash-команд
+-  - Ідеально підходить для дослідження незнайомих кодових баз або планування змін
+-
+-Також доступний допоміжний агент **general** для складного пошуку та багатокрокових завдань.
+-Він використовується всередині системи й може бути викликаний у повідомленнях через `@general`.
+-
+-Дізнайтеся більше про [agents](https://opencode.ai/v2/docs/agents).
+-
+-### Документація
+-
+-Щоб дізнатися більше про налаштування OpenCode, [**перейдіть до нашої документації**](https://opencode.ai/v2/docs).
+-
+-### Внесок
+-
+-Якщо ви хочете зробити внесок в OpenCode, будь ласка, прочитайте нашу [документацію для контриб'юторів](./CONTRIBUTING.md) перед надсиланням pull request.
+-
+-### Проєкти на базі OpenCode
+-
+-Якщо ви працюєте над проєктом, пов'язаним з OpenCode, і використовуєте "opencode" у назві, наприклад "opencode-dashboard" або "opencode-mobile", додайте примітку до свого README.
+-Уточніть, що цей проєкт не створений командою OpenCode і жодним чином не афілійований із нами.
+-
+----
+-
+-**Приєднуйтеся до нашої спільноти** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+diff --git a/README.vi.md b/README.vi.md
+deleted file mode 100644
+index d25173ac00..0000000000
+--- a/README.vi.md
++++ /dev/null
+@@ -1,114 +0,0 @@
+-<p align="center">
+-  <a href="https://opencode.ai">
+-    <picture>
+-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+-    </picture>
+-  </a>
+-</p>
+-<p align="center">Trợ lý lập trình AI mã nguồn mở.</p>
+-<p align="center">
+-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
+-</p>
+-
+-<p align="center">
+-  <a href="README.md">English</a> |
+-  <a href="README.zh.md">简体中文</a> |
+-  <a href="README.zht.md">繁體中文</a> |
+-  <a href="README.ko.md">한국어</a> |
+-  <a href="README.de.md">Deutsch</a> |
+-  <a href="README.es.md">Español</a> |
+-  <a href="README.fr.md">Français</a> |
+-  <a href="README.it.md">Italiano</a> |
+-  <a href="README.da.md">Dansk</a> |
+-  <a href="README.ja.md">日本語</a> |
+-  <a href="README.pl.md">Polski</a> |
+-  <a href="README.ru.md">Русский</a> |
+-  <a href="README.bs.md">Bosanski</a> |
+-  <a href="README.ar.md">العربية</a> |
+-  <a href="README.no.md">Norsk</a> |
+-  <a href="README.br.md">Português (Brasil)</a> |
+-  <a href="README.th.md">ไทย</a> |
+-  <a href="README.tr.md">Türkçe</a> |
+-  <a href="README.uk.md">Українська</a> |
+-  <a href="README.bn.md">বাংলা</a> |
+-  <a href="README.gr.md">Ελληνικά</a> |
+-  <a href="README.vi.md">Tiếng Việt</a>
+-</p>
+-
+-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+-
+----
+-
+-### Cài đặt
+-
+-```bash
+-# YOLO
+-curl -fsSL https://opencode.ai/v2/install | bash
+-
+-# Các trình quản lý gói (Package managers)
+-npm i -g @opencode/cli@latest      # hoặc bun/pnpm/yarn
+-brew install anomalyco/tap/opencode-v2 # macOS và Linux (khuyên dùng, luôn cập nhật)
+-brew install opencode              # macOS và Linux (công thức brew chính thức, ít cập nhật hơn)
+-sudo pacman -S opencode            # Arch Linux (Bản ổn định)
+-paru -S opencode-beta              # Arch Linux (Bản mới nhất từ AUR)
+-mise use -g opencode               # Mọi hệ điều hành
+-nix run github:anomalyco/opencode  # Nix
+-```
+-
+-> [!TIP]
+-> Hãy xóa các phiên bản cũ hơn 0.1.x trước khi cài đặt.
+-
+-### Ứng dụng Desktop (BETA)
+-
+-OpenCode cũng có sẵn dưới dạng ứng dụng desktop. Tải từ [opencode.ai/download](https://opencode.ai/download).
+-
+-| Nền tảng              | Tải xuống                          |
+-| --------------------- | ---------------------------------- |
+-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
+-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
+-| Windows               | `opencode-desktop-win-x64.exe`     |
+-| Linux                 | `.deb`, `.rpm`, hoặc AppImage      |
+-
+-```bash
+-# macOS (Homebrew)
+-brew install --cask opencode-desktop
+-```
+-
+-#### Thư mục cài đặt
+-
+-Tập lệnh cài đặt sẽ cài OpenCode vào `$HOME/.opencode/bin`.
+-
+-### Agents (Đại diện)
+-
+-OpenCode bao gồm hai agent được tích hợp sẵn mà bạn có thể chuyển đổi bằng phím `Tab`.
+-
+-- **build** - Agent mặc định, có toàn quyền truy cập cho công việc lập trình
+-- **plan** - Agent chỉ đọc dùng để phân tích và khám phá mã nguồn
+-  - Mặc định từ chối việc chỉnh sửa tệp
+-  - Hỏi quyền trước khi chạy các lệnh bash
+-  - Lý tưởng để khám phá các codebase lạ hoặc lên kế hoạch thay đổi
+-
+-Ngoài ra còn có một subagent **general** dùng cho các tìm kiếm phức tạp và tác vụ nhiều bước.
+-Agent này được sử dụng nội bộ và có thể gọi bằng cách dùng `@general` trong tin nhắn.
+-
+-Tìm hiểu thêm về [agents](https://opencode.ai/v2/docs/agents).
+-
+-### Tài liệu
+-
+-Để biết thêm thông tin về cách cấu hình OpenCode, [**hãy truy cập tài liệu của chúng tôi**](https://opencode.ai/v2/docs).
+-
+-### Đóng góp
+-
+-Nếu bạn muốn đóng góp cho OpenCode, vui lòng đọc [tài liệu hướng dẫn đóng góp](./CONTRIBUTING.md) trước khi gửi pull request.
+-
+-### Xây dựng trên nền tảng OpenCode
+-
+-Nếu bạn đang làm việc trên một dự án liên quan đến OpenCode và sử dụng "opencode" như một phần của tên dự án, ví dụ "opencode-dashboard" hoặc "opencode-mobile", vui lòng thêm một ghi chú vào README của bạn để làm rõ rằng dự án đó không được xây dựng bởi đội ngũ OpenCode và không liên kết với chúng tôi dưới bất kỳ hình thức nào.
+-
+----
+-
+-**Tham gia cộng đồng của chúng tôi** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+diff --git a/README.zh.md b/README.zh.md
+deleted file mode 100644
+index 2f364601e4..0000000000
+--- a/README.zh.md
++++ /dev/null
+@@ -1,113 +0,0 @@
+-<p align="center">
+-  <a href="https://opencode.ai">
+-    <picture>
+-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+-    </picture>
+-  </a>
+-</p>
+-<p align="center">开源的 AI Coding Agent。</p>
+-<p align="center">
+-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
+-</p>
+-
+-<p align="center">
+-  <a href="README.md">English</a> |
+-  <a href="README.zh.md">简体中文</a> |
+-  <a href="README.zht.md">繁體中文</a> |
+-  <a href="README.ko.md">한국어</a> |
+-  <a href="README.de.md">Deutsch</a> |
+-  <a href="README.es.md">Español</a> |
+-  <a href="README.fr.md">Français</a> |
+-  <a href="README.it.md">Italiano</a> |
+-  <a href="README.da.md">Dansk</a> |
+-  <a href="README.ja.md">日本語</a> |
+-  <a href="README.pl.md">Polski</a> |
+-  <a href="README.ru.md">Русский</a> |
+-  <a href="README.bs.md">Bosanski</a> |
+-  <a href="README.ar.md">العربية</a> |
+-  <a href="README.no.md">Norsk</a> |
+-  <a href="README.br.md">Português (Brasil)</a> |
+-  <a href="README.th.md">ไทย</a> |
+-  <a href="README.tr.md">Türkçe</a> |
+-  <a href="README.uk.md">Українська</a> |
+-  <a href="README.bn.md">বাংলা</a> |
+-  <a href="README.gr.md">Ελληνικά</a> |
+-  <a href="README.vi.md">Tiếng Việt</a>
+-</p>
+-
+-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+-
+----
+-
+-### 安装
+-
+-```bash
+-# 直接安装 (YOLO)
+-curl -fsSL https://opencode.ai/v2/install | bash
+-
+-# 软件包管理器
+-npm i -g @opencode/cli@latest      # 也可使用 bun/pnpm/yarn
+-brew install anomalyco/tap/opencode-v2 # macOS 和 Linux（推荐，始终保持最新）
+-brew install opencode              # macOS 和 Linux（官方 brew formula，更新频率较低）
+-sudo pacman -S opencode            # Arch Linux (Stable)
+-paru -S opencode-beta              # Arch Linux (Latest from AUR)
+-mise use -g opencode               # 任意系统
+-nix run github:anomalyco/opencode  # Nix
+-```
+-
+-> [!TIP]
+-> 安装前请先移除 0.1.x 之前的旧版本。
+-
+-### 桌面应用程序 (BETA)
+-
+-OpenCode 也提供桌面版应用。可从 [opencode.ai/download](https://opencode.ai/download) 下载。
+-
+-| 平台                  | 下载文件                           |
+-| --------------------- | ---------------------------------- |
+-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
+-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
+-| Windows               | `opencode-desktop-win-x64.exe`     |
+-| Linux                 | `.deb`、`.rpm` 或 AppImage         |
+-
+-```bash
+-# macOS (Homebrew Cask)
+-brew install --cask opencode-desktop
+-```
+-
+-#### 安装目录
+-
+-安装脚本将 OpenCode 安装到 `$HOME/.opencode/bin`。
+-
+-### Agents
+-
+-OpenCode 内置两种 Agent，可用 `Tab` 键快速切换：
+-
+-- **build** - 默认模式，具备完整权限，适合开发工作
+-- **plan** - 只读模式，适合代码分析与探索
+-  - 默认拒绝修改文件
+-  - 运行 bash 命令前会询问
+-  - 便于探索未知代码库或规划改动
+-
+-另外还包含一个 **general** 子 Agent，用于复杂搜索和多步任务，内部使用，也可在消息中输入 `@general` 调用。
+-
+-了解更多 [Agents](https://opencode.ai/v2/docs/agents) 相关信息。
+-
+-### 文档
+-
+-更多配置说明请查看我们的 [**官方文档**](https://opencode.ai/v2/docs)。
+-
+-### 参与贡献
+-
+-如有兴趣贡献代码，请在提交 PR 前阅读 [贡献指南 (Contributing Docs)](./CONTRIBUTING.md)。
+-
+-### 基于 OpenCode 进行开发
+-
+-如果你在项目名中使用了 “opencode”（如 “opencode-dashboard” 或 “opencode-mobile”），请在 README 里注明该项目不是 OpenCode 团队官方开发，且不存在隶属关系。
+-
+----
+-
+-**加入我们的社区** [飞书](https://applink.feishu.cn/client/chat/chatter/add_by_link?link_token=52ao9352-5623-4fa0-b7dd-3407c392c1af&qr_code=true) | [X.com](https://x.com/opencode)
+diff --git a/README.zht.md b/README.zht.md
+deleted file mode 100644
+index be90cb3cba..0000000000
+--- a/README.zht.md
++++ /dev/null
+@@ -1,113 +0,0 @@
+-<p align="center">
+-  <a href="https://opencode.ai">
+-    <picture>
+-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
+-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
+-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+-    </picture>
+-  </a>
+-</p>
+-<p align="center">開源的 AI Coding Agent。</p>
+-<p align="center">
+-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
+-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
+-</p>
+-
+-<p align="center">
+-  <a href="README.md">English</a> |
+-  <a href="README.zh.md">简体中文</a> |
+-  <a href="README.zht.md">繁體中文</a> |
+-  <a href="README.ko.md">한국어</a> |
+-  <a href="README.de.md">Deutsch</a> |
+-  <a href="README.es.md">Español</a> |
+-  <a href="README.fr.md">Français</a> |
+-  <a href="README.it.md">Italiano</a> |
+-  <a href="README.da.md">Dansk</a> |
+-  <a href="README.ja.md">日本語</a> |
+-  <a href="README.pl.md">Polski</a> |
+-  <a href="README.ru.md">Русский</a> |
+-  <a href="README.bs.md">Bosanski</a> |
+-  <a href="README.ar.md">العربية</a> |
+-  <a href="README.no.md">Norsk</a> |
+-  <a href="README.br.md">Português (Brasil)</a> |
+-  <a href="README.th.md">ไทย</a> |
+-  <a href="README.tr.md">Türkçe</a> |
+-  <a href="README.uk.md">Українська</a> |
+-  <a href="README.bn.md">বাংলা</a> |
+-  <a href="README.gr.md">Ελληνικά</a> |
+-  <a href="README.vi.md">Tiếng Việt</a>
+-</p>
+-
+-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+-
+----
+-
+-### 安裝
+-
+-```bash
+-# 直接安裝 (YOLO)
+-curl -fsSL https://opencode.ai/v2/install | bash
+-
+-# 套件管理員
+-npm i -g @opencode/cli@latest      # 也可使用 bun/pnpm/yarn
+-brew install anomalyco/tap/opencode-v2 # macOS 與 Linux（推薦，始終保持最新）
+-brew install opencode              # macOS 與 Linux（官方 brew formula，更新頻率較低）
+-sudo pacman -S opencode            # Arch Linux (Stable)
+-paru -S opencode-beta              # Arch Linux (Latest from AUR)
+-mise use -g opencode               # 任何作業系統
+-nix run github:anomalyco/opencode  # Nix
+-```
+-
+-> [!TIP]
+-> 安裝前請先移除 0.1.x 以前的舊版本。
+-
+-### 桌面應用程式 (BETA)
+-
+-OpenCode 也提供桌面版應用程式。您可以從 [opencode.ai/download](https://opencode.ai/download) 下載。
+-
+-| 平台                  | 下載連結                           |
+-| --------------------- | ---------------------------------- |
+-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
+-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
+-| Windows               | `opencode-desktop-win-x64.exe`     |
+-| Linux                 | `.deb`, `.rpm`, 或 AppImage        |
+-
+-```bash
+-# macOS (Homebrew Cask)
+-brew install --cask opencode-desktop
+-```
+-
+-#### 安裝目錄
+-
+-安裝腳本將 OpenCode 安裝到 `$HOME/.opencode/bin`。
+-
+-### Agents
+-
+-OpenCode 內建了兩種 Agent，您可以使用 `Tab` 鍵快速切換。
+-
+-- **build** - 預設模式，具備完整權限的 Agent，適用於開發工作。
+-- **plan** - 唯讀模式，適用於程式碼分析與探索。
+-  - 預設禁止修改檔案。
+-  - 執行 bash 指令前會詢問權限。
+-  - 非常適合用來探索陌生的程式碼庫或規劃變更。
+-
+-此外，OpenCode 還包含一個 **general** 子 Agent，用於處理複雜搜尋與多步驟任務。此 Agent 供系統內部使用，亦可透過在訊息中輸入 `@general` 來呼叫。
+-
+-了解更多關於 [Agents](https://opencode.ai/v2/docs/agents) 的資訊。
+-
+-### 線上文件
+-
+-關於如何設定 OpenCode 的詳細資訊，請參閱我們的 [**官方文件**](https://opencode.ai/v2/docs)。
+-
+-### 參與貢獻
+-
+-如果您有興趣參與 OpenCode 的開發，請在提交 Pull Request 前先閱讀我們的 [貢獻指南 (Contributing Docs)](./CONTRIBUTING.md)。
+-
+-### 基於 OpenCode 進行開發
+-
+-如果您正在開發與 OpenCode 相關的專案，並在名稱中使用了 "opencode"（例如 "opencode-dashboard" 或 "opencode-mobile"），請在您的 README 中加入聲明，說明該專案並非由 OpenCode 團隊開發，且與我們沒有任何隸屬關係。
+-
+----
+-
+-**加入我們的社群** [飞书](https://applink.feishu.cn/client/chat/chatter/add_by_link?link_token=52ao9352-5623-4fa0-b7dd-3407c392c1af&qr_code=true) | [X.com](https://x.com/opencode)
+diff --git a/SECURITY.md b/SECURITY.md
+index e7e59f4a27..e79bab9be0 100644
+--- a/SECURITY.md
++++ b/SECURITY.md
+@@ -10,13 +10,13 @@ submit one that will be an automatic ban from the project.
+ 
+ ### Overview
+ 
+-OpenCode is an AI-powered coding assistant that runs locally on your machine. It provides an agent system with access to powerful tools including shell execution, file operations, and web access.
++Loophole is an AI-powered coding assistant that runs locally on your machine. It provides an agent system with access to powerful tools including shell execution, file operations, and web access.
+ 
+ ### No Sandbox
+ 
+-OpenCode does **not** sandbox the agent. The permission system exists as a UX feature to help users stay aware of what actions the agent is taking - it prompts for confirmation before executing commands, writing files, etc. However, it is not designed to provide security isolation.
++Loophole does **not** sandbox the agent. The permission system exists as a UX feature to help users stay aware of what actions the agent is taking - it prompts for confirmation before executing commands, writing files, etc. However, it is not designed to provide security isolation.
+ 
+-If you need true isolation, run OpenCode inside a Docker container or VM.
++If you need true isolation, run Loophole inside a Docker container or VM.
+ 
+ ### Server Mode
+ 
+@@ -36,12 +36,31 @@ Server mode is opt-in only. When enabled, set `OPENCODE_SERVER_PASSWORD` to requ
+ 
+ # Reporting Security Issues
+ 
+-We appreciate your efforts to responsibly disclose your findings, and will make every effort to acknowledge your contributions.
++**Please do not report security vulnerabilities through public GitHub issues.**
+ 
+-To report a security issue, please use the GitHub Security Advisory ["Report a Vulnerability"](https://github.com/anomalyco/opencode/security/advisories/new) tab.
++If you discover a security vulnerability in Loophole, please report it privately by:
+ 
+-The team will send a response indicating the next steps in handling your report. After the initial reply to your report, the security team will keep you informed of the progress towards a fix and full announcement, and may ask for additional information or guidance.
++1. Sending an email to: security@loophole.ai
++2. Including details about the vulnerability
++3. Providing steps to reproduce (if applicable)
++4. Waiting for confirmation before publicly disclosing
++
++You can also use the GitHub Security Advisory
++["Report a Vulnerability"](https://github.com/loophole-ai/loophole-app/security/advisories/new)
++tab.
++
++We will review your report and work with you to address the issue. We aim to respond within 48 hours.
++
++## Responsible Disclosure
++
++We appreciate responsible security disclosures and will work with researchers to:
++
++- Acknowledge the report
++- Investigate and validate the vulnerability
++- Develop and test a fix
++- Release a security update
++- Credit the reporter (if desired)
+ 
+ ## Escalation
+ 
+-If you do not receive an acknowledgement of your report within 6 business days, you may send an email to security@anoma.ly
++If you do not receive an acknowledgement of your report within 6 business days, you may send a follow-up email to security@loophole.ai.
+diff --git a/packages/cli/package.json b/packages/cli/package.json
+index 04816573da..512e2baf59 100644
+--- a/packages/cli/package.json
++++ b/packages/cli/package.json
+@@ -1,12 +1,12 @@
+ {
+   "$schema": "https://json.schemastore.org/package.json",
+-  "name": "@opencode/cli",
++  "name": "@loophole-ai/cli",
+   "version": "2.2.0",
+   "type": "module",
+-  "license": "MIT",
++  "license": "AGPL-3.0",
+   "bin": {
+-    "opencode": "./bin/opencode.cjs",
+-    "opencode2": "./bin/opencode2.cjs"
++    "loophole": "./bin/loophole.cjs",
++    "loophole2": "./bin/loophole2.cjs"
+   },
+   "files": [
+     "bin"
+diff --git a/packages/cli/script/build.ts b/packages/cli/script/build.ts
+index ee39d67a24..f51f4b1a4e 100755
+--- a/packages/cli/script/build.ts
++++ b/packages/cli/script/build.ts
+@@ -11,13 +11,13 @@ import type { BunPlugin } from "bun"
+ import pkg from "../package.json"
+ import { discoverPluginRuntimeSpecifiers, pluginRuntimeLoaderCode } from "@opencode/plugin/runtime-modules"
+ import { buildAppArchive } from "./app-assets"
+-import { verifyArtifact, verifySimulationGraph } from "./verify-artifact"
++import { verifyArtifact } from "./verify-artifact"
+ import { resolveOpencodePty } from "./opencode-pty"
+ import { NativeArch } from "../../../script/native-arch"
+ import { bundledModelsSnapshot, modelsSnapshotPlugin } from "../../core/script/models-snapshot"
+ 
+ const dir = path.resolve(import.meta.dirname, "..")
+-const binary = "opencode"
++const binary = "loophole"
+ const outdir = path.resolve(
+   dir,
+   process.argv.find((arg) => arg.startsWith("--outdir="))?.slice("--outdir=".length) ?? "dist",
+@@ -109,7 +109,7 @@ const pluginRuntimePlugin: BunPlugin = {
+     }))
+     build.onLoad({ filter: /[/\\]internal[/\\]httpApi(?:Scalar|Swagger)\.js$/ }, () => ({
+       contents:
+-        'export const css = ""; export const javascript = \'document.body.textContent = "Scalar/Swagger UI assets are not bundled in OpenCode"\'',
++        'export const css = ""; export const javascript = \'document.body.textContent = "Scalar/Swagger UI assets are not bundled in Loophole"\'',
+       loader: "js",
+     }))
+   },
+@@ -133,16 +133,6 @@ export default { path: file, version: ${JSON.stringify(opencodePty.version)}, sh
+       }))
+     },
+   }
+-  const simulationInputs = new Set<string>()
+-  const simulationGraphPlugin: BunPlugin = {
+-    name: "opencode-simulation-graph",
+-    setup(build) {
+-      build.onLoad(
+-        { filter: /packages[/\\]simulation[/\\]src[/\\](frontend[/\\](simulation|server)|control-server)\.ts$/ },
+-        (args) => void simulationInputs.add(args.path),
+-      )
+-    },
+-  }
+   const parcelWatcherPackage = `@parcel/watcher-${item.os}-${item.arch}${item.os === "linux" ? `-${item.abi ?? "glibc"}` : ""}`
+   const parcelWatcherPlugin: BunPlugin = {
+     name: "parcel-watcher-binding",
+@@ -185,7 +175,7 @@ export default { path: file, version: ${JSON.stringify(opencodePty.version)}, sh
+       outfile: path.join(outdir, name, "bin", binary),
+       execArgv: [
+         "--smol",
+-        `--user-agent=opencode/${Script.channel}/${Script.version}/cli`,
++        `--user-agent=loophole/${Script.channel}/${Script.version}/cli`,
+         "--use-system-ca",
+         "--no-warnings",
+         "--",
+@@ -194,7 +184,7 @@ export default { path: file, version: ${JSON.stringify(opencodePty.version)}, sh
+     },
+     define: {
+       OPENCODE_VERSION: `'${Script.version}'`,
+-      OPENCODE_CLI_NAME: "'opencode'",
++      OPENCODE_CLI_NAME: "'loophole'",
+       OPENCODE_CHANNEL: `'${Script.channel}'`,
+       OPENCODE_ARTIFACT: `'cli'`,
+       ...(highlights ? { OPENCODE_RELEASE_HIGHLIGHTS: JSON.stringify(highlights) } : {}),
+@@ -209,17 +199,16 @@ export default { path: file, version: ${JSON.stringify(opencodePty.version)}, sh
+     for (const log of result.logs) console.error(log)
+     process.exit(1)
+   }
+-  verifySimulationGraph(simulationInputs)
+   await NativeArch.verify(path.join(outdir, name, "bin", item.os === "win32" ? `${binary}.exe` : binary), item.arch)
+ 
+   await Bun.write(
+     path.join(outdir, name, "package.json"),
+     JSON.stringify(
+       {
+-        name: `@opencode/${name}`,
++        name: `@loophole-ai/${name}`,
+         version: Script.version,
+-        license: "MIT",
+-        repository: { type: "git", url: "git+https://github.com/anomalyco/opencode.git" },
++        license: "AGPL-3.0",
++        repository: { type: "git", url: "git+https://github.com/loophole-ai/loophole-app.git" },
+         os: [item.os],
+         cpu: [item.arch],
+       },
