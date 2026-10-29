@@ -19762,7 +19762,7 @@ index c6960b4cc2..a38f777ebf 100644
        errorName: error.type,
      })
 diff --git a/packages/cli/src/commands/commands.ts b/packages/cli/src/commands/commands.ts
-index 85a3bf7274..18d29b28c4 100644
+index 85a3bf7274..ce1d614c4b 100644
 --- a/packages/cli/src/commands/commands.ts
 +++ b/packages/cli/src/commands/commands.ts
 @@ -1,4 +1,4 @@
@@ -19786,7 +19786,29 @@ index 85a3bf7274..18d29b28c4 100644
        Argument.optional,
      ),
      continue: Flag.Boolean("continue").pipe(
-@@ -68,7 +68,7 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
+@@ -64,11 +64,29 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
+       Flag.withDescription("Session ID to continue, or to create if it does not exist"),
+       Flag.optional,
+     ),
++    fork: Flag.Boolean("fork").pipe(
++      Flag.withDescription("Fork the session when continuing"),
++      Flag.withDefault(false),
++    ),
++    replay: Flag.Boolean("replay").pipe(
++      Flag.withDescription("Restore session history on resume and resize (disable with --no-replay)"),
++      Flag.optional,
++    ),
++    replayLimit: Flag.Int("replay-limit").pipe(
++      Flag.withDescription("Limit replay to the newest N messages (default: 200)"),
++      Flag.optional,
++    ),
++    model: Flag.String("model").pipe(
++      Flag.withAlias("m"),
++      Flag.withDescription("Model to use in the format provider/model"),
++      Flag.optional,
++    ),
++    agent: Flag.String("agent").pipe(Flag.withDescription("Agent to use"), Flag.optional),
+     prompt: Flag.String("prompt").pipe(Flag.withDescription("Prompt to use"), Flag.optional),
    },
    commands: [
      Spec.make("upgrade", {
@@ -19795,7 +19817,7 @@ index 85a3bf7274..18d29b28c4 100644
        aliases: ["update"],
        params: {
          target: Argument.String("target").pipe(
-@@ -83,7 +83,7 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
+@@ -83,7 +101,7 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
        },
      }),
      Spec.make("uninstall", {
@@ -19804,7 +19826,7 @@ index 85a3bf7274..18d29b28c4 100644
        params: {
          dryRun: Flag.Boolean("dry-run").pipe(
            Flag.withDescription("Show what would be removed without removing"),
-@@ -397,7 +397,7 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
+@@ -397,7 +415,7 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
        },
      }),
      Spec.make("run", {
@@ -19833,16 +19855,61 @@ index d729c7c99f..ca74d864d4 100644
      })
    }),
 diff --git a/packages/cli/src/commands/handlers/default.ts b/packages/cli/src/commands/handlers/default.ts
-index c23e2be273..56b5cf93fb 100644
+index c23e2be273..f8d3dd507f 100644
 --- a/packages/cli/src/commands/handlers/default.ts
 +++ b/packages/cli/src/commands/handlers/default.ts
-@@ -1,4 +1,4 @@
+@@ -1,43 +1,28 @@
 -import { LayerNode } from "@opencode/util/effect/layer-node"
-+﻿import { LayerNode } from "@opencode/util/effect/layer-node"
- import { Global } from "@opencode/util/global"
- import { run } from "@opencode/tui"
+-import { Global } from "@opencode/util/global"
+-import { run } from "@opencode/tui"
++﻿import { Global } from "@opencode/util/global"
  import { Commands } from "../commands"
-@@ -47,7 +47,7 @@ export default Runtime.handler(Commands, (input) =>
+ import { Runtime } from "../../framework/runtime"
+ import { Config } from "../../config"
+-import { Context, Effect, FileSystem, Option, Queue, Schedule, Semaphore } from "effect"
++import { Context, Effect, FileSystem, Option } from "effect"
+ import { ServerConnection } from "../../services/server-connection"
+-import { Updater } from "../../services/updater"
+ import { UpdatePreflight } from "../../services/update-preflight"
+-import { Npm } from "@opencode/util/npm"
+-import { OPENCODE_ARTIFACT, OPENCODE_CHANNEL, OPENCODE_HIGHLIGHTS, OPENCODE_VERSION } from "../../version"
+-import { Env } from "../../env"
+-import { Service } from "@opencode/client/effect/service"
+-import { OpenCode } from "@opencode/client/promise"
+-import { findSession } from "../../session-target"
+-import { errorMessage } from "../../util/error"
++import { resolve } from "@opencode/tui/config"
+ 
+ export default Runtime.handler(Commands, (input) =>
+   Effect.gen(function* () {
+     const requestedDirectory = Option.getOrUndefined(input.directory)
+     const requestedServer = Option.getOrUndefined(input.server)
+     if (requestedDirectory !== undefined) process.chdir(requestedDirectory)
++    if (input.auto || input.yolo || input.dangerouslySkipPermissions) {
++      process.stderr.write("\x1b[91m\x1b[1mError: \x1b[0m--auto is not supported by this interface yet\n")
++      process.exit(1)
++    }
+     const preflight = UpdatePreflight.make()
+     yield* Effect.addFinalizer(() => Effect.promise(() => preflight.close()))
+-    const serviceStarts = yield* Queue.unbounded<{
+-      readonly reason: "missing" | "version-mismatch"
+-      readonly previousVersion?: string
+-    }>()
+-    yield* Queue.take(serviceStarts).pipe(
+-      Effect.flatMap((event) => Effect.logInfo("background service starting", event)),
+-      Effect.forever,
+-      Effect.forkScoped,
+-    )
+     const server = yield* ServerConnection.resolve({
+       server: requestedServer,
+       standalone: input.standalone,
+       mismatch: "replace",
+       onStart: (reason, previousVersion) => {
+-        Queue.offerUnsafe(serviceStarts, { reason, previousVersion })
+         if (reason === "version-mismatch" && preflight.begin(previousVersion)) return
+         process.stderr.write(
+           reason === "version-mismatch"
+@@ -47,114 +32,41 @@ export default Runtime.handler(Commands, (input) =>
        },
      }).pipe(
        Effect.tapError(() =>
@@ -19850,7 +19917,139 @@ index c23e2be273..56b5cf93fb 100644
 +        Effect.promise(() => preflight.fail("Loophole update could not start the new background service")),
        ),
      )
-     const session = Option.getOrUndefined(input.session)
+-    const session = Option.getOrUndefined(input.session)
+-    // A missing --session ID becomes the ID of the session the first prompt creates.
+-    const sessionExists =
+-      session !== undefined &&
+-      (yield* Effect.tryPromise({
+-        try: () =>
+-          findSession(OpenCode.make({ baseUrl: server.endpoint.url, headers: Service.headers(server.endpoint) }), session),
+-        catch: (cause) => new Error(errorMessage(cause)),
+-      })) !== undefined
+-    const updater = yield* Updater.Service
+-    let installing: string | undefined
+-    let latest: Updater.RunResult | undefined
+-    const installListeners = new Set<(version: string) => void>()
+-    const resultListeners = new Set<(result: Updater.RunResult) => void>()
+-    // Background checks, `/update` lookups, and manual installs take turns so two installs never overlap.
+-    const checking = yield* Semaphore.make(1)
+-    yield* updater
+-      .run((version) => {
+-        installing = version
+-        installListeners.forEach((notify) => notify(version))
+-      })
+-      .pipe(
+-        Effect.ensuring(Effect.sync(() => (installing = undefined))),
+-        Effect.tap((result) =>
+-          Effect.sync(() => {
+-            if (!result || (result.type === latest?.type && result.version === latest.version)) return
+-            latest = result
+-            resultListeners.forEach((notify) => notify(result))
+-          }),
+-        ),
+-        checking.withPermits(1),
+-        Effect.repeat(Schedule.spaced("10 minutes")),
+-        Effect.forkScoped({ startImmediately: true }),
+-      )
+     preflight.loading()
++    const { runMini, validateMiniTerminal } = yield* Effect.promise(() => import("../../mini"))
++    yield* Effect.promise(async () => validateMiniTerminal())
+     const config = yield* Config.Service
+-    const npm = yield* Npm.Service
++    const global = yield* Global.Service
++    const resolved = resolve(yield* config.get(), { terminalSuspend: process.platform !== "win32" })
+     const fileSystem = yield* FileSystem.FileSystem
+     const runServicePromise = Effect.runPromiseWith(Context.make(FileSystem.FileSystem, fileSystem))
+-    const context = yield* Effect.context<FileSystem.FileSystem>()
+-    const runFork = Effect.runForkWith(context)
+-    const runPromise = Effect.runPromiseWith(context)
+     const service = server.service
+-    yield* run({
+-      app: {
+-        name: process.env.OPENCODE_CLIENT ?? OPENCODE_ARTIFACT,
+-        version: OPENCODE_VERSION,
+-        channel: process.env.OPENCODE_TUI_CHANNEL ?? OPENCODE_CHANNEL,
+-        highlights: OPENCODE_HIGHLIGHTS,
+-      },
+-      server: {
+-        endpoint: server.endpoint,
+-        // Managed and standalone servers run here; an explicit --server may be on another machine.
+-        local: requestedServer === undefined,
+-        service: service
+-          ? {
+-              reconnect: (signal) => runServicePromise(service.reconnect(), { signal }),
+-              restart: () => runServicePromise(service.restart()),
+-            }
+-          : undefined,
+-      },
+-      args: {
++    // The plain interface cannot take the terminal over mid-update, so the
++    // preflight footer is settled and cleared before it starts.
++    yield* Effect.promise(() => preflight.finish())
++    yield* Effect.promise(() =>
++      runMini({
++        server: {
++          endpoint: server.endpoint,
++          reconnect: service ? (signal) => runServicePromise(service.reconnect(), { signal }) : undefined,
++        },
+         continue: input.continue,
+-        sessionID: sessionExists ? session : undefined,
+-        newSessionID: sessionExists ? undefined : session,
++        session: Option.getOrUndefined(input.session),
++        fork: input.fork,
++        model: Option.getOrUndefined(input.model),
++        agent: Option.getOrUndefined(input.agent),
+         prompt: Option.getOrUndefined(input.prompt),
+-        auto: input.auto || input.yolo || input.dangerouslySkipPermissions,
+-      },
+-      config: {
+-        path: config.path,
+-        get: () => runPromise(config.get()),
+-        update: (update) => runPromise(config.update(update)),
+-      },
+-      updater: {
+-        remote: requestedServer !== undefined,
+-        subscribe: (notify) => {
+-          if (latest) notify(latest)
+-          resultListeners.add(notify)
+-          return () => resultListeners.delete(notify)
++        replay: Option.getOrUndefined(input.replay) ?? resolved.mini?.replay ?? true,
++        replayLimit: Option.getOrUndefined(input.replayLimit) ?? resolved.mini?.replay_limit,
++        tuiConfig: resolved,
++        config: {
++          update: (update) => runServicePromise(config.update(update)),
+         },
+-        check: (signal, notify) => {
+-          if (installing) notify(installing)
+-          installListeners.add(notify)
+-          return runPromise(checking.withPermits(1)(updater.check()), { signal }).finally(() =>
+-            installListeners.delete(notify),
+-          )
+-        },
+-        apply: (version) => runPromise(checking.withPermits(1)(updater.apply(version))),
+-      },
+-      packages: {
+-        prepare: (spec, install = true) => runPromise(install ? npm.add(spec) : npm.resolve(spec)),
+-      },
+-      environment: requestedServer === undefined ? Env.session() : undefined,
+-      terminalHandoff: () => preflight.finish(),
+-      log: (level, message, tags) => {
+-        const effect =
+-          level === "debug"
+-            ? Effect.logDebug(message, tags)
+-            : level === "warn"
+-              ? Effect.logWarning(message, tags)
+-              : level === "error"
+-                ? Effect.logError(message, tags)
+-                : Effect.logInfo(message, tags)
+-        runFork(effect)
+-      },
+-    }).pipe(Effect.provide(LayerNode.compile(Global.node)))
++        paths: { home: global.home, state: global.state, log: global.log },
++      }),
++    )
+   }),
+ )
 diff --git a/packages/cli/src/commands/handlers/pair.ts b/packages/cli/src/commands/handlers/pair.ts
 index d1bee74100..fe8234dbc3 100644
 --- a/packages/cli/src/commands/handlers/pair.ts
@@ -21882,10 +22081,55 @@ index 235aa5a0b4..c76c907759 100644
        </box>
  
 diff --git a/packages/tui/src/mini/footer.prompt.tsx b/packages/tui/src/mini/footer.prompt.tsx
-index b7b2046fc1..c0e2f593dc 100644
+index b7b2046fc1..042e8df5a2 100644
 --- a/packages/tui/src/mini/footer.prompt.tsx
 +++ b/packages/tui/src/mini/footer.prompt.tsx
-@@ -528,7 +528,7 @@ export function createPromptState(input: PromptInput): PromptState {
+@@ -66,7 +66,6 @@ import type {
+   RunReference,
+   RunTuiConfig,
+ } from "./types"
+-import { EmptyBorder } from "../ui/border"
+ 
+ const AUTOCOMPLETE_ROWS = FOOTER_MENU_ROWS
+ 
+@@ -266,14 +265,9 @@ export function RunPromptBody(props: {
+ 
+   return (
+     <box width="100%" paddingTop={props.layout().padding} paddingBottom={props.layout().padding}>
+-      <box
+-        border={["left"]}
+-        borderColor={props.rail()}
+-        customBorderChars={{ ...EmptyBorder, vertical: props.mono ? "|" : "┃" }}
+-        paddingLeft={1}
+-        paddingRight={2}
+-        onSizeChange={props.onSizeChange}
+-      >
++      <box flexDirection="row" width="100%" onSizeChange={props.onSizeChange}>
++        <text fg={props.rail()} flexShrink={0} wrapMode="none">)</text>
++        <box flexGrow={1} flexShrink={1} paddingLeft={1} paddingRight={2} flexDirection="column">
+         <Show when={props.layout().images > 0}>
+           <box width="100%" height={props.layout().images} flexDirection="row" gap={1}>
+             <For
+@@ -331,6 +325,7 @@ export function RunPromptBody(props: {
+             area = next
+           }}
+         />
++        </box>
+       </box>
+     </box>
+   )
+@@ -352,7 +347,9 @@ export function createPromptState(input: PromptInput): PromptState {
+     }
+ 
+     return new StyledText([
+-      fg(input.theme().muted)(`Ask anything, / for commands, @ for context${input.mono() ? "..." : "…"}`),
++      fg(
++        input.theme().muted,
++      )(`Ask Loophole to build features, fix bugs, or work on your code${input.mono() ? "..." : "…"}`),
+     ])
+   })
+ 
+@@ -528,7 +525,7 @@ export function createPromptState(input: PromptInput): PromptState {
          description: "compact older session context to free space",
        } satisfies SlashOption,
        ...EXIT_COMMANDS.map(
@@ -21894,6 +22138,90 @@ index b7b2046fc1..c0e2f593dc 100644
        ),
      ]
      const hidden = new Set(builtins.map((item) => item.name))
+diff --git a/packages/tui/src/mini/footer.ts b/packages/tui/src/mini/footer.ts
+index eb868d9911..5e72701a40 100644
+--- a/packages/tui/src/mini/footer.ts
++++ b/packages/tui/src/mini/footer.ts
+@@ -117,6 +117,8 @@ export function resolveRunAgent(agents: RunAgent[], current: string | undefined)
+ const PERMISSION_ROWS = 12
+ const FORM_ROWS = 14
+ const SUBAGENT_ROWS = RUN_SUBAGENT_PANEL_ROWS
++// Rows consumed by the footer's top+bottom rules in the plain look.
++const RULE_ROWS = 2
+ const NOTICE_DURATION = 3000
+ const THEME_REFRESH_DELAYS = [1000, 1000] as const
+ 
+@@ -756,10 +758,12 @@ export class RunFooter implements FooterApi {
+               : route === "subagent"
+                 ? this.base + SUBAGENT_INSPECTOR_ROWS
+                 : prompt.padding * 2 + 1 + this.rows
++    // The plain look draws thin top+bottom rules around the footer content; they
++    // cost two rows that the old left-rail border did not.
+     const height = Math.max(
+       1,
+       Math.min(
+-        desired + (this.startup() ? 1 : 0),
++        desired + RULE_ROWS + (this.startup() ? 1 : 0),
+         this.renderer.terminalHeight - (type === "prompt" && route === "composer" ? 1 : 0),
+       ),
+     )
+diff --git a/packages/tui/src/mini/footer.view.tsx b/packages/tui/src/mini/footer.view.tsx
+index e001868760..0274e088d1 100644
+--- a/packages/tui/src/mini/footer.view.tsx
++++ b/packages/tui/src/mini/footer.view.tsx
+@@ -735,16 +735,9 @@ export function RunFooterView(props: RunFooterViewProps) {
+                 <box
+                   width="100%"
+                   flexShrink={0}
+-                  border={panel() || prompt() ? false : ["left"]}
+-                  borderColor={panel() || prompt() ? undefined : theme().border}
+-                  customBorderChars={
+-                    panel() || prompt()
+-                      ? undefined
+-                      : {
+-                          ...EMPTY_BORDER,
+-                          vertical: props.mono ? "|" : "█",
+-                        }
+-                  }
++                  border={["top", "bottom"]}
++                  borderColor={theme().border}
++                  customBorderChars={{ ...EMPTY_BORDER, horizontal: props.mono ? "-" : "─" }}
+                 >
+                   <box
+                     width="100%"
+@@ -753,7 +746,7 @@ export function RunFooterView(props: RunFooterViewProps) {
+                     paddingRight={0}
+                     paddingTop={0}
+                     flexDirection="column"
+-                    backgroundColor={panel() || prompt() ? "transparent" : theme().surface}
++                    backgroundColor="transparent"
+                     gap={0}
+                   >
+                     <box width="100%" flexGrow={1} flexShrink={1} flexDirection="column">
+@@ -763,7 +756,7 @@ export function RunFooterView(props: RunFooterViewProps) {
+                             theme={theme}
+                             cursorStyle={props.tuiConfig.cursor}
+                             background={() => runTheme().background}
+-                            rail={() => (shell() ? theme().formfieldFocusedText : agentColor())}
++                            rail={() => (shell() ? theme().formfieldFocusedText : theme().muted)}
+                             mono={props.mono}
+                             placeholder={composer.placeholder}
+                             onSubmit={composer.onSubmit}
+@@ -1014,12 +1007,9 @@ export function RunFooterView(props: RunFooterViewProps) {
+           width="100%"
+           flexGrow={1}
+           flexShrink={1}
+-          border={["left"]}
++          border={["top", "bottom"]}
+           borderColor={theme().border}
+-          customBorderChars={{
+-            ...EMPTY_BORDER,
+-            vertical: props.mono ? "|" : "┃",
+-          }}
++          customBorderChars={{ ...EMPTY_BORDER, horizontal: props.mono ? "-" : "─" }}
+         >
+           <RunFooterSubagentBody
+             active={inspecting}
 diff --git a/packages/tui/src/mini/runtime.lifecycle.ts b/packages/tui/src/mini/runtime.lifecycle.ts
 index 934766699f..c49ef04c0e 100644
 --- a/packages/tui/src/mini/runtime.lifecycle.ts
@@ -21908,10 +22236,26 @@ index 934766699f..c49ef04c0e 100644
    }
    setTitle(input.sessionTitle)
 diff --git a/packages/tui/src/mini/splash.ts b/packages/tui/src/mini/splash.ts
-index 123b224f45..014c76a2b3 100644
+index 123b224f45..b25eae60b6 100644
 --- a/packages/tui/src/mini/splash.ts
 +++ b/packages/tui/src/mini/splash.ts
-@@ -176,12 +176,12 @@ function buildExit(input: SplashWriterInput, ctx: ScrollbackRenderContext): Scro
+@@ -17,11 +17,14 @@ import { Locale } from "../util/locale"
+ import { stringWidth } from "../util/string-width"
+ import { go } from "../logo"
+ import { monoTruncate } from "./mono"
+-import type { RunSplashTheme } from "./theme"
++import { ACCENT, type RunSplashTheme } from "./theme"
+ 
+ const SPLASH_TITLE_LIMIT = 50
+ const SPLASH_TITLE_FALLBACK = "Untitled session"
+ 
++// Header title for the plain entry splash.
++const BRAND = "Loophole CLI"
++
+ type SplashInput = {
+   title: string | undefined
+   session_id: string
+@@ -176,12 +179,12 @@ function buildExit(input: SplashWriterInput, ctx: ScrollbackRenderContext): Scro
    const left = input.theme.left
    const right = input.theme.right
    const leftShadow = input.theme.leftShadow
@@ -21926,6 +22270,89 @@ index 123b224f45..014c76a2b3 100644
    const wide = body_left + stringWidth(label + command) <= width
    const commandHeight = wide ? 1 : Math.ceil(stringWidth(command) / width)
  
+@@ -253,6 +256,41 @@ export function entrySplash(input: {
+ }): ScrollbackWriter {
+   return (ctx) => {
+     const width = Math.max(1, ctx.width)
++    const mark = input.mono ? undefined : go.right.slice(1)
++    const top = 1
++    const bodyLeft = (mark?.[0]?.length ?? 0) + 2
++    // Wide terminals get the plain header: cell-art logo, name, version, then the
++    // working-directory line. Mono and narrow terminals keep the compact seed line.
++    if (mark && bodyLeft + stringWidth(BRAND) <= width && width >= 48) {
++      const lines: Array<{ left: number; top: number; text: string; fg: ColorInput; bg?: ColorInput; attrs?: number }> =
++        []
++      for (let i = 0; i < mark.length; i += 1) {
++        draw(lines, mark[i] ?? "", {
++          left: 0,
++          top: top + i,
++          fg: input.theme.right,
++          shadow: input.theme.leftShadow,
++        })
++      }
++      push(lines, bodyLeft, top, BRAND, input.theme.right, undefined, TextAttributes.BOLD)
++      push(lines, bodyLeft, top + 1, `v${input.version}`, input.theme.left)
++      if (input.detail) {
++        push(lines, 0, top + mark.length + 1, "\u25CF", ACCENT)
++        push(lines, 2, top + mark.length + 1, input.detail, input.theme.left)
++      }
++      const height = top + mark.length + 2
++      const root = new BoxRenderable(ctx.renderContext, {
++        position: "absolute",
++        left: 0,
++        top: 0,
++        width,
++        height,
++      })
++      for (const line of lines) {
++        write(root, ctx, line)
++      }
++      return { root, width, height, rowColumns: width, startOnNewLine: true, trailingNewline: false }
++    }
+     const layout = entrySplashLayout({ ...input, width })
+     const root = new BoxRenderable(ctx.renderContext, {
+       width,
+@@ -285,9 +323,9 @@ export function entrySplashLayout(input: { width: number; version: string; detai
+     .map((_, index) => ellipsis + slash + segments.slice(index + 1).join(slash))
+     .reverse()
+     .filter((path) => stringWidth(path) < stringWidth(detail))
+-  let layout = { label: Locale.takeWidth("oc mini", input.width), version: "", path: "", metadata: "" }
++  let layout = { label: Locale.takeWidth("loophole", input.width), version: "", path: "", metadata: "" }
+   const stages = [
+-    { label: `${input.mono ? "[O]" : "▪"} oc mini` },
++    { label: `${input.mono ? "[O]" : "▪"} loophole` },
+     ...(leaf ? [{ path: leaf }] : []),
+     ...(input.version ? [{ version: input.version }] : []),
+     ...paths.concat(detail ? [detail] : []).map((path) => ({ path })),
+diff --git a/packages/tui/src/mini/theme.ts b/packages/tui/src/mini/theme.ts
+index 4f8e19762b..8ff6050b28 100644
+--- a/packages/tui/src/mini/theme.ts
++++ b/packages/tui/src/mini/theme.ts
+@@ -73,6 +73,10 @@ export type RunTheme = {
+ 
+ export const transparent = RGBA.fromValues(0, 0, 0, 0)
+ 
++// Warm accent for the plain interface's signature marks (the entry-splash
++// cwd dot). Fixed so the look stays brand-identical across user themes.
++export const ACCENT = "#e8823a"
++
+ const ansiPalette = Array.from({ length: 256 }, (_, index) => RGBA.fromIndex(index, ansiToRgba(index)))
+ const palettes = new WeakMap<CliRenderer, TerminalColors>()
+ 
+@@ -157,9 +161,10 @@ function map(
+       error: exact(theme.text.feedback.error.base),
+       muted: exact(theme.text.muted),
+       text: exact(theme.text.base),
+-      shade: exact(theme.background.raised.base),
+-      surface: exact(theme.background.raised.base),
+-      pane: exact(theme.background.raised.high),
++      // Plain interface: no raised panels, the terminal background shows through everywhere.
++      shade: transparent,
++      surface: transparent,
++      pane: transparent,
+       border: exact(theme.border.base),
+       line: exact(theme.background.raised.high),
+     },
 diff --git a/packages/tui/src/routes/session/permission.tsx b/packages/tui/src/routes/session/permission.tsx
 index 07338aba69..70c4a7877c 100644
 --- a/packages/tui/src/routes/session/permission.tsx
