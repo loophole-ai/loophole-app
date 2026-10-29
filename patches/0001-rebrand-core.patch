@@ -20155,7 +20155,7 @@ index d338b073cf..562b712269 100644
      const client = OpenCode.make({ baseUrl: endpoint.url, headers: Service.headers(endpoint) })
      const health = yield* Effect.tryPromise({
 diff --git a/packages/cli/src/services/service-config.ts b/packages/cli/src/services/service-config.ts
-index 483db314c4..fafa30625b 100644
+index 483db314c4..84daf44d5a 100644
 --- a/packages/cli/src/services/service-config.ts
 +++ b/packages/cli/src/services/service-config.ts
 @@ -1,4 +1,4 @@
@@ -20164,7 +20164,26 @@ index 483db314c4..fafa30625b 100644
  import { OPENCODE_CHANNEL, OPENCODE_VERSION } from "../version"
  import { Hash } from "@opencode/util/hash"
  import { Service } from "@opencode/client/effect/service"
-@@ -218,7 +218,7 @@ export const get = Effect.fn("cli.service-config.get")(function* (key?: string,
+@@ -48,13 +48,16 @@ export function defaultPort(channel = OPENCODE_CHANNEL, platform = process.platf
+   // Windows hands out 0xC000-0xFFFF for outgoing connections, Hyper-V and WinNAT reserve blocks of that range at boot,
+   // and WSL mirrored networking reserves a 4096-port block that usually covers 44620-48715. A reserved port fails as in
+   // use while nothing listens on it. Moving into the 0x7000 block, below 32768, avoids all of them and keeps the low
+-  // 12 bits: 0xC0DE becomes 0x70DE.
++  // 12 bits: 0xC0DE becomes 0x70DE, and this fork's 0xC1DE becomes 0x71DE.
+   if (platform === "win32" && port >= 0x8000) return 0x7000 | (port & 0xfff)
+   return port
+ }
+ 
+ function channelPort(channel: string) {
+-  if (channel === "latest" || channel === "dev" || channel === "beta" || channel === "next") return 0xc0de
++  // An OpenCode install uses the same codebase with its 0xC0DE constant; this fork shifts
++  // the low 12 bits so both managed services can run side by side instead of fighting
++  // for one port.
++  if (channel === "latest" || channel === "dev" || channel === "beta" || channel === "next") return 0xc1de
+   if (channel === "local") return 0xc0df
+   return 10_000 + (Number.parseInt(Hash.fast(channel).slice(0, 8), 16) % 50_000)
+ }
+@@ -218,7 +221,7 @@ export const get = Effect.fn("cli.service-config.get")(function* (key?: string,
      return JSON.stringify(safe.remote === undefined ? safe : { ...safe, remote: {} }, null, 2)
    }
    const selected = configKey(key)
@@ -20173,7 +20192,7 @@ index 483db314c4..fafa30625b 100644
    switch (selected) {
      case "disabled": {
        return String((yield* read()).disabled ?? false)
-@@ -250,7 +250,7 @@ export const get = Effect.fn("cli.service-config.get")(function* (key?: string,
+@@ -250,7 +253,7 @@ export const get = Effect.fn("cli.service-config.get")(function* (key?: string,
  export const set = Effect.fn("cli.service-config.set")(function* (key: string, value: string, nestedValue?: string) {
    const selected = configKey(key)
    if (selected !== "env" && nestedValue !== undefined)
@@ -20182,7 +20201,7 @@ index 483db314c4..fafa30625b 100644
    switch (selected) {
      case "disabled": {
        if (value !== "true" && value !== "false") throw new Error("Disabled must be true or false")
-@@ -288,7 +288,7 @@ export const set = Effect.fn("cli.service-config.set")(function* (key: string, v
+@@ -288,7 +291,7 @@ export const set = Effect.fn("cli.service-config.set")(function* (key: string, v
        return
      }
      case "env": {
@@ -20191,7 +20210,7 @@ index 483db314c4..fafa30625b 100644
        yield* Service.stop(yield* options())
        const existing = yield* read()
        yield* write({ ...existing, env: { ...existing.env, [value]: nestedValue } })
-@@ -312,7 +312,7 @@ export const set = Effect.fn("cli.service-config.set")(function* (key: string, v
+@@ -312,7 +315,7 @@ export const set = Effect.fn("cli.service-config.set")(function* (key: string, v
  
  export const unset = Effect.fn("cli.service-config.unset")(function* (key: string, name?: string) {
    const selected = configKey(key)
@@ -20200,7 +20219,7 @@ index 483db314c4..fafa30625b 100644
    switch (selected) {
      case "disabled": {
        const { disabled: _disabled, ...next } = yield* read()
-@@ -343,7 +343,7 @@ export const unset = Effect.fn("cli.service-config.unset")(function* (key: strin
+@@ -343,7 +346,7 @@ export const unset = Effect.fn("cli.service-config.unset")(function* (key: strin
        return
      }
      case "env": {
@@ -20516,6 +20535,37 @@ index 4af0a73c03..e36a2c1916 100644
            }),
            signal: AbortSignal.timeout(1_000),
          })
+diff --git a/packages/cli/test/service.test.ts b/packages/cli/test/service.test.ts
+index d3aa1797f3..85135d1f7b 100644
+--- a/packages/cli/test/service.test.ts
++++ b/packages/cli/test/service.test.ts
+@@ -21,19 +21,19 @@ import { testEffect } from "../../core/test/lib/effect"
+ const it = testEffect(NodeFileSystem.layer)
+ 
+ test("managed service ports are stable per installation channel", () => {
+-  expect(ServiceConfig.defaultPort("latest", "linux")).toBe(0xc0de)
+-  expect(ServiceConfig.defaultPort("dev", "linux")).toBe(0xc0de)
+-  expect(ServiceConfig.defaultPort("beta", "linux")).toBe(0xc0de)
+-  expect(ServiceConfig.defaultPort("next", "linux")).toBe(0xc0de)
++  expect(ServiceConfig.defaultPort("latest", "linux")).toBe(0xc1de)
++  expect(ServiceConfig.defaultPort("dev", "linux")).toBe(0xc1de)
++  expect(ServiceConfig.defaultPort("beta", "linux")).toBe(0xc1de)
++  expect(ServiceConfig.defaultPort("next", "linux")).toBe(0xc1de)
+   expect(ServiceConfig.defaultPort("local", "linux")).toBe(0xc0df)
+-  expect(ServiceConfig.defaultPort("latest", "darwin")).toBe(0xc0de)
++  expect(ServiceConfig.defaultPort("latest", "darwin")).toBe(0xc1de)
+   expect(ServiceConfig.defaultPort("preview-a", "linux")).toBe(ServiceConfig.defaultPort("preview-a", "linux"))
+   expect(ServiceConfig.defaultPort("preview-a", "linux")).not.toBe(ServiceConfig.defaultPort("preview-b", "linux"))
+ })
+ 
+ test("managed service ports on Windows stay below the ranges Windows and WSL reserve", () => {
+-  expect(ServiceConfig.defaultPort("latest", "win32")).toBe(0x70de)
+-  expect(ServiceConfig.defaultPort("dev", "win32")).toBe(0x70de)
++  expect(ServiceConfig.defaultPort("latest", "win32")).toBe(0x71de)
++  expect(ServiceConfig.defaultPort("dev", "win32")).toBe(0x71de)
+   expect(ServiceConfig.defaultPort("local", "win32")).toBe(0x70df)
+   const ports = Array.from({ length: 200 }, (_, index) => ({
+     windows: ServiceConfig.defaultPort(`preview-${index}`, "win32"),
 diff --git a/packages/client/src/service-probe.ts b/packages/client/src/service-probe.ts
 index 7f61c84f8e..f0a88fbd72 100644
 --- a/packages/client/src/service-probe.ts
