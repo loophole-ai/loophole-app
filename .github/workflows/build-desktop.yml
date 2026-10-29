@@ -24,8 +24,13 @@ jobs:
         run: cd loophole-build && bun install
 
       # The desktop build bundles the CLI from packages/cli/dist (folder cli-windows-x64-baseline).
+      # The CLI's channel is baked in at compile time from this env (CI checkouts are detached HEADs,
+      # so without it the CLI lands on the "detached" channel and registers service-detached.json,
+      # which the prod-channel desktop never reads -> background service start timeout).
       - name: Build CLI
         run: cd loophole-build && bun run --cwd packages/cli build --single --baseline
+        env:
+          OPENCODE_CHANNEL: prod
 
       - name: Build desktop app
         run: cd loophole-build && bun run --cwd packages/desktop build
