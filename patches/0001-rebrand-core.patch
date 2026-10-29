@@ -22143,6 +22143,29 @@ index 8c570fb934..92a727dd0b 100644
 +    "██████  ",
 +  ],
  }
+diff --git a/packages/tui/src/mini/footer.menu.tsx b/packages/tui/src/mini/footer.menu.tsx
+index 7feca80f22..6c72c0e372 100644
+--- a/packages/tui/src/mini/footer.menu.tsx
++++ b/packages/tui/src/mini/footer.menu.tsx
+@@ -222,8 +222,7 @@ export function RunFooterMenu(props: {
+           const available = () => Math.max(0, width() - (row.item.icon ? 2 : 0))
+           const attributes = () =>
+             active() ? TextAttributes.BOLD | (props.mono ? TextAttributes.INVERSE : 0) : undefined
+-          const background = () =>
+-            active() ? props.theme().actionFocusedBg : props.background ? props.theme().shade : transparent
++          const background = () => (props.background ? props.theme().shade : transparent)
+           const footer = () => {
+             if (!row.item.footer) return
+             const title = stringWidth(row.item.display)
+@@ -243,7 +242,7 @@ export function RunFooterMenu(props: {
+             <box height={1} flexShrink={0} paddingRight={0} flexDirection="row" backgroundColor={background()}>
+               {border() ? (
+                 <text fg={props.theme().actionFocusedText} bg={background()} wrapMode="none">
+-                  {active() ? (props.mono ? ">" : "▌") : " "}
++                  {active() ? (props.mono ? ">" : "→") : " "}
+                 </text>
+               ) : undefined}
+               <box
 diff --git a/packages/tui/src/mini/footer.permission.tsx b/packages/tui/src/mini/footer.permission.tsx
 index 235aa5a0b4..c76c907759 100644
 --- a/packages/tui/src/mini/footer.permission.tsx
@@ -22166,7 +22189,7 @@ index 235aa5a0b4..c76c907759 100644
        </box>
  
 diff --git a/packages/tui/src/mini/footer.prompt.tsx b/packages/tui/src/mini/footer.prompt.tsx
-index b7b2046fc1..042e8df5a2 100644
+index b7b2046fc1..fa5452b14f 100644
 --- a/packages/tui/src/mini/footer.prompt.tsx
 +++ b/packages/tui/src/mini/footer.prompt.tsx
 @@ -66,7 +66,6 @@ import type {
@@ -22177,7 +22200,17 @@ index b7b2046fc1..042e8df5a2 100644
  
  const AUTOCOMPLETE_ROWS = FOOTER_MENU_ROWS
  
-@@ -266,14 +265,9 @@ export function RunPromptBody(props: {
+@@ -209,8 +208,7 @@ export function selectedCommand(text: string, command: RunPrompt["command"]) {
+ export function RunPromptBody(props: {
+   theme: () => RunFooterTheme
+   background: () => ColorInput
+-  rail: () => ColorInput
+-  mono: boolean
++    mono: boolean
+   cursorStyle: RunTuiConfig["cursor"]
+   placeholder: () => StyledText | string
+   onSubmit: () => void
+@@ -266,14 +264,8 @@ export function RunPromptBody(props: {
  
    return (
      <box width="100%" paddingTop={props.layout().padding} paddingBottom={props.layout().padding}>
@@ -22189,13 +22222,12 @@ index b7b2046fc1..042e8df5a2 100644
 -        paddingRight={2}
 -        onSizeChange={props.onSizeChange}
 -      >
-+      <box flexDirection="row" width="100%" onSizeChange={props.onSizeChange}>
-+        <text fg={props.rail()} flexShrink={0} wrapMode="none">)</text>
-+        <box flexGrow={1} flexShrink={1} paddingLeft={1} paddingRight={2} flexDirection="column">
++      <box width="100%" onSizeChange={props.onSizeChange}>
++        <box flexGrow={1} paddingLeft={1} paddingRight={2} flexDirection="column">
          <Show when={props.layout().images > 0}>
            <box width="100%" height={props.layout().images} flexDirection="row" gap={1}>
              <For
-@@ -331,6 +325,7 @@ export function RunPromptBody(props: {
+@@ -331,6 +323,7 @@ export function RunPromptBody(props: {
              area = next
            }}
          />
@@ -22203,7 +22235,7 @@ index b7b2046fc1..042e8df5a2 100644
        </box>
      </box>
    )
-@@ -352,7 +347,9 @@ export function createPromptState(input: PromptInput): PromptState {
+@@ -352,7 +345,9 @@ export function createPromptState(input: PromptInput): PromptState {
      }
  
      return new StyledText([
@@ -22214,7 +22246,7 @@ index b7b2046fc1..042e8df5a2 100644
      ])
    })
  
-@@ -528,7 +525,7 @@ export function createPromptState(input: PromptInput): PromptState {
+@@ -528,7 +523,7 @@ export function createPromptState(input: PromptInput): PromptState {
          description: "compact older session context to free space",
        } satisfies SlashOption,
        ...EXIT_COMMANDS.map(
@@ -22251,7 +22283,7 @@ index eb868d9911..5e72701a40 100644
        ),
      )
 diff --git a/packages/tui/src/mini/footer.view.tsx b/packages/tui/src/mini/footer.view.tsx
-index e001868760..0274e088d1 100644
+index e001868760..ea8db6c6b2 100644
 --- a/packages/tui/src/mini/footer.view.tsx
 +++ b/packages/tui/src/mini/footer.view.tsx
 @@ -735,16 +735,9 @@ export function RunFooterView(props: RunFooterViewProps) {
@@ -22283,16 +22315,17 @@ index e001868760..0274e088d1 100644
                      gap={0}
                    >
                      <box width="100%" flexGrow={1} flexShrink={1} flexDirection="column">
-@@ -763,7 +756,7 @@ export function RunFooterView(props: RunFooterViewProps) {
+@@ -763,8 +756,7 @@ export function RunFooterView(props: RunFooterViewProps) {
                              theme={theme}
                              cursorStyle={props.tuiConfig.cursor}
                              background={() => runTheme().background}
 -                            rail={() => (shell() ? theme().formfieldFocusedText : agentColor())}
-+                            rail={() => (shell() ? theme().formfieldFocusedText : theme().muted)}
-                             mono={props.mono}
+-                            mono={props.mono}
++                                            mono={props.mono}
                              placeholder={composer.placeholder}
                              onSubmit={composer.onSubmit}
-@@ -1014,12 +1007,9 @@ export function RunFooterView(props: RunFooterViewProps) {
+                             onKeyDown={composer.onKeyDown}
+@@ -1014,12 +1006,9 @@ export function RunFooterView(props: RunFooterViewProps) {
            width="100%"
            flexGrow={1}
            flexShrink={1}
@@ -22321,33 +22354,30 @@ index 934766699f..c49ef04c0e 100644
    }
    setTitle(input.sessionTitle)
 diff --git a/packages/tui/src/mini/splash.ts b/packages/tui/src/mini/splash.ts
-index 123b224f45..b25eae60b6 100644
+index 123b224f45..dc5bc76342 100644
 --- a/packages/tui/src/mini/splash.ts
 +++ b/packages/tui/src/mini/splash.ts
-@@ -17,11 +17,14 @@ import { Locale } from "../util/locale"
+@@ -15,9 +15,9 @@ import {
+ } from "@opentui/core"
+ import { Locale } from "../util/locale"
  import { stringWidth } from "../util/string-width"
- import { go } from "../logo"
+-import { go } from "../logo"
++import { logo } from "../logo"
  import { monoTruncate } from "./mono"
 -import type { RunSplashTheme } from "./theme"
-+import { ACCENT, type RunSplashTheme } from "./theme"
++import { type RunSplashTheme } from "./theme"
  
  const SPLASH_TITLE_LIMIT = 50
  const SPLASH_TITLE_FALLBACK = "Untitled session"
- 
-+// Header title for the plain entry splash.
-+const BRAND = "Loophole CLI"
-+
- type SplashInput = {
-   title: string | undefined
-   session_id: string
-@@ -176,12 +179,12 @@ function buildExit(input: SplashWriterInput, ctx: ScrollbackRenderContext): Scro
+@@ -176,12 +176,12 @@ function buildExit(input: SplashWriterInput, ctx: ScrollbackRenderContext): Scro
    const left = input.theme.left
    const right = input.theme.right
    const leftShadow = input.theme.leftShadow
 -  const mark = input.mono ? ["[O]"] : go.right.slice(1)
-+  const mark = input.mono ? ["[L]"] : go.right.slice(1)
++  const mark = input.mono ? ["[L]"] : logo.narrow
    const top = 1
-   const body_left = (mark[0]?.length ?? 0) + 2
+-  const body_left = (mark[0]?.length ?? 0) + 2
++  const body_left = (mark[0]?.length ?? 0) + 3
    const session = "Session  "
    const label = "Continue "
 -  const command = `opencode mini -s ${meta.session_id}`
@@ -22355,31 +22385,31 @@ index 123b224f45..b25eae60b6 100644
    const wide = body_left + stringWidth(label + command) <= width
    const commandHeight = wide ? 1 : Math.ceil(stringWidth(command) / width)
  
-@@ -253,6 +256,41 @@ export function entrySplash(input: {
+@@ -253,6 +253,41 @@ export function entrySplash(input: {
  }): ScrollbackWriter {
    return (ctx) => {
      const width = Math.max(1, ctx.width)
-+    const mark = input.mono ? undefined : go.right.slice(1)
++    // Plain header in the pi.dev style: the full wordmark indented one column,
++    // the version beside its top row, then the working directory underneath.
++    const mark = input.mono ? undefined : logo.narrow
 +    const top = 1
-+    const bodyLeft = (mark?.[0]?.length ?? 0) + 2
-+    // Wide terminals get the plain header: cell-art logo, name, version, then the
-+    // working-directory line. Mono and narrow terminals keep the compact seed line.
-+    if (mark && bodyLeft + stringWidth(BRAND) <= width && width >= 48) {
++    const left = 1
++    const markWidth = stringWidth(mark?.[0] ?? "")
++    const versionText = `v${input.version}`
++    if (mark && left + markWidth + stringWidth(versionText) + 2 <= width) {
 +      const lines: Array<{ left: number; top: number; text: string; fg: ColorInput; bg?: ColorInput; attrs?: number }> =
 +        []
 +      for (let i = 0; i < mark.length; i += 1) {
 +        draw(lines, mark[i] ?? "", {
-+          left: 0,
++          left,
 +          top: top + i,
 +          fg: input.theme.right,
 +          shadow: input.theme.leftShadow,
 +        })
 +      }
-+      push(lines, bodyLeft, top, BRAND, input.theme.right, undefined, TextAttributes.BOLD)
-+      push(lines, bodyLeft, top + 1, `v${input.version}`, input.theme.left)
++      push(lines, left + markWidth + 2, top, versionText, input.theme.left)
 +      if (input.detail) {
-+        push(lines, 0, top + mark.length + 1, "\u25CF", ACCENT)
-+        push(lines, 2, top + mark.length + 1, input.detail, input.theme.left)
++        push(lines, left, top + mark.length + 1, input.detail, input.theme.left)
 +      }
 +      const height = top + mark.length + 2
 +      const root = new BoxRenderable(ctx.renderContext, {
@@ -22397,7 +22427,7 @@ index 123b224f45..b25eae60b6 100644
      const layout = entrySplashLayout({ ...input, width })
      const root = new BoxRenderable(ctx.renderContext, {
        width,
-@@ -285,9 +323,9 @@ export function entrySplashLayout(input: { width: number; version: string; detai
+@@ -285,9 +320,9 @@ export function entrySplashLayout(input: { width: number; version: string; detai
      .map((_, index) => ellipsis + slash + segments.slice(index + 1).join(slash))
      .reverse()
      .filter((path) => stringWidth(path) < stringWidth(detail))
