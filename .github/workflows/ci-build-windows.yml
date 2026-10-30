@@ -9,6 +9,10 @@ on:
     branches: [main]
     paths-ignore:
       - "**/*.md"
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
   workflow_dispatch:
 
 permissions: {}
@@ -27,6 +31,9 @@ jobs:
     defaults:
       run:
         shell: bash
+    env:
+      # Build exactly one target instead of every host target (x64 + baseline).
+      OPENCODE_TARGET: windows-x64-baseline
     steps:
       - uses: actions/checkout@v4
         with:

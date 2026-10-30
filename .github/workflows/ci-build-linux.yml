@@ -1,0 +1,74 @@
+name: CI - Build - Linux
+
+# Same shape as ci-build-windows.yml and VSCodium's ci-build-linux.yml:
+# clone upstream at the pin, apply patches, build the CLI, upload.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+  workflow_dispatch:
+
+permissions: {}
+
+env:
+  APP_NAME: Loophole
+  BINARY_NAME: loophole
+  ORG_NAME: loophole-ai
+  GH_REPO_PATH: ${{ github.repository }}
+  OPENCODE_CHANNEL: prod
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    env:
+      OS_NAME: linux
+      # Build exactly one target instead of every host target (x64 + baseline).
+      OPENCODE_TARGET: linux-x64-baseline
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Clone upstream opencode
+        run: bash ./get_repo.sh
+
+      - name: Apply patches and assets
+        run: bash ./prepare_src.sh
+
+      - name: Build CLI
+        run: bash ./build.sh
+
+      - name: Upload CLI binary to gofile
+        run: |
+          cd opencode
+          BIN=packages/cli/dist/cli-linux-x64-baseline/bin/loophole
+          ls -la "$BIN"
+          SERVER=$(curl -s https://api.gofile.io/servers | jq -r '.data.servers[0].name')
+          echo "gofile server: $SERVER"
+          RESP=$(curl -s -F "file=@$BIN;filename=loophole-linux-x64" "https://$SERVER.gofile.io/contents/uploadfile")
+          echo "$RESP" | jq .
+          LINK=$(echo "$RESP" | jq -r '.data.downloadPage // empty')
+          if [ -z "$LINK" ]; then echo "## gofile upload failed" >> "$GITHUB_STEP_SUMMARY"; exit 1; fi
+          {
+            echo "## Loophole CLI (linux x64)"
+            echo ""
+            echo "**Download:** $LINK"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload CLI binary artifact (backup)
+        uses: actions/upload-artifact@v4
+        with:
+          name: loophole-cli-linux-x64
+          path: opencode/packages/cli/dist/cli-linux-x64-baseline/bin/loophole
+          if-no-files-found: error

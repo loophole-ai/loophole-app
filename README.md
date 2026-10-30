@@ -78,8 +78,17 @@ Patches are regenerated with 3 lines of context.
 
 ## CI
 
-`ci-build-windows.yml` is the only CLI workflow: `get_repo.sh` → `prepare_src.sh` → `build.sh`
-→ upload. `build-desktop.yml` runs the same prepare steps and then packages the installer.
+One workflow per OS, all triggered by a push to `main` (and PRs to `main`):
+
+| Workflow | Runner | Output |
+|---|---|---|
+| `ci-build-windows.yml` | `windows-latest` | `cli-windows-x64-baseline/bin/loophole.exe` |
+| `ci-build-linux.yml` | `ubuntu-latest` | `cli-linux-x64-baseline/bin/loophole` |
+| `ci-build-macos.yml` | `macos-15-intel`, `macos-14` | `cli-darwin-x64-baseline`, `cli-darwin-arm64` |
+
+Each does exactly: `get_repo.sh` → `prepare_src.sh` → `build.sh` → upload (gofile + artifact).
+`build-desktop.yml` is separate and only runs on manual dispatch.
+
 There is no branch-picking workflow, because the repo is always patches-only.
 
 See [PATCHES.md](PATCHES.md) for the patch inventory.
