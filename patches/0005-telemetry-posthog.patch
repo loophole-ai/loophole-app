@@ -1,10 +1,9 @@
 diff --git a/packages/core/src/telemetry.ts b/packages/core/src/telemetry.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..27916a5dede32671a64bd663f44ec7a8da576e2e
+index 0000000000000000000000000000000000000000..d8f82469f8fa9fc64608630e05410df709fec032
 --- /dev/null
 +++ b/packages/core/src/telemetry.ts
-@@ -0,0 +1,208 @@
-+export * as Telemetry from "./telemetry.js"
+@@ -0,0 +1,209 @@
 +
 +import { randomUUID } from "node:crypto"
 +import fs from "node:fs"
@@ -212,8 +211,10 @@ index 0000000000000000000000000000000000000000..27916a5dede32671a64bd663f44ec7a8
 +
 +  yield* flush.pipe(Effect.repeat(Schedule.spaced("30 seconds")), Effect.forkScoped({ startImmediately: true }))
 +})
++
++export const Telemetry = { start }
 diff --git a/packages/server/src/process.ts b/packages/server/src/process.ts
-index bca0daecc3df0607b24fbd93d346faf5d115924b..7f0a94d6cf8dacb7b44badc441fec27f0ac6a257 100644
+index 5c5e55ac1bc3231d43c8cef058cf5ff6c3f0cf6f..d7ebf6a0dd91888b87ac9755cf7841fa83cb49bb 100644
 --- a/packages/server/src/process.ts
 +++ b/packages/server/src/process.ts
 @@ -2,6 +2,7 @@ export * as ServerProcess from "./process"
@@ -224,7 +225,7 @@ index bca0daecc3df0607b24fbd93d346faf5d115924b..7f0a94d6cf8dacb7b44badc441fec27f
  import { SessionRestart } from "@opencode/core/session/execution/restart"
  import { InstallationEvent } from "@opencode/schema/installation-event"
  import { hasPtyConnectTicketURL } from "@opencode/protocol/groups/pty"
-@@ -112,6 +113,10 @@ export const start = Effect.fn("ServerProcess.start")(function* <E, R>(
+@@ -113,6 +114,10 @@ export const start = Effect.fn("ServerProcess.start")(function* <E, R>(
      yield* Ref.set(application, Option.some(Context.get(context, HttpRouter.HttpRouter).asHttpEffect()))
      yield* status.ready
      const bus = Context.get(context, Bus.Service)
