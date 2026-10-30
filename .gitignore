@@ -1,0 +1,10 @@
+# Build tree produced by get_repo.sh (upstream opencode at the pin)
+/opencode/
+
+# Legacy tree location, kept ignored so an old checkout cannot be committed
+/loophole-build/
+
+node_modules/
+.bun-cache/
+.DS_Store
+*.log

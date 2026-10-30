@@ -1,90 +1,129 @@
 ﻿# Patch System
 
-Loophole is maintained as a set of **patches on top of upstream opencode** (same model
-as VSCodium on top of VS Code). The Loophole-specific changes never live as a long-lived
-fork diff â€” they live in `patches/` + `assets/`, and can be applied to any upstream
-snapshot.
+Loophole is maintained as a set of **patches on top of upstream opencode** (the same model
+as VSCodium on top of VS Code). Loophole-specific changes never live as a long-lived fork
+diff — they live in `patches/` + `assets/` and can be applied to any upstream snapshot.
 
 ## Layout
 
 ```
-UPSTREAM-REF              full SHA of the upstream commit the patches are based on
+upstream/opencode.json   pinned upstream commit ({ref, commit})
 patches/
-  series                  ordered list of patches
-  0001-rebrand-core.patch     branding, i18n strings, logos refs, service discovery, TUI/App
-  0002-licensing-docs.patch   AGPL-3.0 license, READMEs, NOTICE, stats workflow, CLI licensing
-  0003-desktop-channels.patch desktop update channel, support/issue links, desktop metadata
-assets/                   binary overlay (icons, logos), mirrored by repo path
-  deletes.txt             files to delete from the upstream tree
-scripts/patches/
-  export-patches.ps1      regenerate patches + assets from committed state (HEAD vs UPSTREAM-REF)
-  apply-patches.ps1       fresh upstream checkout + apply patches + overlay assets
+  0001-rebrand-core.patch      branding, i18n strings, logo refs, service discovery, TUI/App
+  0002-licensing-docs.patch    AGPL-3.0 license, READMEs, NOTICE, stats workflow, CLI licensing
+  0003-desktop-channels.patch  desktop update channel, support/issue links, desktop metadata
+  0004-pi-tui.patch            pi-style TUI: packages/tui-pi + CLI tui-adapter replacement
+  0005-telemetry-posthog.patch opt-out aggregate telemetry (LOOPHOLE_TELEMETRY_DISABLE=1)
+  user/                        optional extra patches, applied after the numbered stack
+  series                       legacy list, ignored by the scripts (sorted order wins)
+  @ai-sdk%2F...@x.patch         copies of upstream bun patchedDependencies - NEVER applied
+assets/                  binary overlay (icons, logos), mirrored by repo path
+  deletes.txt            files to delete from the upstream tree
 ```
 
+Application order: every numbered `patches/[0-9]*-*.patch` sorted, then
+`patches/user/*.patch` sorted. There is no series file (the old `series` is kept for
+reference only).
+
+Why the numbered filter: `patches/` also contains copies of **upstream opencode's bun
+dependency patches** (`@ai-sdk/...`, `vite@...`, ...). They are byte-identical to upstream
+and are supplied by the `opencode/` checkout, so they must not be applied as source patches.
+Only numbered files are Loophole's stack.
+
 Notes:
-- `bun.lock` is intentionally **not** patched. It is regenerated with `bun install`
-  after the patches are applied (package names change from `@opencode-ai/*` to
-  `@loophole-ai/*`).
-- Binary files (icons, PNGs) are never put inside `.patch` files. They live in
-  `assets/` and are copied over the tree by the apply script.
+- `bun.lock` is intentionally **not** patched. It is regenerated with `bun install` after the
+  patches are applied (package names change from `@opencode-ai/*` to `@loophole-ai/*`, and
+  `0004` adds the `tui-pi` package).
+- Binary files are never put inside `.patch` files, except `0004`'s `tui-pi` native
+  prebuilds, which are exported with `--binary` (needed to build the package).
 
 ## Building a patched tree
 
-```powershell
-scripts/prepare-loophole.ps1
-# -> D:\Loophole\loophole-build  (override with -Target <dir>)
+```bash
+bash ./get_repo.sh        # ./opencode at the pinned commit
+bash ./prepare_src.sh     # reset + apply patches + overlay assets
 ```
 
-This clones the fork locally (it already contains the upstream objects), checks out
-`UPSTREAM-REF` detached, applies every patch in `patches/series`, copies the binary
-overlay, and applies deletions. It installs nothing and builds nothing.
+This installs nothing and builds nothing. Afterwards:
 
-Afterwards, in the build tree:
-
-```powershell
-cd D:\Loophole\loophole-build
-bun install          # regenerate bun.lock (manual step)
-# ... normal opencode build commands
+```bash
+bash ./build.sh           # bun install + CLI build
 ```
+
+`prepare_src.sh` always resets the tree to the pin first, so it is safe to re-run and it never
+depends on what you did in a previous session.
 
 ## Syncing upstream (the routine)
 
-1. Fetch upstream and pick the new base:
-   ```powershell
-   git fetch upstream
-   git log --oneline upstream/dev -5        # choose the commit to move to
+1. See what moved:
+   ```bash
+   bash ./check_tags.sh
    ```
-2. Merge it into the Loophole branch as usual and resolve conflicts
-   (the `patches/*.patch` files tell you exactly which areas Loophole touches â€”
-   conflicts should only happen where upstream edits the same lines).
-3. Update `UPSTREAM-REF` to the new upstream SHA.
-4. Regenerate the patches:
-   ```powershell
-   the dev fork branch (`opencode`): scripts/patches/export-patches.ps1
+2. Move the pin:
+   ```bash
+   bash ./update_upstream.sh <commit>
    ```
-5. Verify the round-trip (should print no diff):
-   ```powershell
-   scripts/prepare-loophole.ps1 -Target D:\Loophole\loophole-build
-   cd D:\Loophole\loophole-build; git add -A; git diff --cached <loophole-HEAD-sha>
+3. Rebuild the tree and check that every patch still applies:
+   ```bash
+   FORCE=yes bash ./get_repo.sh
+   bash ./prepare_src.sh
+   ```
+4. If a patch fails, either fix that one:
+   ```bash
+   bash dev/patch.sh 0004-pi-tui
+   ```
+   or regenerate the whole stack against the new base:
+   ```bash
+   bash dev/update_patches.sh
+   ```
+5. Round-trip check (must print `OK`):
+   ```bash
+   bash ./dev/verify-patches.sh
    ```
 
 ## Adding a new Loophole feature
 
-1. Implement and **commit** it on the Loophole branch as usual.
-2. If it touches new files, add the paths to the right group in
-   `the dev fork branch (`opencode`): scripts/patches/export-patches.ps1` (group 1 is the catch-all; groups 2 and 3
-   are explicit lists), or just let group 1 pick it up.
-3. Re-run `export-patches.ps1`.
+1. Build the tree: `bash ./get_repo.sh && bash ./prepare_src.sh`.
+2. Edit files directly under `./opencode` like a normal checkout.
+3. Export it:
+   ```bash
+   bash dev/update_patches.sh
+   ```
+   New files are picked up automatically because patches are regenerated from the tree diff.
+   If you prefer an isolated patch, create `patches/user/<name>.patch` by hand.
+
+## Generating / refreshing a patch
+
+`dev/patch.sh <name>` is the single-patch editor:
+reset to the pin, apply all earlier patches as a throwaway commit, apply the target with
+`--reject`, wait while you resolve conflicts, then write the new patch with
+`git diff --staged -U3` and reset the tree.
+
+`dev/update_patches.sh` is the batch version: apply the stack cumulatively, regenerating each
+patch against the state produced by the previous one, then reset.
+
+## Recovered branches
+
+The full-source TUI tip was recovered from the repository reflog and kept as a branch so no
+work is lost:
+
+```
+recover/opencode     61ebc3dc3e  pi-style TUI with slash commands and pickers (source of 0004)
+```
+
+`0005-telemetry-posthog.patch` came from the `telemetry-posthog` / `tui-logo-art` branches and
+applies on top of `0004`. Every other custom commit on the local branches (Discord report
+link, service-port isolation, wordmark art, splash art) was already present in `0001`-`0003`.
 
 ## CI usage
 
-A CI job can build Loophole without this fork's history:
+A CI job can build Loophole without this repo's history:
 
+```bash
+bash ./get_repo.sh          # clone upstream at the pin into ./opencode
+bash ./prepare_src.sh       # patches + assets
+bash ./build.sh             # bun install + build
 ```
-git clone https://github.com/anomalyco/opencode.git tree
-git -C tree checkout $(cat UPSTREAM-REF)
-git apply patches/*.patch          # in series order
-xcopy /E /Y assets\ tree\          # minus deletes.txt
-# rm files listed in assets/deletes.txt
-bun install && <build>
-```
+
+That is exactly what `.github/workflows/ci-build-windows.yml` does. There is no layout
+detection and no full-source branch to keep in sync.

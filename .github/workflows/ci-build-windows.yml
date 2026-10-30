@@ -1,13 +1,25 @@
-name: Build
+name: CI - Build - Windows
 
-# Test builds only: nothing here publishes or releases. Binaries go to gofile + a small artifact.
+# The single CLI build path, same shape as VSCodium: clone upstream at the pin,
+# apply patches, build, upload. There is no branch detection and no second
+# layout to keep in sync.
+
 on:
   push:
     branches: [main]
     paths-ignore:
       - "**/*.md"
-      - ".github/**"
   workflow_dispatch:
+
+permissions: {}
+
+env:
+  APP_NAME: Loophole
+  BINARY_NAME: loophole
+  ORG_NAME: loophole-ai
+  GH_REPO_PATH: ${{ github.repository }}
+  OS_NAME: windows
+  OPENCODE_CHANNEL: prod
 
 jobs:
   build-windows:
@@ -17,24 +29,23 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: oven-sh/setup-bun@v2
 
-      - name: Prepare patched tree
-        run: bash scripts/prepare-loophole.sh
-        env:
-          TARGET: ${{ github.workspace }}/loophole-build
+      - name: Clone upstream opencode
+        run: bash ./get_repo.sh
 
-      - name: Install dependencies
-        run: cd loophole-build && bun install
+      - name: Apply patches and assets
+        run: bash ./prepare_src.sh
 
-      # Single target only: one windows x64 (baseline) binary instead of every platform.
       - name: Build CLI
-        run: cd loophole-build && bun run --cwd packages/cli build --single --baseline
+        run: bash ./build.sh
 
       - name: Upload CLI exe to gofile
         run: |
-          cd loophole-build
+          cd opencode
           EXE=packages/cli/dist/cli-windows-x64-baseline/bin/loophole.exe
           ls -la "$EXE"
           SERVER=$(curl -s https://api.gofile.io/servers | jq -r '.data.servers[0].name')
@@ -53,5 +64,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: loophole-cli-windows-exe
-          path: loophole-build/packages/cli/dist/cli-windows-x64-baseline/bin/loophole.exe
+          path: opencode/packages/cli/dist/cli-windows-x64-baseline/bin/loophole.exe
           if-no-files-found: error
