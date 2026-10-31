@@ -96,10 +96,26 @@ The desktop app has three matching workflows, with the same triggers and the sam
 |---|---|---|
 | `ci-build-desktop-windows.yml` | `windows-latest` | NSIS installer (`loophole-desktop-win-x64.exe`) |
 | `ci-build-desktop-linux.yml` | `ubuntu-latest` | AppImage, deb, rpm (`loophole-desktop-linux-x64.*`) |
-| `ci-build-desktop-macos.yml` | `macos-15-intel`, `macos-14` | unsigned `.app.tar` (x64, arm64) |
+| `ci-build-desktop-macos.yml` | `macos-15-intel`, `macos-14` | dmg + zip (x64, arm64) |
 
 They build the CLI for the matching target first, then `bun run --cwd packages/desktop build`
-and `pack`. Packages are unsigned test builds: gofile + artifact, never published.
+and one `electron-builder` pass, the same packaging shape as forge's `desktop-builder`.
+Packages are unsigned test builds: gofile + artifact, never published.
+
+### Versions
+
+Desktop and CLI versions are separate, like forge:
+
+- **desktop app**: passed as `OPENCODE_VERSION` to the desktop build and package steps.
+  It must not be higher than `loophole-ai/desktop`'s latest release unless that release is
+  published, because the app's updater has `allowDowngrade = true` and would otherwise
+  reinstall the published build on every launch.
+- **bundled CLI**: passed as `OPENCODE_VERSION` to the CLI build, so the binary and
+  `resources/loophole-cli.version` both carry the published CLI version.
+
+Both default to the latest GitHub release (`loophole-ai/desktop`, `loophole-ai/cli`) and can
+be overridden with the `workflow_dispatch` inputs `version` / `cli_version`. No version is
+hardcoded in the patch stack; changing one is a CI input change, not a patch change.
 
 There is no branch-picking workflow, because the repo is always patches-only.
 

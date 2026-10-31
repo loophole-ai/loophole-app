@@ -1,18 +1,24 @@
 name: CI - Build Desktop - macOS
 
-# Desktop build for macOS, same shape as ci-build-macos.yml:
-# clone upstream at the pin, apply patches, build the CLI, build and package
-# the Electron app, upload.
-# Two runners: Intel (x64) and Apple Silicon (arm64).
+# Desktop build for macOS on two runners: Intel (x64) and Apple Silicon (arm64).
+# Clone upstream at the pin, apply patches, build the CLI, build and package the
+# Electron app, upload.
+#
+# Packaging is the same single electron-builder pass as forge's desktop-builder
+# (dmg + zip per arch), unsigned, with an explicit desktop version. See
+# ci-build-desktop-windows.yml for why the version must match the published
+# loophole-ai/desktop release.
+#
+# Desktop and CLI versions are separate and default to the latest published
+# release of each; both can be overridden from the workflow_dispatch inputs.
 #
 # The desktop bundles the CLI from packages/cli/dist, and its target names use
 # the non-baseline form (darwin-x64 / darwin-arm64), so the x64 CLI is built as
 # darwin-x64-baseline (which is what darwin-x64 maps to) and the desktop is
 # built against the matrix target.
 #
-# macOS packing is unsigned (electron-builder --dir with mac.identity=null) and
-# produces a .app.tar, which is the artifact to test with. Signing/notarizing
-# happens only in a release pipeline.
+# Signing and notarizing happen only in a release pipeline; these artifacts are
+# for testing.
 
 on:
   push:
@@ -24,6 +30,15 @@ on:
     paths-ignore:
       - "**/*.md"
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Desktop version (empty = latest loophole-ai/desktop release)"
+        required: false
+        default: ""
+      cli_version:
+        description: "Bundled CLI version (empty = latest loophole-ai/cli release)"
+        required: false
+        default: ""
 
 permissions: {}
 
@@ -65,43 +80,90 @@ jobs:
       - name: Apply patches and assets
         run: bash ./prepare_src.sh
 
+      - name: Resolve versions
+        id: versions
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          desktop="${{ inputs.version }}"
+          cli="${{ inputs.cli_version }}"
+          if [ -z "$desktop" ]; then
+            desktop=$(curl -fsSL -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              https://api.github.com/repos/loophole-ai/desktop/releases/latest \
+              | jq -r '.tag_name // empty' | sed 's/^v//')
+          fi
+          if [ -z "$cli" ]; then
+            cli=$(curl -fsSL -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              https://api.github.com/repos/loophole-ai/cli/releases/latest \
+              | jq -r '.tag_name // empty' | sed 's/^v//')
+          fi
+          if [ -z "$desktop" ] || [ -z "$cli" ]; then
+            echo "::error::could not resolve versions (desktop='$desktop' cli='$cli')"
+            exit 1
+          fi
+          echo "desktop=$desktop" >> "$GITHUB_OUTPUT"
+          echo "cli=$cli" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Versions"
+            echo ""
+            echo "| artifact | version | source |"
+            echo "|---|---|---|"
+            echo "| desktop app | \`$desktop\` | loophole-ai/desktop latest |"
+            echo "| bundled CLI | \`$cli\` | loophole-ai/cli latest |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Build CLI
         run: bash ./build.sh
         env:
           BUILD_TARGET: cli
           OPENCODE_TARGET: ${{ matrix.cli_target }}
+          OPENCODE_VERSION: ${{ steps.versions.outputs.cli }}
 
       - name: Build desktop app
         run: cd opencode && bun run --cwd packages/desktop build
         env:
           OPENCODE_TARGET: ${{ matrix.desktop_target }}
+          OPENCODE_VERSION: ${{ steps.versions.outputs.desktop }}
           NODE_OPTIONS: --max-old-space-size=4096
 
-      - name: Pack desktop app (unsigned, no publish)
-        run: cd opencode && bun run --cwd packages/desktop pack
+      - name: Package desktop app (unsigned, no publish)
+        working-directory: opencode/packages/desktop
+        run: bunx electron-builder --mac --${{ matrix.arch }} --publish never --config electron-builder.config.ts
         env:
           OPENCODE_TARGET: ${{ matrix.desktop_target }}
+          OPENCODE_VERSION: ${{ steps.versions.outputs.desktop }}
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
-      - name: Upload app to gofile
+      - name: Upload packages to gofile
         run: |
-          cd opencode/dist/desktop
+          cd opencode/packages/desktop/dist
           ls -la
-          APP=$(find . -maxdepth 1 -name "*.app.tar" | head -n 1)
           SERVER=$(curl -s https://api.gofile.io/servers | jq -r '.data.servers[0].name')
           echo "gofile server: $SERVER"
-          RESP=$(curl -s -F "file=@$APP;filename=loophole-desktop-macos-${{ matrix.arch }}.app.tar" "https://$SERVER.gofile.io/contents/uploadfile")
-          echo "$RESP" | jq .
-          LINK=$(echo "$RESP" | jq -r '.data.downloadPage // empty')
-          if [ -z "$LINK" ]; then echo "## gofile upload failed" >> "$GITHUB_STEP_SUMMARY"; exit 1; fi
+          : > links.md
+          for f in *.dmg *.zip; do
+            [ -f "$f" ] || continue
+            RESP=$(curl -s -F "file=@$f;filename=$f" "https://$SERVER.gofile.io/contents/uploadfile")
+            echo "$RESP" | jq .
+            LINK=$(echo "$RESP" | jq -r '.data.downloadPage // empty')
+            if [ -z "$LINK" ]; then echo "## gofile upload failed for $f" >> "$GITHUB_STEP_SUMMARY"; exit 1; fi
+            echo "- **$f**: $LINK" >> links.md
+          done
           {
-            echo "## Loophole Desktop (macOS ${{ matrix.arch }}, unsigned .app.tar)"
+            echo "## Loophole Desktop (macOS ${{ matrix.arch }}, unsigned dmg/zip)"
             echo ""
-            echo "**Download:** $LINK"
+            echo "Version: \`${{ steps.versions.outputs.desktop }}\` (bundled CLI \`${{ steps.versions.outputs.cli }}\`)"
+            echo ""
+            cat links.md
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload app artifact (backup)
+      - name: Upload packages artifact (backup)
         uses: actions/upload-artifact@v4
         with:
           name: loophole-desktop-macos-${{ matrix.arch }}
-          path: opencode/dist/desktop/*.app.tar
+          path: |
+            opencode/packages/desktop/dist/*.dmg
+            opencode/packages/desktop/dist/*.zip
           if-no-files-found: error

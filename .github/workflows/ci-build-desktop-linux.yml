@@ -1,15 +1,19 @@
 name: CI - Build Desktop - Linux
 
-# Desktop build for Linux x64, same shape as ci-build-linux.yml:
-# clone upstream at the pin, apply patches, build the CLI, build and package
-# the Electron app, upload.
+# Desktop build for Linux x64: clone upstream at the pin, apply patches, build
+# the CLI, build and package the Electron app, upload.
+#
+# Packaging is the same single electron-builder pass as forge's desktop-builder
+# (AppImage + deb + rpm), with an explicit desktop version. See
+# ci-build-desktop-windows.yml for why the version must match the published
+# loophole-ai/desktop release.
+#
+# Desktop and CLI versions are separate and default to the latest published
+# release of each; both can be overridden from the workflow_dispatch inputs.
 #
 # The desktop bundles the CLI from packages/cli/dist, and its target names use
 # the non-baseline form (linux-x64), so the CLI is built as
-# linux-x64-baseline (which is what that target maps to) and the desktop is
-# built against linux-x64.
-#
-# The Linux pack produces AppImage + deb + rpm. rpm needs the rpmbuild tooling.
+# linux-x64-baseline (which is what that target maps to).
 
 on:
   push:
@@ -21,6 +25,15 @@ on:
     paths-ignore:
       - "**/*.md"
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Desktop version (empty = latest loophole-ai/desktop release)"
+        required: false
+        default: ""
+      cli_version:
+        description: "Bundled CLI version (empty = latest loophole-ai/cli release)"
+        required: false
+        default: ""
 
 permissions: {}
 
@@ -50,11 +63,46 @@ jobs:
       - name: Apply patches and assets
         run: bash ./prepare_src.sh
 
+      - name: Resolve versions
+        id: versions
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          desktop="${{ inputs.version }}"
+          cli="${{ inputs.cli_version }}"
+          if [ -z "$desktop" ]; then
+            desktop=$(curl -fsSL -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              https://api.github.com/repos/loophole-ai/desktop/releases/latest \
+              | jq -r '.tag_name // empty' | sed 's/^v//')
+          fi
+          if [ -z "$cli" ]; then
+            cli=$(curl -fsSL -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              https://api.github.com/repos/loophole-ai/cli/releases/latest \
+              | jq -r '.tag_name // empty' | sed 's/^v//')
+          fi
+          if [ -z "$desktop" ] || [ -z "$cli" ]; then
+            echo "::error::could not resolve versions (desktop='$desktop' cli='$cli')"
+            exit 1
+          fi
+          echo "desktop=$desktop" >> "$GITHUB_OUTPUT"
+          echo "cli=$cli" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Versions"
+            echo ""
+            echo "| artifact | version | source |"
+            echo "|---|---|---|"
+            echo "| desktop app | \`$desktop\` | loophole-ai/desktop latest |"
+            echo "| bundled CLI | \`$cli\` | loophole-ai/cli latest |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Build CLI
         run: bash ./build.sh
         env:
           BUILD_TARGET: cli
           OPENCODE_TARGET: linux-x64-baseline
+          OPENCODE_VERSION: ${{ steps.versions.outputs.cli }}
 
       # rpm packaging needs rpmbuild; deb and AppImage use electron-builder's
       # bundled fpm and appimage tooling.
@@ -65,16 +113,19 @@ jobs:
         run: cd opencode && bun run --cwd packages/desktop build
         env:
           OPENCODE_TARGET: linux-x64
+          OPENCODE_VERSION: ${{ steps.versions.outputs.desktop }}
           NODE_OPTIONS: --max-old-space-size=4096
 
-      - name: Pack desktop app (unsigned, no publish)
-        run: cd opencode && bun run --cwd packages/desktop pack
+      - name: Package desktop app (unsigned, no publish)
+        working-directory: opencode/packages/desktop
+        run: bunx electron-builder --linux --x64 --publish never --config electron-builder.config.ts
         env:
           OPENCODE_TARGET: linux-x64
+          OPENCODE_VERSION: ${{ steps.versions.outputs.desktop }}
 
       - name: Upload packages to gofile
         run: |
-          cd opencode/dist/desktop
+          cd opencode/packages/desktop/dist
           ls -la
           SERVER=$(curl -s https://api.gofile.io/servers | jq -r '.data.servers[0].name')
           echo "gofile server: $SERVER"
@@ -90,6 +141,8 @@ jobs:
           {
             echo "## Loophole Desktop (linux x64, unsigned packages)"
             echo ""
+            echo "Version: \`${{ steps.versions.outputs.desktop }}\` (bundled CLI \`${{ steps.versions.outputs.cli }}\`)"
+            echo ""
             cat links.md
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -98,7 +151,7 @@ jobs:
         with:
           name: loophole-desktop-linux-x64
           path: |
-            opencode/dist/desktop/*.AppImage
-            opencode/dist/desktop/*.deb
-            opencode/dist/desktop/*.rpm
+            opencode/packages/desktop/dist/*.AppImage
+            opencode/packages/desktop/dist/*.deb
+            opencode/packages/desktop/dist/*.rpm
           if-no-files-found: error

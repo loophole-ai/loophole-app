@@ -21657,9 +21657,9 @@ index 6af860b9f0..48d18ac09a 100644
    throw new Error(`This script requires bun@${expectedBunVersionRange}, but you are using bun@${process.versions.bun}`)
  }
  
-+// Release version for this fork. Kept as a constant rather than derived from the branch or the
-+// published @opencode/cli version, which would otherwise label every build `0.0.0-<branch>-<run>`.
-+const LOOPHOLE_PREVIEW_VERSION = "1.0.5"
++// Fallback version for local builds only. Release workflows pass OPENCODE_VERSION (or
++// LOOPHOLE_VERSION), which takes priority, so no release version lives in a patch.
++const LOOPHOLE_PREVIEW_VERSION = "0.0.0"
 +
  const env = {
    OPENCODE_CHANNEL: process.env["OPENCODE_CHANNEL"],

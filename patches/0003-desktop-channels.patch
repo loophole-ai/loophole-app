@@ -227,7 +227,7 @@ index 8d2f76a4a4..5f82351bd5 100644
 +  "name": "@loophole-ai/desktop",
    "private": true,
 -  "version": "2.2.0",
-+  "version": "1.0.5",
++  "version": "0.0.0",
    "type": "module",
 -  "license": "MIT",
 -  "homepage": "https://opencode.ai",

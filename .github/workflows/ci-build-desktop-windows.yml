@@ -1,16 +1,28 @@
 name: CI - Build Desktop - Windows
 
-# Desktop build for Windows x64, same shape as ci-build-windows.yml:
-# clone upstream at the pin, apply patches, build the CLI, build and package
-# the Electron app, upload.
+# Desktop build for Windows x64: clone upstream at the pin, apply patches, build
+# the CLI, build and package the Electron app, upload.
+#
+# Packaging mirrors loophole-ai/forge's desktop-builder: one electron-builder
+# pass that produces the real NSIS installer, not pack.ts's unpacked app plus a
+# second pass.
+#
+# Desktop and CLI versions are separate, exactly like forge's desktop-builder:
+#
+#   * desktop app version -> OPENCODE_VERSION for the app build/package steps.
+#     The app's updater has allowDowngrade = true and reads
+#     loophole-ai/desktop/releases/latest, so this must never be higher than
+#     the published release unless that release is published too. Otherwise
+#     every launch installs the published build over the local one.
+#   * bundled CLI version -> OPENCODE_VERSION for the CLI build. It is stamped
+#     into the binary and into resources/loophole-cli.version.
+#
+# Both default to the latest published release and can be overridden from the
+# workflow_dispatch inputs. No version lives in the patch stack.
 #
 # The desktop bundles the CLI from packages/cli/dist, and its target names use
 # the non-baseline form (windows-x64), so the CLI is built as
-# windows-x64-baseline (which is what that target maps to) and the desktop is
-# built against windows-x64.
-#
-# Packaging is two passes: electron-builder --dir produces the unpacked app,
-# then a second pass wraps that app in the NSIS installer.
+# windows-x64-baseline (which is what that target maps to).
 
 on:
   push:
@@ -22,6 +34,15 @@ on:
     paths-ignore:
       - "**/*.md"
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Desktop version (empty = latest loophole-ai/desktop release)"
+        required: false
+        default: ""
+      cli_version:
+        description: "Bundled CLI version (empty = latest loophole-ai/cli release)"
+        required: false
+        default: ""
 
 permissions: {}
 
@@ -51,39 +72,66 @@ jobs:
       - name: Apply patches and assets
         run: bash ./prepare_src.sh
 
+      - name: Resolve versions
+        id: versions
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          desktop="${{ inputs.version }}"
+          cli="${{ inputs.cli_version }}"
+          if [ -z "$desktop" ]; then
+            desktop=$(curl -fsSL -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              https://api.github.com/repos/loophole-ai/desktop/releases/latest \
+              | jq -r '.tag_name // empty' | sed 's/^v//')
+          fi
+          if [ -z "$cli" ]; then
+            cli=$(curl -fsSL -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              https://api.github.com/repos/loophole-ai/cli/releases/latest \
+              | jq -r '.tag_name // empty' | sed 's/^v//')
+          fi
+          if [ -z "$desktop" ] || [ -z "$cli" ]; then
+            echo "::error::could not resolve versions (desktop='$desktop' cli='$cli')"
+            exit 1
+          fi
+          echo "desktop=$desktop" >> "$GITHUB_OUTPUT"
+          echo "cli=$cli" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Versions"
+            echo ""
+            echo "| artifact | version | source |"
+            echo "|---|---|---|"
+            echo "| desktop app | \`$desktop\` | loophole-ai/desktop latest |"
+            echo "| bundled CLI | \`$cli\` | loophole-ai/cli latest |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Build CLI
         run: bash ./build.sh
         env:
           BUILD_TARGET: cli
           OPENCODE_TARGET: windows-x64-baseline
+          OPENCODE_VERSION: ${{ steps.versions.outputs.cli }}
 
       - name: Build desktop app
         run: cd opencode && bun run --cwd packages/desktop build
         env:
           OPENCODE_TARGET: windows-x64
+          OPENCODE_VERSION: ${{ steps.versions.outputs.desktop }}
           NODE_OPTIONS: --max-old-space-size=4096
 
-      # First pass: unpacked app (packages/desktop/dist -> dist/desktop/app).
-      - name: Pack desktop app (unsigned, no publish)
-        run: cd opencode && bun run --cwd packages/desktop pack
+      - name: Package desktop app (unsigned, no publish)
+        working-directory: opencode/packages/desktop
+        run: bunx electron-builder --win --x64 --publish never --config electron-builder.config.ts
         env:
           OPENCODE_TARGET: windows-x64
-
-      # Second pass: wrap the unpacked app in the NSIS installer. Copy it out of
-      # dist/ first because pack wipes dist/ at startup.
-      - name: Copy unpacked app aside
-        run: cp -r opencode/dist/desktop/app opencode/.app-for-installer
-
-      - name: Pack NSIS installer (unsigned, no publish)
-        run: cd opencode && bun run --cwd packages/desktop pack
-        env:
-          OPENCODE_TARGET: windows-x64
-          OPENCODE_DESKTOP_APP: ${{ github.workspace }}/opencode/.app-for-installer
+          OPENCODE_VERSION: ${{ steps.versions.outputs.desktop }}
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
       - name: Upload installer to gofile
         run: |
-          cd opencode
-          EXE=$(find dist/desktop -maxdepth 1 -name "*.exe" | head -n 1)
+          cd opencode/packages/desktop/dist
+          EXE=$(find . -maxdepth 1 -name "*.exe" | head -n 1)
           ls -la "$EXE"
           SERVER=$(curl -s https://api.gofile.io/servers | jq -r '.data.servers[0].name')
           echo "gofile server: $SERVER"
@@ -94,6 +142,8 @@ jobs:
           {
             echo "## Loophole Desktop (windows x64, unsigned installer)"
             echo ""
+            echo "Version: \`${{ steps.versions.outputs.desktop }}\` (bundled CLI \`${{ steps.versions.outputs.cli }}\`)"
+            echo ""
             echo "**Download:** $LINK"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -101,5 +151,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: loophole-desktop-windows-installer
-          path: opencode/dist/desktop/*.exe
+          path: opencode/packages/desktop/dist/*.exe
           if-no-files-found: error
