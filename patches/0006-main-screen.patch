@@ -131,7 +131,7 @@ index e269351b42..53bc130ee7 100644
      expect(await logo.evaluate((element) => element.getBoundingClientRect().right <= innerWidth)).toBe(true)
    })
 diff --git a/packages/app/src/new-session/view.tsx b/packages/app/src/new-session/view.tsx
-index 592a8c9c24..c3830dd3f4 100644
+index 592a8c9c24..0ad64135f7 100644
 --- a/packages/app/src/new-session/view.tsx
 +++ b/packages/app/src/new-session/view.tsx
 @@ -68,10 +68,12 @@ export function NewSessionView(props: {
@@ -145,7 +145,7 @@ index 592a8c9c24..c3830dd3f4 100644
              <NewSessionWordmark />
 -            <div class="mt-8 flex flex-col gap-3">
 +          </div>
-+          <div class={`${NEW_SESSION_CONTENT_WIDTH} shrink-0 pb-[max(64px,9vh)]`}>
++          <div class="w-full max-w-[720px] px-0 shrink-0 pb-[max(64px,9vh)]">
 +            <div class="flex flex-col gap-3">
                <div data-slot="new-session-composer" class="flex flex-col gap-1">
                  <div class="relative z-10">
@@ -284,7 +284,7 @@ index 1adc0d0ab0..9ff47312f6 100644
 +  }
 +}
 diff --git a/packages/app/src/new-session/wordmark.tsx b/packages/app/src/new-session/wordmark.tsx
-index 33e3e6cb01..0d3bd76cff 100644
+index 33e3e6cb01..99e5e0fa7e 100644
 --- a/packages/app/src/new-session/wordmark.tsx
 +++ b/packages/app/src/new-session/wordmark.tsx
 @@ -6,12 +6,9 @@ export function NewSessionWordmark() {
@@ -292,7 +292,7 @@ index 33e3e6cb01..0d3bd76cff 100644
        data-component="new-session-wordmark"
        aria-hidden="true"
 -      class="pointer-events-none mx-auto w-full max-w-[720px] text-v2-background-bg-inverse"
-+      class="pointer-events-none mx-auto w-full max-w-[700px] text-v2-background-bg-inverse"
++      class="pointer-events-none mx-auto w-full max-w-[550px] text-v2-icon-icon-base opacity-60"
      >
 -      <div data-slot="wordmark-reveal" class="relative mx-auto w-5/12">
 -        <Logo class="block aspect-[2170/725] w-full opacity-[0.16]" />
