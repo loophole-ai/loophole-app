@@ -20854,18 +20854,30 @@ diff --git a/packages/client/src/service-probe.ts b/packages/client/src/service-
 index 7f61c84f8e..f0a88fbd72 100644
 --- a/packages/client/src/service-probe.ts
 +++ b/packages/client/src/service-probe.ts
-@@ -37,7 +37,9 @@ function fail(message: string) {
+@@ -37,7 +37,21 @@ function fail(message: string) {
  
  /** The default registration file. */
  export function fallback() {
 -  return join(process.env["XDG_STATE_HOME"] ?? join(homedir(), ".local", "state"), "opencode", "service.json")
-+  // Must match the app name in @opencode/util/global, or a client that passes no explicit file watches
-+  // another install's registration: this fork writes under "loophole", never "opencode".
-+  return join(process.env["XDG_STATE_HOME"] ?? join(homedir(), ".local", "state"), "loophole", "service.json")
++  // Must match the app name in @opencode/util/global and the filename the CLI derives from the channel
++  // it was built with (packages/cli/src/services/service-config.ts), or a client that passes no explicit
++  // file watches another install's registration. Stable Loophole builds use the "prod" channel, whose
++  // registration is service-prod.json.
++  return join(
++    process.env["XDG_STATE_HOME"] ?? join(homedir(), ".local", "state"),
++    "loophole",
++    registrationFile(process.env["OPENCODE_CHANNEL"]),
++  )
  }
  
++function registrationFile(channel: string | undefined) {
++  if (channel === undefined || channel === "latest" || channel === "dev" || channel === "beta" || channel === "next")
++    return "service.json"
++  return `service-${channel.replace(/[^a-zA-Z0-9._-]/g, "-")}.json`
++}
++
  /** Whether two registrations describe the same service instance. */
-@@ -49,7 +51,7 @@ export function same(left: Info, right: Info) {
+@@ -49,7 +63,7 @@ export function same(left: Info, right: Info) {
  export async function probeResult(info: Info, timeout = defaultEnsureTiming.requestTimeout) {
    const endpoint = {
      url: info.url,
