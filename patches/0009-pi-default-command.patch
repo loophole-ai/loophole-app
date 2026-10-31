@@ -1,0 +1,52 @@
+diff --git a/packages/cli/src/commands/handlers/default.ts b/packages/cli/src/commands/handlers/default.ts
+index 4e71336..6a6a8bb 100644
+--- a/packages/cli/src/commands/handlers/default.ts
++++ b/packages/cli/src/commands/handlers/default.ts
+@@ -52,9 +52,16 @@ export default Runtime.handler(Commands, (input) =>
+       ),
+     )
+     const drive = process.env.OPENCODE_DRIVE !== undefined
+-    // The plain interface cannot auto-accept permissions yet; the full TUI
+-    // (Drive mode) still honors the flags.
+-    if (!drive && (input.auto || input.yolo || input.dangerouslySkipPermissions)) {
++    // The pi-tui screen is the default whenever a real terminal is attached. Piped stdin/stdout and
++    // LOOPHOLE_TUI=mini keep the old plain interface, which also handles stdin-fed prompts and replay.
++    const usePi =
++      !drive &&
++      process.stdin.isTTY === true &&
++      process.stdout.isTTY === true &&
++      process.env.LOOPHOLE_TUI !== "mini"
++    // The plain interface cannot auto-accept permissions yet; the pi-tui screen and the full TUI
++    // (Drive mode) still honor the flags.
++    if (!drive && !usePi && (input.auto || input.yolo || input.dangerouslySkipPermissions)) {
+       process.stderr.write("\x1b[91m\x1b[1mError: \x1b[0m--auto is not supported by this interface yet\n")
+       process.exit(1)
+     }
+@@ -173,6 +180,27 @@ export default Runtime.handler(Commands, (input) =>
+       }).pipe(Effect.provide(LayerNode.compile(Global.node)))
+       return
+     }
++    if (usePi) {
++      // Loaded lazily so the pi-tui engine is only evaluated when it is actually used.
++      const { runInteractive } = yield* Effect.promise(() => import("../../run/interactive"))
++      // The pi-tui screen owns the terminal from here, so settle the update footer first.
++      yield* Effect.promise(() => preflight.finish())
++      yield* Effect.promise(() =>
++        runInteractive({
++          server,
++          message: [Option.getOrUndefined(input.prompt)].filter((text): text is string => text !== undefined),
++          continue: input.continue,
++          session: Option.getOrUndefined(input.session),
++          fork: input.fork,
++          model: Option.getOrUndefined(input.model),
++          agent: Option.getOrUndefined(input.agent),
++          format: "default",
++          file: [],
++          auto: input.auto || input.yolo || input.dangerouslySkipPermissions,
++        }),
++      )
++      return
++    }
+     const { runMini, validateMiniTerminal } = yield* Effect.promise(() => import("../../mini"))
+     yield* Effect.promise(async () => validateMiniTerminal())
+     preflight.loading()
