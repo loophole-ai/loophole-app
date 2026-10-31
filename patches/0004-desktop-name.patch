@@ -1,0 +1,150 @@
+diff --git a/packages/app/src/servers/connect/screen.tsx b/packages/app/src/servers/connect/screen.tsx
+index 21f54fb2ec..830412e50b 100644
+--- a/packages/app/src/servers/connect/screen.tsx
++++ b/packages/app/src/servers/connect/screen.tsx
+@@ -3,7 +3,7 @@ import { createStore } from "solid-js/store"
+ import { useMutation } from "@tanstack/solid-query"
+ import { Button } from "@opencode/ui/button"
+ import { TextInput } from "@opencode/ui/text-input"
+-import { Wordmark } from "@opencode/ui/wordmark"
++import { Logo } from "@opencode/ui/logo"
+ import { useLanguage } from "@/runtime/i18n/language"
+ import { usePlatform } from "@/runtime/platform/platform"
+ import { useCheckServerHealth } from "@/runtime/server/health"
+@@ -114,8 +114,8 @@ export function ConnectServerScreen(props: { url?: string } = {}) {
+   return (
+     <main data-component="connect-server" aria-labelledby="server-connect-title">
+       <div class="server-connect-content">
+-        <div class="server-connect-brand" role="img" aria-label="OpenCode">
+-          <Wordmark />
++        <div class="server-connect-brand" role="img" aria-label="Loophole Desktop">
++          <Logo />
+         </div>
+         <header>
+           <h1 id="server-connect-title">{language.t("server.connect.title")}</h1>
+diff --git a/packages/app/src/settings/about/about.tsx b/packages/app/src/settings/about/about.tsx
+index 9b70cf3de2..be70b069d9 100644
+--- a/packages/app/src/settings/about/about.tsx
++++ b/packages/app/src/settings/about/about.tsx
+@@ -6,7 +6,6 @@ import { ExternalLink } from "@/runtime/platform/external-link"
+ import { showToast } from "@/shell/notifications/toast"
+ import legal from "./legal.svg"
+ import anomalyBrush from "./anomaly-brush.svg"
+-import { AnimatedWordmark } from "./animated-wordmark"
+ import { FALLBACK_OTHER_CONTRIBUTORS, loadOtherContributorCount } from "./contributors"
+ 
+ const writers = [
+@@ -80,7 +79,7 @@ export function SettingsAbout(props: { active: boolean }) {
+         <p>{language.t("settings.about.license")}</p>
+       </div>
+ 
+-      <AnimatedWordmark active={props.active} />
++      <h2 class="settings-about-name">Loophole Desktop</h2>
+ 
+       <div class="settings-about-credits">
+         <p>{language.rich("settings.about.writtenByNames", { names: language.list(writerCredits()) })}</p>
+diff --git a/packages/app/src/settings/settings.css b/packages/app/src/settings/settings.css
+index 8fffd4c8f5..dcb47ac6a0 100644
+--- a/packages/app/src/settings/settings.css
++++ b/packages/app/src/settings/settings.css
+@@ -238,17 +238,14 @@
+   gap: 16px;
+ }
+ 
+-.settings-about-wordmark {
+-  width: 178px;
+-  height: 32px;
++.settings-about-name {
++  margin: 0;
+   flex-shrink: 0;
+-  opacity: 0.2;
+-  color: var(--v2-text-text-muted);
+-  fill: currentColor;
+-}
+-
+-.settings-about-letter-shadow {
+-  opacity: 0.3;
++  color: var(--v2-text-text-base);
++  font-size: 24px;
++  font-weight: 530;
++  line-height: 1.2;
++  letter-spacing: -0.02em;
+ }
+ 
+ .settings-about-faint,
+diff --git a/packages/desktop/script/copy-metainfo.ts b/packages/desktop/script/copy-metainfo.ts
+index 050eb4e97d..71a9333c2a 100644
+--- a/packages/desktop/script/copy-metainfo.ts
++++ b/packages/desktop/script/copy-metainfo.ts
+@@ -26,7 +26,7 @@ const xml = `<?xml version="1.0" encoding="UTF-8"?>
+ 
+   <description>
+     <p>
+-      Loophole is an open source agent that helps you write and run code with any AI model. It is a fork of OpenCode.
++      Loophole Desktop is an open source agent that helps you write and run code with any AI model. It is a fork of OpenCode.
+     </p>
+   </description>
+ 
+diff --git a/packages/desktop/src/main/windows/appearance.ts b/packages/desktop/src/main/windows/appearance.ts
+index 551f614191..2f295e2769 100644
+--- a/packages/desktop/src/main/windows/appearance.ts
++++ b/packages/desktop/src/main/windows/appearance.ts
+@@ -26,7 +26,7 @@ let backgroundColor: string | undefined
+ 
+ export function windowAppearance(path: Path.Path, paths: DesktopPaths.Resolved) {
+   return {
+-    title: "Loophole",
++    title: "Loophole Desktop",
+     icon: iconPath(path, paths),
+     backgroundColor: backgroundColor ?? storedBackgroundColor(),
+     ...platformFrame(tone(), storedZoomLevel()),
+diff --git a/packages/desktop/src/main/windows/early.ts b/packages/desktop/src/main/windows/early.ts
+index 60d7da6572..3698139070 100644
+--- a/packages/desktop/src/main/windows/early.ts
++++ b/packages/desktop/src/main/windows/early.ts
+@@ -50,7 +50,7 @@ export function createEarlyWindow() {
+     height: state.height,
+     show: true,
+     autoHideMenuBar: true,
+-    title: "Loophole",
++    title: "Loophole Desktop",
+     icon: path.join(icons, `icon.${process.platform === "win32" ? "ico" : "png"}`),
+     backgroundColor: storedBackgroundColor(),
+     ...platformFrame(tone(), zoom),
+diff --git a/packages/desktop/src/renderer/index.html b/packages/desktop/src/renderer/index.html
+index 7ce0b9dcb4..7afcd62c15 100644
+--- a/packages/desktop/src/renderer/index.html
++++ b/packages/desktop/src/renderer/index.html
+@@ -4,7 +4,7 @@
+     <meta charset="utf-8" />
+     <meta name="viewport" content="width=device-width, initial-scale=1" />
+     <!-- data-sm lets the MetaProvider replace this pre-load title with the app's <Title> tags. -->
+-    <title data-sm>Loophole</title>
++    <title data-sm>Loophole Desktop</title>
+     <link rel="icon" type="image/png" href="./favicon-96x96-v3.png" sizes="96x96" />
+     <link rel="icon" type="image/svg+xml" href="./favicon-v3.svg" />
+     <link rel="shortcut icon" href="./favicon-v3.ico" />
+diff --git a/packages/desktop/src/renderer/startup/splash.tsx b/packages/desktop/src/renderer/startup/splash.tsx
+index accb9dac59..017c62cf7f 100644
+--- a/packages/desktop/src/renderer/startup/splash.tsx
++++ b/packages/desktop/src/renderer/startup/splash.tsx
+@@ -1,4 +1,4 @@
+-import { Wordmark } from "@opencode/ui/wordmark"
++import { Logo } from "@opencode/ui/logo"
+ import type { Platform } from "@opencode/app/desktop"
+ import { onCleanup, onMount, Show } from "solid-js"
+ import { createStore } from "solid-js/store"
+@@ -82,12 +82,7 @@ export function LoadingSplash(props: {
+         <div class="relative size-full">
+           <div class="absolute inset-x-0 top-[25.375%]">
+             <div class="mx-auto w-full max-w-[720px]">
+-              <Wordmark
+-                outline
+-                fade={false}
+-                muted={false}
+-                class="mx-auto block h-auto w-4/5 text-v2-icon-icon-faint opacity-50"
+-              />
++              <Logo class="mx-auto block h-auto w-4/5 text-v2-icon-icon-faint opacity-50" />
+             </div>
+           </div>
+         </div>
