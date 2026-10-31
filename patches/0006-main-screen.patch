@@ -1,8 +1,8 @@
 diff --git a/packages/app/component-tests/new-session-wordmark.spec.ts b/packages/app/component-tests/new-session-wordmark.spec.ts
-index e269351b42..e7994c8032 100644
+index e269351b42..53bc130ee7 100644
 --- a/packages/app/component-tests/new-session-wordmark.spec.ts
 +++ b/packages/app/component-tests/new-session-wordmark.spec.ts
-@@ -2,83 +2,33 @@ import { expect, story } from "../../stories/playwright/story"
+@@ -2,83 +2,50 @@ import { expect, story } from "../../stories/playwright/story"
  
  for (const theme of ["light", "dark"]) {
    for (const direction of ["ltr", "rtl"]) {
@@ -28,36 +28,53 @@ index e269351b42..e7994c8032 100644
 +
        await expect(base.locator('path[fill="currentColor"]')).toHaveCount(8)
  
--      await logo.evaluate((element) => {
--        element.getAnimations({ subtree: true }).forEach((animation) => {
--          animation.pause()
--          animation.currentTime = 0
--        })
--      })
--      await expect(reveal).toHaveCSS("opacity", "1")
--      await expect(reveal).toHaveCSS("animation-name", "none")
--      await expect(shimmer).toHaveCSS("mask-position", "100% 0px")
 +      for (let index = 0; index < 8; index++) {
 +        await expect(paths.nth(index)).toHaveCSS("animation-name", /wordmark-letter-in/)
 +        await expect(paths.nth(index)).toHaveCSS("animation-iteration-count", "1, infinite")
 +      }
- 
++
++      // The asset does not store the letters in reading order, so the stagger must be
++      // checked against the drawn position: earlier letters start earlier.
++      const stagger = await paths.evaluateAll((items) =>
++        items
++          .map((item) => ({
++            x: item.getBoundingClientRect().left,
++            delay: Number.parseFloat(getComputedStyle(item).animationDelay),
++          }))
++          .sort((a, b) => a.x - b.x)
++          .map((letter) => letter.delay),
++      )
++      expect(stagger).toHaveLength(8)
++      expect(new Set(stagger).size).toBe(8)
++      for (let index = 1; index < stagger.length; index++) expect(stagger[index]).toBeGreaterThan(stagger[index - 1])
++
++      // The entrance settles at full size; the wave rests at its 0% keyframe.
+       await logo.evaluate((element) => {
+         element.getAnimations({ subtree: true }).forEach((animation) => {
+-          animation.pause()
+-          animation.currentTime = 0
++          if (animation.effect?.getTiming().iterations === Infinity) {
++            animation.pause()
++            animation.currentTime = 0
++          } else animation.finish()
+         })
+       })
+-      await expect(reveal).toHaveCSS("opacity", "1")
+-      await expect(reveal).toHaveCSS("animation-name", "none")
+-      await expect(shimmer).toHaveCSS("mask-position", "100% 0px")
+-
 -      await logo.evaluate((element) => {
 -        element.getAnimations({ subtree: true }).forEach((animation) => (animation.currentTime = 400))
 -      })
 -      await expect(shimmer).toHaveCSS("mask-position", "50% 0px")
 -      await expect(shimmer).toHaveCSS("opacity", theme === "dark" ? "0.0672" : "0.45")
 -      const swept = await logo.screenshot({ path: testInfo.outputPath("wordmark-shimmer.png") })
-+      // Each letter starts a little later than the one before it.
-+      const delays = await paths.evaluateAll((items) => items.map((item) => getComputedStyle(item).animationDelay))
-+      expect(new Set(delays).size).toBe(8)
- 
-+      // The entrance settles at full size; the endless wave is left running.
-       await logo.evaluate((element) => {
+-
+-      await logo.evaluate((element) => {
 -        element.getAnimations({ subtree: true }).forEach((animation) => animation.finish())
-+        element.getAnimations({ subtree: true }).forEach((animation) => {
-+          if (animation.effect?.getTiming().iterations !== Infinity) animation.finish()
-+        })
++      const settle = await paths.first().evaluate((element) => {
++        const style = getComputedStyle(element)
++        return { scale: style.getPropertyValue("scale"), translate: style.getPropertyValue("translate") }
        })
 -      await expect(reveal).toHaveCSS("opacity", "1")
 -      await expect(shimmer).toHaveCSS("opacity", "0")
@@ -93,16 +110,16 @@ index e269351b42..e7994c8032 100644
 -          }
 -        },
 -        [swept.toString("base64"), settled.toString("base64")],
-+      expect(await paths.first().evaluate((element) => getComputedStyle(element).getPropertyValue("scale"))).toMatch(
-+        /^1( 1)?$/,
-       )
+-      )
 -
 -      expect(brightness.min).toBeGreaterThanOrEqual(0)
 -      expect(brightness.max).toBeGreaterThanOrEqual(5)
++      expect(settle.scale).toMatch(/^1( 1)?$/)
++      expect(settle.translate).toMatch(/^(none|0px|0px 0px)$/)
      })
    }
  
-@@ -87,9 +37,7 @@ for (const theme of ["light", "dark"]) {
+@@ -87,9 +54,7 @@ for (const theme of ["light", "dark"]) {
      await page.setViewportSize({ width: 360, height: 640 })
      const component = await mount("app-new-session-wordmark--reveal", { globals: { theme } })
      const logo = component.locator('[data-component="new-session-wordmark"]')
@@ -134,10 +151,10 @@ index 592a8c9c24..c3830dd3f4 100644
                  <div class="relative z-10">
                    <Composer model={props.composer} />
 diff --git a/packages/app/src/new-session/wordmark.css b/packages/app/src/new-session/wordmark.css
-index 1adc0d0ab0..554a4b58e4 100644
+index 1adc0d0ab0..9ff47312f6 100644
 --- a/packages/app/src/new-session/wordmark.css
 +++ b/packages/app/src/new-session/wordmark.css
-@@ -1,48 +1,82 @@
+@@ -1,48 +1,94 @@
  [data-component="new-session-wordmark"] {
 -  --icon-strong-base: var(--icon-base);
 -  --wordmark-shimmer-opacity: 0.45;
@@ -155,16 +172,23 @@ index 1adc0d0ab0..554a4b58e4 100644
 -    mask-size: 300% 100%;
 -    mask-repeat: no-repeat;
 -    animation: new-session-wordmark-shimmer 800ms linear both;
-+  /* Each letter pops up from its baseline, then a slow wave travels through the word every few seconds. */
++  /*
++   * The asset draws "loophole" as eight paths, and they are not stored in reading
++   * order: --letter below is the letter's rank from left to right, so the
++   * entrance and the wave both travel across the word instead of jumping around.
++   *
++   * Entrance: each letter rises from its baseline and settles.
++   * Wave: a slow lift rolls through the word every few seconds, then rests.
++   */
 +  .wordmark-letter path {
 +    transform-box: fill-box;
 +    transform-origin: 50% 100%;
 +    animation-name: wordmark-letter-in, wordmark-letter-wave;
-+    animation-duration: 640ms, 7s;
-+    animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1), ease-in-out;
++    animation-duration: 700ms, 6s;
++    animation-timing-function: cubic-bezier(0.22, 1.4, 0.36, 1), ease-in-out;
 +    animation-fill-mode: both, none;
 +    animation-iteration-count: 1, infinite;
-+    animation-delay: calc(var(--letter, 0) * 55ms), calc(1.6s + var(--letter, 0) * 90ms);
++    animation-delay: calc(var(--letter, 0) * 60ms), calc(1.8s + var(--letter, 0) * 70ms);
    }
 -}
  
@@ -172,11 +196,11 @@ index 1adc0d0ab0..554a4b58e4 100644
 -  --icon-weak-base: color-mix(in srgb, var(--icon-base) 30%, transparent);
 -}
 +  .wordmark-letter path:nth-of-type(1) {
-+    --letter: 0;
++    --letter: 7;
 +  }
 +
 +  .wordmark-letter path:nth-of-type(2) {
-+    --letter: 1;
++    --letter: 3;
 +  }
 +
 +  .wordmark-letter path:nth-of-type(3) {
@@ -184,7 +208,7 @@ index 1adc0d0ab0..554a4b58e4 100644
 +  }
 +
 +  .wordmark-letter path:nth-of-type(4) {
-+    --letter: 3;
++    --letter: 5;
 +  }
 +
 +  .wordmark-letter path:nth-of-type(5) {
@@ -192,18 +216,18 @@ index 1adc0d0ab0..554a4b58e4 100644
 +  }
 +
 +  .wordmark-letter path:nth-of-type(6) {
-+    --letter: 5;
++    --letter: 1;
 +  }
  
 -[data-color-scheme="dark"] [data-component="new-session-wordmark"] {
 -  /* Preserve the previous dark highlight strength: 0.16 × 0.7 × 0.6. */
 -  --wordmark-shimmer-opacity: 0.0672;
 +  .wordmark-letter path:nth-of-type(7) {
-+    --letter: 6;
++    --letter: 0;
 +  }
 +
 +  .wordmark-letter path:nth-of-type(8) {
-+    --letter: 7;
++    --letter: 6;
 +  }
  }
  
@@ -214,33 +238,38 @@ index 1adc0d0ab0..554a4b58e4 100644
 -    opacity: 0;
 +@keyframes wordmark-letter-in {
 +  from {
-+    scale: 0.72;
++    translate: 0 22px;
++    scale: 0.7;
    }
 -  20%,
 -  80% {
 -    opacity: var(--wordmark-shimmer-opacity);
 +
 +  to {
++    translate: 0 0;
 +    scale: 1;
    }
 +}
 +
-+/* The wave occupies the end of the loop so the wordmark rests between passes. */
++/* The lift sits at the end of each loop so the wordmark rests between passes. */
 +@keyframes wordmark-letter-wave {
 +  0%,
-+  88%,
++  86%,
    100% {
 -    mask-position: 0% 0;
 -    opacity: 0;
 +    translate: 0 0;
++    scale: 1;
 +  }
 +
-+  91% {
-+    translate: 0 -4px;
++  90% {
++    translate: 0 -5px;
++    scale: 1.03;
 +  }
 +
 +  94% {
 +    translate: 0 0;
++    scale: 1;
    }
  }
  

@@ -1,3 +1,185 @@
+diff --git a/packages/app/src/runtime/i18n/am.ts b/packages/app/src/runtime/i18n/am.ts
+index 900130c480..55df6159e3 100644
+--- a/packages/app/src/runtime/i18n/am.ts
++++ b/packages/app/src/runtime/i18n/am.ts
+@@ -665,7 +665,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole የAnomaly Innovations, Inc. የተመዘገበ የንግድ ምልክት ነው።",
+   "settings.about.typeset": "በInter እና IBM Plex Mono ተሰድሯል",
+   "settings.about.tagline": "ያለ እርስዎ AI ምርጥ ሶፍትዌር መገንባት አይችልም",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "ፕሮጀክት አርትዕ",
+   "settings.timeline.title": "የጊዜ መስመር",
+   "settings.timeline.detail": "የጊዜ መስመር ዝርዝር",
+diff --git a/packages/app/src/runtime/i18n/ar.ts b/packages/app/src/runtime/i18n/ar.ts
+index cc9e2b86da..a4507d90a0 100644
+--- a/packages/app/src/runtime/i18n/ar.ts
++++ b/packages/app/src/runtime/i18n/ar.ts
+@@ -729,7 +729,7 @@ export const dict = {
+   "settings.about.trademark": "\u2068Loophole\u2069 علامة تجارية مسجلة لشركة \u2068Anomaly Innovations, Inc.\u2069",
+   "settings.about.typeset": "منضّد بخطي \u2068Inter\u2069 و\u2068IBM Plex Mono\u2069",
+   "settings.about.tagline": "لا يستطيع الذكاء الاصطناعي بناء برمجيات رائعة من دونك",
+-  "settings.about.copyright": "© \u2068Anomaly Innovations, Inc.\u2069",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "تحرير المشروع",
+   "settings.timeline.title": "المخطط الزمني",
+   "settings.timeline.detail": "تفاصيل المخطط الزمني",
+diff --git a/packages/app/src/runtime/i18n/az.ts b/packages/app/src/runtime/i18n/az.ts
+index 591326392d..3c98ee5041 100644
+--- a/packages/app/src/runtime/i18n/az.ts
++++ b/packages/app/src/runtime/i18n/az.ts
+@@ -684,7 +684,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole, Anomaly Innovations, Inc. şirkətinin qeydiyyatdan keçmiş ticarət nişanıdır.",
+   "settings.about.typeset": "Inter və IBM Plex Mono şriftləri ilə tərtib olunub",
+   "settings.about.tagline": "Siz olmadan AI möhtəşəm proqram təminatı yarada bilməz",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Layihəni redaktə et",
+   "settings.timeline.title": "Zaman xətti",
+   "settings.timeline.detail": "Zaman xəttinin təfərrüatı",
+diff --git a/packages/app/src/runtime/i18n/bg.ts b/packages/app/src/runtime/i18n/bg.ts
+index c817f800a6..0cdf0f9d35 100644
+--- a/packages/app/src/runtime/i18n/bg.ts
++++ b/packages/app/src/runtime/i18n/bg.ts
+@@ -683,7 +683,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole е регистрирана търговска марка на Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Набор в Inter и IBM Plex Mono",
+   "settings.about.tagline": "AI не може да създаде страхотен софтуер без вас",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Редактиране на проект",
+   "settings.timeline.title": "Хронология",
+   "settings.timeline.detail": "Подробности за времевата линия",
+diff --git a/packages/app/src/runtime/i18n/bn.ts b/packages/app/src/runtime/i18n/bn.ts
+index f00daf41e0..ab6d09325b 100644
+--- a/packages/app/src/runtime/i18n/bn.ts
++++ b/packages/app/src/runtime/i18n/bn.ts
+@@ -682,7 +682,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole, Anomaly Innovations, Inc.-এর নিবন্ধিত ট্রেডমার্ক।",
+   "settings.about.typeset": "Inter এবং IBM Plex Mono-তে টাইপসেট",
+   "settings.about.tagline": "আপনাকে ছাড়া AI দারুণ সফটওয়্যার তৈরি করতে পারে না",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "প্রকল্প সম্পাদনা করুন",
+   "settings.timeline.title": "টাইমলাইন",
+   "settings.timeline.detail": "টাইমলাইনের বিস্তারিত",
+diff --git a/packages/app/src/runtime/i18n/br.ts b/packages/app/src/runtime/i18n/br.ts
+index 26c927ebe3..21798cfe4b 100644
+--- a/packages/app/src/runtime/i18n/br.ts
++++ b/packages/app/src/runtime/i18n/br.ts
+@@ -157,7 +157,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole Ã© uma marca registrada da Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Composto em Inter e IBM Plex Mono",
+   "settings.about.tagline": "A IA nÃ£o consegue criar um Ã³timo software sem vocÃª",
+-  "settings.about.copyright": "Â© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Editar projeto",
+   "settings.timeline.title": "Linha do tempo",
+   "settings.timeline.detail": "Detalhamento da linha do tempo",
+diff --git a/packages/app/src/runtime/i18n/bs.ts b/packages/app/src/runtime/i18n/bs.ts
+index b26d18b509..b84578fccd 100644
+--- a/packages/app/src/runtime/i18n/bs.ts
++++ b/packages/app/src/runtime/i18n/bs.ts
+@@ -746,7 +746,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole je registrovani zaštitni znak Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Postavljen u Inter i IBM Plex Mono",
+   "settings.about.tagline": "AI ne može napraviti odličan softver bez vas",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Uredi projekat",
+   "settings.timeline.title": "Vremenska linija",
+   "settings.timeline.detail": "Detalji vremenske linije",
+diff --git a/packages/app/src/runtime/i18n/ca.ts b/packages/app/src/runtime/i18n/ca.ts
+index 08906c75ca..c2dab94f38 100644
+--- a/packages/app/src/runtime/i18n/ca.ts
++++ b/packages/app/src/runtime/i18n/ca.ts
+@@ -686,7 +686,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole és una marca registrada de Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Tipografia en Inter i IBM Plex Mono",
+   "settings.about.tagline": "La IA no pot crear un gran programari sense tu",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Modifica el projecte",
+   "settings.timeline.title": "Cronologia",
+   "settings.timeline.detail": "Detall de la cronologia",
+diff --git a/packages/app/src/runtime/i18n/cs.ts b/packages/app/src/runtime/i18n/cs.ts
+index 9e9b1fafc3..7b817ff548 100644
+--- a/packages/app/src/runtime/i18n/cs.ts
++++ b/packages/app/src/runtime/i18n/cs.ts
+@@ -688,7 +688,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole je registrovaná ochranná známka společnosti Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Typová sada v Inter a IBM Plex Mono",
+   "settings.about.tagline": "AI nemůže vytvořit skvělý software bez vás",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Upravit projekt",
+   "settings.timeline.title": "Časová osa",
+   "settings.timeline.detail": "Detail časové osy",
+diff --git a/packages/app/src/runtime/i18n/da.ts b/packages/app/src/runtime/i18n/da.ts
+index faf9647963..8051dfcf0c 100644
+--- a/packages/app/src/runtime/i18n/da.ts
++++ b/packages/app/src/runtime/i18n/da.ts
+@@ -146,7 +146,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole er et registreret varemærke tilhørende Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Sat med Inter og IBM Plex Mono",
+   "settings.about.tagline": "AI kan ikke bygge fantastisk software uden dig",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Rediger projekt",
+   "settings.timeline.title": "Tidslinje",
+   "settings.timeline.detail": "Tidslinjedetaljer",
+diff --git a/packages/app/src/runtime/i18n/de.ts b/packages/app/src/runtime/i18n/de.ts
+index 2029e18b18..be082ce6f7 100644
+--- a/packages/app/src/runtime/i18n/de.ts
++++ b/packages/app/src/runtime/i18n/de.ts
+@@ -159,7 +159,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole ist eine eingetragene Marke von Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Gesetzt in Inter und IBM Plex Mono",
+   "settings.about.tagline": "KI kann ohne Sie keine großartige Software entwickeln",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Projekt bearbeiten",
+   "settings.timeline.title": "Timeline",
+   "settings.timeline.detail": "Timeline-Detailgrad",
+diff --git a/packages/app/src/runtime/i18n/dv.ts b/packages/app/src/runtime/i18n/dv.ts
+index a524d37d31..4a88810ccf 100644
+--- a/packages/app/src/runtime/i18n/dv.ts
++++ b/packages/app/src/runtime/i18n/dv.ts
+@@ -695,7 +695,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole އަކީ Anomaly Innovations, Inc. ގެ ރަޖިސްޓަރޑް ޓްރޭޑްމާކެވެ.",
+   "settings.about.typeset": "Inter އަދި IBM Plex Mono އިން ޓައިޕްސެޓްކޮށްފައި",
+   "settings.about.tagline": "ތިބާ ނެތި AI އަށް ރަނގަޅު ސޮފްޓްވެއަރ ނުހެދޭނެ",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "ޕްރޮޖެކްޓް އެޑިޓްކުރައްވާ",
+   "settings.timeline.title": "ޓައިމްލައިން",
+   "settings.timeline.detail": "ޓައިމްލައިންގެ ތަފްޞީލް",
+diff --git a/packages/app/src/runtime/i18n/dz.ts b/packages/app/src/runtime/i18n/dz.ts
+index f7d951a53f..be5a36ada9 100644
+--- a/packages/app/src/runtime/i18n/dz.ts
++++ b/packages/app/src/runtime/i18n/dz.ts
+@@ -689,7 +689,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole འདི་ Anomaly Innovations, Inc གི་ཐོ་བཀོད་ཚོང་རྟགས་ཅིག་ཨིན།",
+   "settings.about.typeset": "ཨིན་ཊར་དང་ཨའི་བི་ཨེམ་པེལེགསི་མོ་ནོ་ནང་ཡིག་དཔར་གཞི་སྒྲིག།",
+   "settings.about.tagline": "ཁྱོད་མེད་པར་ AI གིས་མཉེན་ཆས་ལེགས་ཤོམ་བཟོ་མི་ཐུབ།",
+-  "settings.about.copyright": "© Anomaly གསར་གཏོད།",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "ཞུན་དག་ལས་གཞི།",
+   "settings.timeline.title": "དུས་ཚོད།",
+   "settings.timeline.detail": "དུས་ཚོད་ཐིག་རྒྱས་པ།",
+diff --git a/packages/app/src/runtime/i18n/el.ts b/packages/app/src/runtime/i18n/el.ts
+index 0a52def0f2..5136de0795 100644
+--- a/packages/app/src/runtime/i18n/el.ts
++++ b/packages/app/src/runtime/i18n/el.ts
+@@ -687,7 +687,7 @@ export const dict = {
+   "settings.about.trademark": "Το Loophole είναι σήμα κατατεθέν της Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Δακτυλογράφηση σε Inter και IBM Plex Mono",
+   "settings.about.tagline": "Το AI δεν μπορεί να δημιουργήσει εξαιρετικό λογισμικό, χωρίς εσάς",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Επεξεργασία έργου",
+   "settings.timeline.title": "Χρονολόγιο",
+   "settings.timeline.detail": "Λεπτομέρειες χρονολογίου",
 diff --git a/packages/app/src/runtime/i18n/en.ts b/packages/app/src/runtime/i18n/en.ts
 index c7c3bdc08e..8fa132ebcc 100644
 --- a/packages/app/src/runtime/i18n/en.ts
@@ -11,6 +193,630 @@ index c7c3bdc08e..8fa132ebcc 100644
    "settings.preferences.description": "Customize preferences and theme and default behavior",
    "settings.appearance.description": "Customize theme and fonts",
    "settings.appearance.row.tabs.title": "Tabs",
+diff --git a/packages/app/src/runtime/i18n/es.ts b/packages/app/src/runtime/i18n/es.ts
+index e39f81e52d..e35309e255 100644
+--- a/packages/app/src/runtime/i18n/es.ts
++++ b/packages/app/src/runtime/i18n/es.ts
+@@ -159,7 +159,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole es una marca registrada de Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Compuesto con Inter e IBM Plex Mono",
+   "settings.about.tagline": "La IA no puede crear software excelente sin ti",
+-  "settings.about.copyright": "Â© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Editar proyecto",
+   "settings.timeline.title": "CronologÃ­a",
+   "settings.timeline.detail": "Detalle de la cronologÃ­a",
+diff --git a/packages/app/src/runtime/i18n/et.ts b/packages/app/src/runtime/i18n/et.ts
+index f9c6a9316d..363103bc21 100644
+--- a/packages/app/src/runtime/i18n/et.ts
++++ b/packages/app/src/runtime/i18n/et.ts
+@@ -673,7 +673,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole on ettevõtte Anomaly Innovations, Inc. registreeritud kaubamärk.",
+   "settings.about.typeset": "Sisestatud Inter ja IBM Plex Mono",
+   "settings.about.tagline": "AI ei saa ilma sinuta suurepärast tarkvara luua",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Redigeeri projekti",
+   "settings.timeline.title": "Ajaskaala",
+   "settings.timeline.detail": "Ajaskaala üksikasjad",
+diff --git a/packages/app/src/runtime/i18n/fa.ts b/packages/app/src/runtime/i18n/fa.ts
+index 1710bf19f4..1d9fc3e465 100644
+--- a/packages/app/src/runtime/i18n/fa.ts
++++ b/packages/app/src/runtime/i18n/fa.ts
+@@ -691,7 +691,7 @@ export const dict = {
+   "settings.about.trademark": "\u2068Loophole\u2069 علامت تجاری ثبت‌شدهٔ \u2068Anomaly Innovations, Inc.\u2069 است",
+   "settings.about.typeset": "حروف‌چینی با \u2068Inter\u2069 و \u2068IBM Plex Mono\u2069",
+   "settings.about.tagline": "هوش مصنوعی بدون شما نمی‌تواند نرم‌افزار عالی بسازد",
+-  "settings.about.copyright": "© \u2068Anomaly Innovations, Inc.\u2069",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "ویرایش پروژه",
+   "settings.timeline.title": "خط زمانی",
+   "settings.timeline.detail": "جزئیات خط زمانی",
+diff --git a/packages/app/src/runtime/i18n/fi.ts b/packages/app/src/runtime/i18n/fi.ts
+index 9014a3a167..388a45fe14 100644
+--- a/packages/app/src/runtime/i18n/fi.ts
++++ b/packages/app/src/runtime/i18n/fi.ts
+@@ -144,7 +144,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole on Anomaly Innovations, Inc:n rekisteröity tavaramerkki.",
+   "settings.about.typeset": "Kirjasinlajit Inter ja IBM Plex Mono",
+   "settings.about.tagline": "Tekoäly ei voi rakentaa erinomaista ohjelmistoa ilman sinua",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Muokkaa projektia",
+   "settings.timeline.title": "Aikajana",
+   "settings.timeline.detail": "Aikajanan tarkkuus",
+diff --git a/packages/app/src/runtime/i18n/fo.ts b/packages/app/src/runtime/i18n/fo.ts
+index e94d0fb4b3..8d189df9b4 100644
+--- a/packages/app/src/runtime/i18n/fo.ts
++++ b/packages/app/src/runtime/i18n/fo.ts
+@@ -677,7 +677,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole er eitt skrásett vørumerki hjá Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Skriftsett í Inter og IBM Plex Mono",
+   "settings.about.tagline": "AI kann ikki byggja góða ritbúnað, uttan teg",
+-  "settings.about.copyright": "© Anomaly nýskapanir, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Rætta verkætlan",
+   "settings.timeline.title": "Tíðarlinja",
+   "settings.timeline.detail": "Smálutir á tíðarlinju",
+diff --git a/packages/app/src/runtime/i18n/fr.ts b/packages/app/src/runtime/i18n/fr.ts
+index 404231840a..7819b15159 100644
+--- a/packages/app/src/runtime/i18n/fr.ts
++++ b/packages/app/src/runtime/i18n/fr.ts
+@@ -160,7 +160,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole est une marque dÃ©posÃ©e dâ€™Anomaly Innovations, Inc.",
+   "settings.about.typeset": "ComposÃ© en Inter et IBM Plex Mono",
+   "settings.about.tagline": "Lâ€™IA ne peut pas crÃ©er dâ€™excellents logiciels sans vous",
+-  "settings.about.copyright": "Â© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Modifier le projet",
+   "settings.timeline.title": "Chronologie",
+   "settings.timeline.detail": "Niveau de dÃ©tail de la chronologie",
+diff --git a/packages/app/src/runtime/i18n/he.ts b/packages/app/src/runtime/i18n/he.ts
+index f1e801d3bb..20cf3c93e7 100644
+--- a/packages/app/src/runtime/i18n/he.ts
++++ b/packages/app/src/runtime/i18n/he.ts
+@@ -691,7 +691,7 @@ export const dict = {
+   "settings.about.trademark": "\u2068Loophole\u2069 הוא סימן מסחרי רשום של \u2068Anomaly Innovations, Inc.\u2069",
+   "settings.about.typeset": "סודר בגופנים \u2068Inter\u2069 ו-\u2068IBM Plex Mono\u2069",
+   "settings.about.tagline": "בינה מלאכותית לא יכולה לבנות תוכנה מעולה בלעדיך",
+-  "settings.about.copyright": "© \u2068Anomaly Innovations, Inc.\u2069",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "ערוך פרויקט",
+   "settings.timeline.title": "ציר זמן",
+   "settings.timeline.detail": "פירוט ציר הזמן",
+diff --git a/packages/app/src/runtime/i18n/hi.ts b/packages/app/src/runtime/i18n/hi.ts
+index 9d9b68d324..687d047927 100644
+--- a/packages/app/src/runtime/i18n/hi.ts
++++ b/packages/app/src/runtime/i18n/hi.ts
+@@ -682,7 +682,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole, Anomaly Innovations, Inc. का पंजीकृत ट्रेडमार्क है।",
+   "settings.about.typeset": "Inter और IBM Plex Mono में अक्षर-संयोजन",
+   "settings.about.tagline": "आपके बिना AI बेहतरीन सॉफ़्टवेयर नहीं बना सकता",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "प्रोजेक्ट संपादित करें",
+   "settings.timeline.title": "टाइमलाइन",
+   "settings.timeline.detail": "टाइमलाइन विवरण",
+diff --git a/packages/app/src/runtime/i18n/hr.ts b/packages/app/src/runtime/i18n/hr.ts
+index aa881d8cc3..bd00fa7ea5 100644
+--- a/packages/app/src/runtime/i18n/hr.ts
++++ b/packages/app/src/runtime/i18n/hr.ts
+@@ -690,7 +690,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole je registrirani zaštitni znak Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Označeno u Inter i IBM Plex Mono",
+   "settings.about.tagline": "AI ne može izgraditi odličan softver, bez vas",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Uredi projekt",
+   "settings.timeline.title": "Vremenska linija",
+   "settings.timeline.detail": "Detalj vremenske trake",
+diff --git a/packages/app/src/runtime/i18n/hu.ts b/packages/app/src/runtime/i18n/hu.ts
+index 434b432c41..238a17df13 100644
+--- a/packages/app/src/runtime/i18n/hu.ts
++++ b/packages/app/src/runtime/i18n/hu.ts
+@@ -687,7 +687,7 @@ export const dict = {
+   "settings.about.trademark": "A Loophole a Anomaly Innovations, Inc. bejegyzett védjegye.",
+   "settings.about.typeset": "Betűkészlet Inter és IBM Plex Mono nyelven",
+   "settings.about.tagline": "Az AI nem tud nagyszerű szoftvert készíteni nélküled",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Projekt szerkesztése",
+   "settings.timeline.title": "Idővonal",
+   "settings.timeline.detail": "Idővonal részletei",
+diff --git a/packages/app/src/runtime/i18n/hy.ts b/packages/app/src/runtime/i18n/hy.ts
+index 2d35f6cd8f..31fbba2671 100644
+--- a/packages/app/src/runtime/i18n/hy.ts
++++ b/packages/app/src/runtime/i18n/hy.ts
+@@ -678,7 +678,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole-ը Anomaly Innovations, Inc.-ի գրանցված ապրանքային նշանն է։",
+   "settings.about.typeset": "Շարված է Inter և IBM Plex Mono տառատեսակներով",
+   "settings.about.tagline": "AI-ը չի կարող հիանալի ծրագրակազմ ստեղծել առանց ձեզ",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Խմբագրել նախագիծը",
+   "settings.timeline.title": "Ժամանակագիծ",
+   "settings.timeline.detail": "Ժամանակագծի մանրամասներ",
+diff --git a/packages/app/src/runtime/i18n/id.ts b/packages/app/src/runtime/i18n/id.ts
+index 6165a314e7..5deae24529 100644
+--- a/packages/app/src/runtime/i18n/id.ts
++++ b/packages/app/src/runtime/i18n/id.ts
+@@ -750,7 +750,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole adalah merek dagang terdaftar dari Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Pengesetan di Inter dan IBM Plex Mono",
+   "settings.about.tagline": "AI tidak dapat membuat perangkat lunak yang hebat tanpa Anda",
+-  "settings.about.copyright": "© Anomali Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Sunting proyek",
+   "settings.timeline.title": "Garis Waktu",
+   "settings.timeline.detail": "Detail garis waktu",
+diff --git a/packages/app/src/runtime/i18n/is.ts b/packages/app/src/runtime/i18n/is.ts
+index 6947fa31db..d2780b68ba 100644
+--- a/packages/app/src/runtime/i18n/is.ts
++++ b/packages/app/src/runtime/i18n/is.ts
+@@ -680,7 +680,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole er skráð vörumerki Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Tegund í Inter og IBM Plex Mono",
+   "settings.about.tagline": "AI getur ekki smíðað frábæran hugbúnað án þín",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Breyta verkefni",
+   "settings.timeline.title": "Tímalína",
+   "settings.timeline.detail": "Upplýsingar tímalínu",
+diff --git a/packages/app/src/runtime/i18n/it.ts b/packages/app/src/runtime/i18n/it.ts
+index d72b56853b..a348a4d57f 100644
+--- a/packages/app/src/runtime/i18n/it.ts
++++ b/packages/app/src/runtime/i18n/it.ts
+@@ -158,7 +158,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole è un marchio registrato di Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Composto in Inter e IBM Plex Mono",
+   "settings.about.tagline": "L’IA non può creare software eccellente senza di te",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Modifica progetto",
+   "settings.timeline.title": "Sequenza temporale",
+   "settings.timeline.detail": "Dettaglio della sequenza temporale",
+diff --git a/packages/app/src/runtime/i18n/ja.ts b/packages/app/src/runtime/i18n/ja.ts
+index da553bf1d3..be57dc1625 100644
+--- a/packages/app/src/runtime/i18n/ja.ts
++++ b/packages/app/src/runtime/i18n/ja.ts
+@@ -693,7 +693,7 @@ export const dict = {
+   "settings.about.trademark": "LoopholeはAnomaly Innovations, Inc.の登録商標です。",
+   "settings.about.typeset": "InterおよびIBM Plex Monoのタイプセット",
+   "settings.about.tagline": "AIはあなたなしで素晴らしいソフトウェアを構築することはできません",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "プロジェクトを編集",
+   "settings.timeline.title": "タイムライン",
+   "settings.timeline.detail": "タイムラインの詳細",
+diff --git a/packages/app/src/runtime/i18n/ka.ts b/packages/app/src/runtime/i18n/ka.ts
+index 3639df2ee3..7b8387b1f1 100644
+--- a/packages/app/src/runtime/i18n/ka.ts
++++ b/packages/app/src/runtime/i18n/ka.ts
+@@ -677,7 +677,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole არის Anomaly Innovations, Inc.-ის რეგისტრირებული სავაჭრო ნიშანი.",
+   "settings.about.typeset": "აწყობილია Inter და IBM Plex Mono შრიფტებით",
+   "settings.about.tagline": "AI ვერ შექმნის შესანიშნავ პროგრამულ უზრუნველყოფას თქვენ გარეშე",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "პროექტის რედაქტირება",
+   "settings.timeline.title": "დროის ხაზი",
+   "settings.timeline.detail": "დროის ხაზის დეტალები",
+diff --git a/packages/app/src/runtime/i18n/km.ts b/packages/app/src/runtime/i18n/km.ts
+index b1e8b7b160..4be7bb01bd 100644
+--- a/packages/app/src/runtime/i18n/km.ts
++++ b/packages/app/src/runtime/i18n/km.ts
+@@ -678,7 +678,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole គឺជាពាណិជ្ជសញ្ញាដែលបានចុះបញ្ជីរបស់ Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Typeset នៅក្នុង Inter និង IBM Plex Mono",
+   "settings.about.tagline": "AI មិនអាចបង្កើតកម្មវិធីដ៏អស្ចារ្យបានទេ បើគ្មានអ្នក",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "កែសម្រួលគម្រោង",
+   "settings.timeline.title": "បន្ទាត់ពេលវេលា",
+   "settings.timeline.detail": "ព័ត៌មានលម្អិតអំពីពេលវេលា",
+diff --git a/packages/app/src/runtime/i18n/ko.ts b/packages/app/src/runtime/i18n/ko.ts
+index 25c4434230..afbf48991c 100644
+--- a/packages/app/src/runtime/i18n/ko.ts
++++ b/packages/app/src/runtime/i18n/ko.ts
+@@ -692,7 +692,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole는 Anomaly Innovations, Inc.의 등록 상표입니다.",
+   "settings.about.typeset": "Inter 및 IBM Plex Mono의 조판",
+   "settings.about.tagline": "AI는 당신 없이는 훌륭한 소프트웨어를 만들 수 없습니다",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "프로젝트 편집",
+   "settings.timeline.title": "타임라인",
+   "settings.timeline.detail": "타임라인 세부정보",
+diff --git a/packages/app/src/runtime/i18n/lo.ts b/packages/app/src/runtime/i18n/lo.ts
+index f19efa2216..617d879570 100644
+--- a/packages/app/src/runtime/i18n/lo.ts
++++ b/packages/app/src/runtime/i18n/lo.ts
+@@ -678,7 +678,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole ເປັນເຄື່ອງໝາຍການຄ້າທີ່ຈົດທະບຽນຂອງ Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Typeset ໃນ Inter ແລະ IBM Plex Mono",
+   "settings.about.tagline": "AI ບໍ່ສາມາດສ້າງຊອບແວທີ່ດີໄດ້, ຖ້າບໍ່ມີທ່ານ",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "ແກ້ໄຂໂຄງການ",
+   "settings.timeline.title": "ທາມລາຍ",
+   "settings.timeline.detail": "ລາຍລະອຽດທາມລາຍ",
+diff --git a/packages/app/src/runtime/i18n/lt.ts b/packages/app/src/runtime/i18n/lt.ts
+index a381653038..6c2af7a641 100644
+--- a/packages/app/src/runtime/i18n/lt.ts
++++ b/packages/app/src/runtime/i18n/lt.ts
+@@ -694,7 +694,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole yra registruotasis Anomaly Innovations, Inc. prekės ženklas.",
+   "settings.about.typeset": "Rinkinys „Inter“ ir „IBM Plex Mono“.",
+   "settings.about.tagline": "AI negali sukurti puikios programinės įrangos be jūsų",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Redaguoti projektą",
+   "settings.timeline.title": "Laiko juosta",
+   "settings.timeline.detail": "Laiko juostos informacija",
+diff --git a/packages/app/src/runtime/i18n/lv.ts b/packages/app/src/runtime/i18n/lv.ts
+index f5f08a3d55..1be64e10cb 100644
+--- a/packages/app/src/runtime/i18n/lv.ts
++++ b/packages/app/src/runtime/i18n/lv.ts
+@@ -684,7 +684,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole ir Anomaly Innovations, Inc. reģistrēta preču zīme.",
+   "settings.about.typeset": "Salikums Inter un IBM Plex Mono",
+   "settings.about.tagline": "AI nevar izveidot lielisku programmatūru bez jums",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Rediģēt projektu",
+   "settings.timeline.title": "Laika skala",
+   "settings.timeline.detail": "Laika skalas informācija",
+diff --git a/packages/app/src/runtime/i18n/mk.ts b/packages/app/src/runtime/i18n/mk.ts
+index e9243095b4..df69d707e9 100644
+--- a/packages/app/src/runtime/i18n/mk.ts
++++ b/packages/app/src/runtime/i18n/mk.ts
+@@ -680,7 +680,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole е регистрирана трговска марка на Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Типови во Inter и IBM Plex Mono",
+   "settings.about.tagline": "AI не може да изгради одличен софтвер, без вас",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Уреди проект",
+   "settings.timeline.title": "Времеплов",
+   "settings.timeline.detail": "Детали за временската линија",
+diff --git a/packages/app/src/runtime/i18n/mn.ts b/packages/app/src/runtime/i18n/mn.ts
+index 6ff11bc9b0..a453c810c7 100644
+--- a/packages/app/src/runtime/i18n/mn.ts
++++ b/packages/app/src/runtime/i18n/mn.ts
+@@ -682,7 +682,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole нь Anomaly Innovations, Inc.-ийн бүртгэлтэй барааны тэмдэг юм.",
+   "settings.about.typeset": "Inter болон IBM Plex Mono үсгийн хэвээр өрсөн",
+   "settings.about.tagline": "Тангүйгээр AI гайхалтай програм хангамж бүтээж чадахгүй",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Төслийг засах",
+   "settings.timeline.title": "Цагийн шугам",
+   "settings.timeline.detail": "Цагийн шугамын дэлгэрэнгүй",
+diff --git a/packages/app/src/runtime/i18n/ms.ts b/packages/app/src/runtime/i18n/ms.ts
+index b54b65b3b7..f9e55ee01b 100644
+--- a/packages/app/src/runtime/i18n/ms.ts
++++ b/packages/app/src/runtime/i18n/ms.ts
+@@ -682,7 +682,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole ialah tanda dagangan berdaftar Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Set taip dalam Inter dan IBM Plex Mono",
+   "settings.about.tagline": "AI tidak boleh membina perisian yang hebat, tanpa anda",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Edit projek",
+   "settings.timeline.title": "Garis masa",
+   "settings.timeline.detail": "Perincian garis masa",
+diff --git a/packages/app/src/runtime/i18n/my.ts b/packages/app/src/runtime/i18n/my.ts
+index 879ef23d78..1030a2bff9 100644
+--- a/packages/app/src/runtime/i18n/my.ts
++++ b/packages/app/src/runtime/i18n/my.ts
+@@ -689,7 +689,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole သည် Anomaly Innovations, Inc ၏ မှတ်ပုံတင်ထားသော ကုန်အမှတ်တံဆိပ်တစ်ခုဖြစ်သည်။",
+   "settings.about.typeset": "Inter နှင့် IBM Plex Mono တွင် အမျိုးအစားအစုံ",
+   "settings.about.tagline": "AI သည် သင်မပါဘဲ ကောင်းမွန်သော ဆော့ဖ်ဝဲလ်ကို မတည်ဆောက်နိုင်ပါ။",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "ပရောဂျက်ကို တည်းဖြတ်ပါ။",
+   "settings.timeline.title": "အချိန်ဇယား",
+   "settings.timeline.detail": "အချိန်ဇယားအသေးစိတ်",
+diff --git a/packages/app/src/runtime/i18n/ne.ts b/packages/app/src/runtime/i18n/ne.ts
+index 65f395006c..2e831afd40 100644
+--- a/packages/app/src/runtime/i18n/ne.ts
++++ b/packages/app/src/runtime/i18n/ne.ts
+@@ -681,7 +681,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole, Anomaly Innovations, Inc. को दर्ता गरिएको ट्रेडमार्क हो।",
+   "settings.about.typeset": "Inter र IBM Plex Mono मा अक्षर संयोजन",
+   "settings.about.tagline": "तपाईंबिना AI ले उत्कृष्ट सफ्टवेयर बनाउन सक्दैन",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "परियोजना सम्पादन गर्नुहोस्",
+   "settings.timeline.title": "समयरेखा",
+   "settings.timeline.detail": "समयरेखा विवरण",
+diff --git a/packages/app/src/runtime/i18n/nl.ts b/packages/app/src/runtime/i18n/nl.ts
+index a5f374e7bc..2692d835fb 100644
+--- a/packages/app/src/runtime/i18n/nl.ts
++++ b/packages/app/src/runtime/i18n/nl.ts
+@@ -153,7 +153,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole is een geregistreerd handelsmerk van Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Opgemaakt in Inter en IBM Plex Mono",
+   "settings.about.tagline": "AI kan geen geweldige software bouwen zonder jou",
+-  "settings.about.copyright": "Â© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Project bewerken",
+   "settings.timeline.title": "Tijdlijn",
+   "settings.timeline.detail": "Tijdlijndetails",
+diff --git a/packages/app/src/runtime/i18n/no.ts b/packages/app/src/runtime/i18n/no.ts
+index f5407af65f..4482159f9d 100644
+--- a/packages/app/src/runtime/i18n/no.ts
++++ b/packages/app/src/runtime/i18n/no.ts
+@@ -148,7 +148,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole er et registrert varemerke for Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Satt med Inter og IBM Plex Mono",
+   "settings.about.tagline": "KI kan ikke bygge fantastisk programvare uten deg",
+-  "settings.about.copyright": "Â© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Rediger prosjekt",
+   "settings.timeline.title": "Tidslinje",
+   "settings.timeline.detail": "Tidslinjedetaljer",
+diff --git a/packages/app/src/runtime/i18n/pa.ts b/packages/app/src/runtime/i18n/pa.ts
+index b8016868d9..cfdb1ac85f 100644
+--- a/packages/app/src/runtime/i18n/pa.ts
++++ b/packages/app/src/runtime/i18n/pa.ts
+@@ -690,7 +690,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole، Anomaly Innovations, Inc. دا رجسٹرڈ ٹریڈ مارک اے۔",
+   "settings.about.typeset": "Inter تے IBM Plex Mono وچ ٹائپ سیٹ",
+   "settings.about.tagline": "تہاڈے بغیر AI ودھیا سافٹ ویئر نئیں بݨا سکدا",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "پروجیکٹ وچ تبدیلی کرو",
+   "settings.timeline.title": "ٹائم لائن",
+   "settings.timeline.detail": "ٹائم لائن دی تفصیل",
+diff --git a/packages/app/src/runtime/i18n/pl.ts b/packages/app/src/runtime/i18n/pl.ts
+index 9861e3bac9..91ae2cc2a1 100644
+--- a/packages/app/src/runtime/i18n/pl.ts
++++ b/packages/app/src/runtime/i18n/pl.ts
+@@ -701,7 +701,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole jest zastrzeżonym znakiem towarowym firmy Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Zestaw w Inter i IBM Plex Mono",
+   "settings.about.tagline": "AI nie może zbudować świetnego oprogramowania bez Ciebie",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Edytuj projekt",
+   "settings.timeline.title": "Oś czasu",
+   "settings.timeline.detail": "Szczegóły osi czasu",
+diff --git a/packages/app/src/runtime/i18n/ro.ts b/packages/app/src/runtime/i18n/ro.ts
+index e341b612e0..f3620c52c8 100644
+--- a/packages/app/src/runtime/i18n/ro.ts
++++ b/packages/app/src/runtime/i18n/ro.ts
+@@ -684,7 +684,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole este o marcă înregistrată a Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Compoziție în Inter și IBM Plex Mono",
+   "settings.about.tagline": "AI nu poate construi un software grozav fără tine",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Editați proiectul",
+   "settings.timeline.title": "Cronologie",
+   "settings.timeline.detail": "Detalii cronologie",
+diff --git a/packages/app/src/runtime/i18n/ru.ts b/packages/app/src/runtime/i18n/ru.ts
+index 10dce9424a..9529066e95 100644
+--- a/packages/app/src/runtime/i18n/ru.ts
++++ b/packages/app/src/runtime/i18n/ru.ts
+@@ -755,7 +755,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole является зарегистрированной торговой маркой Anomaly Innovations, Inc..",
+   "settings.about.typeset": "Набор в Inter и IBM Plex Mono",
+   "settings.about.tagline": "AI не сможет создать отличное программное обеспечение без вас",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Редактировать проект",
+   "settings.timeline.title": "Хронология",
+   "settings.timeline.detail": "Подробности временной шкалы",
+diff --git a/packages/app/src/runtime/i18n/si.ts b/packages/app/src/runtime/i18n/si.ts
+index ed6e2dbe91..ca649e83e0 100644
+--- a/packages/app/src/runtime/i18n/si.ts
++++ b/packages/app/src/runtime/i18n/si.ts
+@@ -677,7 +677,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole යනු Anomaly Innovations, Inc. හි ලියාපදිංචි වෙළඳ ලකුණකි.",
+   "settings.about.typeset": "Inter සහ IBM Plex Mono අකුරුවලින් සකසා ඇත",
+   "settings.about.tagline": "ඔබ නොමැතිව AI හට විශිෂ්ට මෘදුකාංග තැනිය නොහැක",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "ව්‍යාපෘතිය සංස්කරණය කරන්න",
+   "settings.timeline.title": "කාලරේඛාව",
+   "settings.timeline.detail": "කාලරේඛා විස්තර",
+diff --git a/packages/app/src/runtime/i18n/sk.ts b/packages/app/src/runtime/i18n/sk.ts
+index a351638485..5eb608657e 100644
+--- a/packages/app/src/runtime/i18n/sk.ts
++++ b/packages/app/src/runtime/i18n/sk.ts
+@@ -704,7 +704,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole je registrovaná ochranná známka spoločnosti Anomaly Innovations, Inc.",
+   "settings.about.typeset": "typová súprava v Inter a IBM Plex Mono",
+   "settings.about.tagline": "AI nedokáže vytvoriť skvelý softvér bez vás",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Upraviť projekt",
+   "settings.timeline.title": "Časová os",
+   "settings.timeline.detail": "Detail časovej osi",
+diff --git a/packages/app/src/runtime/i18n/sl.ts b/packages/app/src/runtime/i18n/sl.ts
+index 0553f031f3..3a411b64e7 100644
+--- a/packages/app/src/runtime/i18n/sl.ts
++++ b/packages/app/src/runtime/i18n/sl.ts
+@@ -703,7 +703,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole je registrirana blagovna znamka Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Vrsta v Inter in IBM Plex Mono",
+   "settings.about.tagline": "AI ne more zgraditi odlične programske opreme brez vas",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Uredi projekt",
+   "settings.timeline.title": "Časovnica",
+   "settings.timeline.detail": "Podrobnosti o časovnici",
+diff --git a/packages/app/src/runtime/i18n/sq.ts b/packages/app/src/runtime/i18n/sq.ts
+index e205f159fb..2d217555a6 100644
+--- a/packages/app/src/runtime/i18n/sq.ts
++++ b/packages/app/src/runtime/i18n/sq.ts
+@@ -678,7 +678,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole është një markë e regjistruar e Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Llojet në Inter dhe IBM Plex Mono",
+   "settings.about.tagline": "AI nuk mund të ndërtojë softuer të shkëlqyeshëm, pa ju",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Redakto projektin",
+   "settings.timeline.title": "Afati kohor",
+   "settings.timeline.detail": "Detajet e afatit kohor",
+diff --git a/packages/app/src/runtime/i18n/sr.ts b/packages/app/src/runtime/i18n/sr.ts
+index 0544b099c0..b1debe0b2f 100644
+--- a/packages/app/src/runtime/i18n/sr.ts
++++ b/packages/app/src/runtime/i18n/sr.ts
+@@ -691,7 +691,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole је регистровани заштитни знак Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Откуцано у Inter и IBM Plex Mono",
+   "settings.about.tagline": "AI не може да направи одличан софтвер без вас",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Уреди пројекат",
+   "settings.timeline.title": "Временска линија",
+   "settings.timeline.detail": "Детаљи временске линије",
+diff --git a/packages/app/src/runtime/i18n/sv.ts b/packages/app/src/runtime/i18n/sv.ts
+index f63794341d..e537bb60b6 100644
+--- a/packages/app/src/runtime/i18n/sv.ts
++++ b/packages/app/src/runtime/i18n/sv.ts
+@@ -148,7 +148,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole Ã¤r ett registrerat varumÃ¤rke som tillhÃ¶r Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Satt med Inter och IBM Plex Mono",
+   "settings.about.tagline": "AI kan inte bygga fantastisk programvara utan dig",
+-  "settings.about.copyright": "Â© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Redigera projekt",
+   "settings.timeline.title": "Tidslinje",
+   "settings.timeline.detail": "Tidslinjedetaljer",
+diff --git a/packages/app/src/runtime/i18n/tg.ts b/packages/app/src/runtime/i18n/tg.ts
+index 3c669a7b56..970f742c4c 100644
+--- a/packages/app/src/runtime/i18n/tg.ts
++++ b/packages/app/src/runtime/i18n/tg.ts
+@@ -681,7 +681,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole тамғаи тиҷории бақайдгирифтаи Anomaly Innovations, Inc. мебошад.",
+   "settings.about.typeset": "Бо Inter ва IBM Plex Mono ҳуруфчинӣ шудааст",
+   "settings.about.tagline": "AI бе шумо нармафзори олӣ сохта наметавонад",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Таҳрири лоиҳа",
+   "settings.timeline.title": "Ҷадвали вақт",
+   "settings.timeline.detail": "Тафсилоти ҷадвали вақт",
+diff --git a/packages/app/src/runtime/i18n/th.ts b/packages/app/src/runtime/i18n/th.ts
+index 6128ab68b7..73aae96854 100644
+--- a/packages/app/src/runtime/i18n/th.ts
++++ b/packages/app/src/runtime/i18n/th.ts
+@@ -741,7 +741,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole เป็นเครื่องหมายการค้าจดทะเบียนของ Anomaly Innovations, Inc.",
+   "settings.about.typeset": "เรียงพิมพ์ใน Inter และ IBM Plex Mono",
+   "settings.about.tagline": "AI ไม่สามารถสร้างซอฟต์แวร์ที่ยอดเยี่ยมได้หากไม่มีคุณ",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "แก้ไขโครงการ",
+   "settings.timeline.title": "ไทม์ไลน์",
+   "settings.timeline.detail": "รายละเอียดไทม์ไลน์",
+diff --git a/packages/app/src/runtime/i18n/tk.ts b/packages/app/src/runtime/i18n/tk.ts
+index 064c3a6783..50c685bac6 100644
+--- a/packages/app/src/runtime/i18n/tk.ts
++++ b/packages/app/src/runtime/i18n/tk.ts
+@@ -676,7 +676,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole Anomaly Innovations, Inc. kompaniýasynyň bellige alnan söwda nyşanydyr.",
+   "settings.about.typeset": "Inter we IBM Plex Mono bilen düzüldi",
+   "settings.about.tagline": "AI sizsiz ajaýyp programma üpjünçiligini döredip bilmez",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Taslamany redaktirle",
+   "settings.timeline.title": "Wagt çyzgysy",
+   "settings.timeline.detail": "Wagt çyzgysynyň jikme-jigi",
+diff --git a/packages/app/src/runtime/i18n/tr.ts b/packages/app/src/runtime/i18n/tr.ts
+index d586ac312e..1a191ccb5e 100644
+--- a/packages/app/src/runtime/i18n/tr.ts
++++ b/packages/app/src/runtime/i18n/tr.ts
+@@ -755,7 +755,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole, Anomaly Innovations, Inc.'in tescilli ticari markasıdır.",
+   "settings.about.typeset": "Inter ve IBM Plex Mono'da dizgi",
+   "settings.about.tagline": "Yapay zeka siz olmadan mükemmel yazılım geliştiremez",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Projeyi düzenle",
+   "settings.timeline.title": "Zaman çizelgesi",
+   "settings.timeline.detail": "Zaman çizelgesi ayrıntısı",
+diff --git a/packages/app/src/runtime/i18n/uk.ts b/packages/app/src/runtime/i18n/uk.ts
+index b58b113ec5..e13297a78e 100644
+--- a/packages/app/src/runtime/i18n/uk.ts
++++ b/packages/app/src/runtime/i18n/uk.ts
+@@ -771,7 +771,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole є зареєстрованою торговою маркою Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Набір на Inter та IBM Plex Mono",
+   "settings.about.tagline": "AI не може створити чудове програмне забезпечення без вас",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Редагувати проект",
+   "settings.timeline.title": "Хронологія",
+   "settings.timeline.detail": "Деталі часової шкали",
+diff --git a/packages/app/src/runtime/i18n/ur.ts b/packages/app/src/runtime/i18n/ur.ts
+index 09c05b058c..c14f51643f 100644
+--- a/packages/app/src/runtime/i18n/ur.ts
++++ b/packages/app/src/runtime/i18n/ur.ts
+@@ -690,7 +690,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole، Anomaly Innovations, Inc. کا رجسٹرڈ ٹریڈ مارک ہے۔",
+   "settings.about.typeset": "Inter اور IBM Plex Mono میں ٹائپ سیٹ",
+   "settings.about.tagline": "آپ کے بغیر AI بہترین سافٹ ویئر نہیں بنا سکتا",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "پروجیکٹ میں ترمیم کریں",
+   "settings.timeline.title": "ٹائم لائن",
+   "settings.timeline.detail": "ٹائم لائن کی تفصیل",
+diff --git a/packages/app/src/runtime/i18n/uz.ts b/packages/app/src/runtime/i18n/uz.ts
+index b56d7ef2d6..fdbe956767 100644
+--- a/packages/app/src/runtime/i18n/uz.ts
++++ b/packages/app/src/runtime/i18n/uz.ts
+@@ -682,7 +682,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole — Anomaly Innovations, Inc. kompaniyasining ro‘yxatdan o‘tgan savdo belgisi.",
+   "settings.about.typeset": "Inter va IBM Plex Mono shriftlarida terilgan",
+   "settings.about.tagline": "Sizsiz AI ajoyib dasturiy ta’minot yarata olmaydi",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Loyihani tahrirlash",
+   "settings.timeline.title": "Vaqt jadvali",
+   "settings.timeline.detail": "Vaqt jadvali tafsilotlari",
+diff --git a/packages/app/src/runtime/i18n/vi.ts b/packages/app/src/runtime/i18n/vi.ts
+index 8743911503..f7f32808a0 100644
+--- a/packages/app/src/runtime/i18n/vi.ts
++++ b/packages/app/src/runtime/i18n/vi.ts
+@@ -688,7 +688,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole là nhãn hiệu đã đăng ký của Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Bộ sắp chữ trong Inter và IBM Plex Mono",
+   "settings.about.tagline": "AI không thể xây dựng phần mềm tuyệt vời nếu không có bạn",
+-  "settings.about.copyright": "© Anomaly Đổi mới, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "Chỉnh sửa dự án",
+   "settings.timeline.title": "Dòng thời gian",
+   "settings.timeline.detail": "Chi tiết dòng thời gian",
+diff --git a/packages/app/src/runtime/i18n/zh.ts b/packages/app/src/runtime/i18n/zh.ts
+index a9ea9a8f94..8519345af9 100644
+--- a/packages/app/src/runtime/i18n/zh.ts
++++ b/packages/app/src/runtime/i18n/zh.ts
+@@ -739,7 +739,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole是Anomaly Innovations, Inc.的注册商标。",
+   "settings.about.typeset": "Inter和IBM Plex Mono中的排版",
+   "settings.about.tagline": "没有您，人工智能无法构建出色的软件",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "编辑项目",
+   "settings.timeline.title": "时间表",
+   "settings.timeline.detail": "时间轴详细信息",
+diff --git a/packages/app/src/runtime/i18n/zht.ts b/packages/app/src/runtime/i18n/zht.ts
+index ec7904f6e3..1b876f73d7 100644
+--- a/packages/app/src/runtime/i18n/zht.ts
++++ b/packages/app/src/runtime/i18n/zht.ts
+@@ -731,7 +731,7 @@ export const dict = {
+   "settings.about.trademark": "Loophole是Anomaly Innovations, Inc.的註冊商標。",
+   "settings.about.typeset": "Inter和IBM Plex Mono中的排版",
+   "settings.about.tagline": "如果沒有您， AI就無法構建出色的軟件",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "project.settings.title": "編輯專案",
+   "settings.timeline.title": "時間軸",
+   "settings.timeline.detail": "時間軸詳細資訊",
 diff --git a/packages/app/src/settings/about/about.tsx b/packages/app/src/settings/about/about.tsx
 index be70b069d9..09c9bc29bc 100644
 --- a/packages/app/src/settings/about/about.tsx
