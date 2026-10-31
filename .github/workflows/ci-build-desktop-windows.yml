@@ -1,9 +1,36 @@
-name: Build Desktop
+name: CI - Build Desktop - Windows
 
-# Manual test builds only: nothing here publishes or releases. Installer goes to gofile + a small artifact.
+# Desktop build for Windows x64, same shape as ci-build-windows.yml:
+# clone upstream at the pin, apply patches, build the CLI, build and package
+# the Electron app, upload.
+#
+# The desktop bundles the CLI from packages/cli/dist, and its target names use
+# the non-baseline form (windows-x64), so the CLI is built as
+# windows-x64-baseline (which is what that target maps to) and the desktop is
+# built against windows-x64.
+#
+# Packaging is two passes: electron-builder --dir produces the unpacked app,
+# then a second pass wraps that app in the NSIS installer.
 
 on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
   workflow_dispatch:
+
+permissions: {}
+
+env:
+  APP_NAME: Loophole
+  BINARY_NAME: loophole
+  ORG_NAME: loophole-ai
+  GH_REPO_PATH: ${{ github.repository }}
+  OPENCODE_CHANNEL: prod
 
 jobs:
   build-desktop-windows:
@@ -13,6 +40,8 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: oven-sh/setup-bun@v2
 
@@ -22,41 +51,32 @@ jobs:
       - name: Apply patches and assets
         run: bash ./prepare_src.sh
 
-      - name: Install dependencies
-        run: cd opencode && bun install
-
-      # The desktop build bundles the CLI from packages/cli/dist (folder cli-windows-x64-baseline).
-      # The CLI's channel is baked in at compile time from this env (CI checkouts are detached HEADs,
-      # so without it the CLI lands on the "detached" channel and registers service-detached.json,
-      # which the prod-channel desktop never reads -> background service start timeout).
       - name: Build CLI
-        run: cd opencode && bun run --cwd packages/cli build --single --baseline
+        run: bash ./build.sh
         env:
-          OPENCODE_CHANNEL: prod
+          BUILD_TARGET: cli
+          OPENCODE_TARGET: windows-x64-baseline
 
       - name: Build desktop app
         run: cd opencode && bun run --cwd packages/desktop build
         env:
-          OPENCODE_CHANNEL: prod
           OPENCODE_TARGET: windows-x64
           NODE_OPTIONS: --max-old-space-size=4096
 
-      # First pass: build the unpacked app (packages/desktop/dist/win-unpacked -> dist/desktop/app).
+      # First pass: unpacked app (packages/desktop/dist -> dist/desktop/app).
       - name: Pack desktop app (unsigned, no publish)
         run: cd opencode && bun run --cwd packages/desktop pack
         env:
-          OPENCODE_CHANNEL: prod
           OPENCODE_TARGET: windows-x64
 
-      # Second pass: wrap the unpacked app in the NSIS installer. Copy it outside dist/ first,
-      # because pack wipes dist/desktop at startup.
+      # Second pass: wrap the unpacked app in the NSIS installer. Copy it out of
+      # dist/ first because pack wipes dist/ at startup.
       - name: Copy unpacked app aside
         run: cp -r opencode/dist/desktop/app opencode/.app-for-installer
 
       - name: Pack NSIS installer (unsigned, no publish)
         run: cd opencode && bun run --cwd packages/desktop pack
         env:
-          OPENCODE_CHANNEL: prod
           OPENCODE_TARGET: windows-x64
           OPENCODE_DESKTOP_APP: ${{ github.workspace }}/opencode/.app-for-installer
 

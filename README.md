@@ -24,7 +24,8 @@ dev/update_patches.sh    re-apply the whole stack and re-export every patch
 dev/verify-patches.sh    fast apply check, no compile
 check_tags.sh            show upstream commits/tags newer than the pin
 update_upstream.sh       bump the pin and commit it
-.github/workflows/       ci-build-windows.yml (CLI) + build-desktop.yml (installer)
+.github/workflows/       ci-build-{windows,linux,macos}.yml (CLI)
+                         ci-build-desktop-{windows,linux,macos}.yml (desktop)
 ```
 
 `patches/` also holds restored copies of upstream opencode's bun `patchedDependencies`
@@ -78,7 +79,7 @@ Patches are regenerated with 3 lines of context.
 
 ## CI
 
-One workflow per OS, all triggered by a push to `main` (and PRs to `main`):
+One CLI workflow per OS, all triggered by a push to `main` (and PRs to `main`):
 
 | Workflow | Runner | Output |
 |---|---|---|
@@ -87,7 +88,18 @@ One workflow per OS, all triggered by a push to `main` (and PRs to `main`):
 | `ci-build-macos.yml` | `macos-15-intel`, `macos-14` | `cli-darwin-x64-baseline`, `cli-darwin-arm64` |
 
 Each does exactly: `get_repo.sh` → `prepare_src.sh` → `build.sh` → upload (gofile + artifact).
-`build-desktop.yml` is separate and only runs on manual dispatch.
+
+The desktop app has three matching workflows, with the same triggers and the same
+`get_repo.sh` → `prepare_src.sh` shape:
+
+| Workflow | Runner | Output |
+|---|---|---|
+| `ci-build-desktop-windows.yml` | `windows-latest` | NSIS installer (`loophole-desktop-win-x64.exe`) |
+| `ci-build-desktop-linux.yml` | `ubuntu-latest` | AppImage, deb, rpm (`loophole-desktop-linux-x64.*`) |
+| `ci-build-desktop-macos.yml` | `macos-15-intel`, `macos-14` | unsigned `.app.tar` (x64, arm64) |
+
+They build the CLI for the matching target first, then `bun run --cwd packages/desktop build`
+and `pack`. Packages are unsigned test builds: gofile + artifact, never published.
 
 There is no branch-picking workflow, because the repo is always patches-only.
 

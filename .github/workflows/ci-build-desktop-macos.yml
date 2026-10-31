@@ -1,0 +1,107 @@
+name: CI - Build Desktop - macOS
+
+# Desktop build for macOS, same shape as ci-build-macos.yml:
+# clone upstream at the pin, apply patches, build the CLI, build and package
+# the Electron app, upload.
+# Two runners: Intel (x64) and Apple Silicon (arm64).
+#
+# The desktop bundles the CLI from packages/cli/dist, and its target names use
+# the non-baseline form (darwin-x64 / darwin-arm64), so the x64 CLI is built as
+# darwin-x64-baseline (which is what darwin-x64 maps to) and the desktop is
+# built against the matrix target.
+#
+# macOS packing is unsigned (electron-builder --dir with mac.identity=null) and
+# produces a .app.tar, which is the artifact to test with. Signing/notarizing
+# happens only in a release pipeline.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+  workflow_dispatch:
+
+permissions: {}
+
+env:
+  APP_NAME: Loophole
+  BINARY_NAME: loophole
+  ORG_NAME: loophole-ai
+  GH_REPO_PATH: ${{ github.repository }}
+  OPENCODE_CHANNEL: prod
+
+jobs:
+  build-desktop-macos:
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15-intel
+            arch: x64
+            cli_target: darwin-x64-baseline
+            desktop_target: darwin-x64
+          - runner: macos-14
+            arch: arm64
+            cli_target: darwin-arm64
+            desktop_target: darwin-arm64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Clone upstream opencode
+        run: bash ./get_repo.sh
+
+      - name: Apply patches and assets
+        run: bash ./prepare_src.sh
+
+      - name: Build CLI
+        run: bash ./build.sh
+        env:
+          BUILD_TARGET: cli
+          OPENCODE_TARGET: ${{ matrix.cli_target }}
+
+      - name: Build desktop app
+        run: cd opencode && bun run --cwd packages/desktop build
+        env:
+          OPENCODE_TARGET: ${{ matrix.desktop_target }}
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Pack desktop app (unsigned, no publish)
+        run: cd opencode && bun run --cwd packages/desktop pack
+        env:
+          OPENCODE_TARGET: ${{ matrix.desktop_target }}
+
+      - name: Upload app to gofile
+        run: |
+          cd opencode/dist/desktop
+          ls -la
+          APP=$(find . -maxdepth 1 -name "*.app.tar" | head -n 1)
+          SERVER=$(curl -s https://api.gofile.io/servers | jq -r '.data.servers[0].name')
+          echo "gofile server: $SERVER"
+          RESP=$(curl -s -F "file=@$APP;filename=loophole-desktop-macos-${{ matrix.arch }}.app.tar" "https://$SERVER.gofile.io/contents/uploadfile")
+          echo "$RESP" | jq .
+          LINK=$(echo "$RESP" | jq -r '.data.downloadPage // empty')
+          if [ -z "$LINK" ]; then echo "## gofile upload failed" >> "$GITHUB_STEP_SUMMARY"; exit 1; fi
+          {
+            echo "## Loophole Desktop (macOS ${{ matrix.arch }}, unsigned .app.tar)"
+            echo ""
+            echo "**Download:** $LINK"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload app artifact (backup)
+        uses: actions/upload-artifact@v4
+        with:
+          name: loophole-desktop-macos-${{ matrix.arch }}
+          path: opencode/dist/desktop/*.app.tar
+          if-no-files-found: error

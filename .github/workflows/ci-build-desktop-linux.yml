@@ -1,0 +1,104 @@
+name: CI - Build Desktop - Linux
+
+# Desktop build for Linux x64, same shape as ci-build-linux.yml:
+# clone upstream at the pin, apply patches, build the CLI, build and package
+# the Electron app, upload.
+#
+# The desktop bundles the CLI from packages/cli/dist, and its target names use
+# the non-baseline form (linux-x64), so the CLI is built as
+# linux-x64-baseline (which is what that target maps to) and the desktop is
+# built against linux-x64.
+#
+# The Linux pack produces AppImage + deb + rpm. rpm needs the rpmbuild tooling.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+  workflow_dispatch:
+
+permissions: {}
+
+env:
+  APP_NAME: Loophole
+  BINARY_NAME: loophole
+  ORG_NAME: loophole-ai
+  GH_REPO_PATH: ${{ github.repository }}
+  OPENCODE_CHANNEL: prod
+
+jobs:
+  build-desktop-linux:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Clone upstream opencode
+        run: bash ./get_repo.sh
+
+      - name: Apply patches and assets
+        run: bash ./prepare_src.sh
+
+      - name: Build CLI
+        run: bash ./build.sh
+        env:
+          BUILD_TARGET: cli
+          OPENCODE_TARGET: linux-x64-baseline
+
+      # rpm packaging needs rpmbuild; deb and AppImage use electron-builder's
+      # bundled fpm and appimage tooling.
+      - name: Setup rpm tooling
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends rpm
+
+      - name: Build desktop app
+        run: cd opencode && bun run --cwd packages/desktop build
+        env:
+          OPENCODE_TARGET: linux-x64
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Pack desktop app (unsigned, no publish)
+        run: cd opencode && bun run --cwd packages/desktop pack
+        env:
+          OPENCODE_TARGET: linux-x64
+
+      - name: Upload packages to gofile
+        run: |
+          cd opencode/dist/desktop
+          ls -la
+          SERVER=$(curl -s https://api.gofile.io/servers | jq -r '.data.servers[0].name')
+          echo "gofile server: $SERVER"
+          : > links.md
+          for f in *.AppImage *.deb *.rpm; do
+            [ -f "$f" ] || continue
+            RESP=$(curl -s -F "file=@$f;filename=$f" "https://$SERVER.gofile.io/contents/uploadfile")
+            echo "$RESP" | jq .
+            LINK=$(echo "$RESP" | jq -r '.data.downloadPage // empty')
+            if [ -z "$LINK" ]; then echo "## gofile upload failed for $f" >> "$GITHUB_STEP_SUMMARY"; exit 1; fi
+            echo "- **$f**: $LINK" >> links.md
+          done
+          {
+            echo "## Loophole Desktop (linux x64, unsigned packages)"
+            echo ""
+            cat links.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload packages artifact (backup)
+        uses: actions/upload-artifact@v4
+        with:
+          name: loophole-desktop-linux-x64
+          path: |
+            opencode/dist/desktop/*.AppImage
+            opencode/dist/desktop/*.deb
+            opencode/dist/desktop/*.rpm
+          if-no-files-found: error
