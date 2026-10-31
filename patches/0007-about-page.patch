@@ -1,0 +1,253 @@
+diff --git a/packages/app/src/runtime/i18n/en.ts b/packages/app/src/runtime/i18n/en.ts
+index c7c3bdc08e..8fa132ebcc 100644
+--- a/packages/app/src/runtime/i18n/en.ts
++++ b/packages/app/src/runtime/i18n/en.ts
+@@ -814,7 +814,7 @@ export const dict = {
+   "settings.about.notices.crates.count.other": "{{count}} crates",
+   "settings.about.notices.crates.appliesTo": "Applies to {{names}}",
+   "settings.about.tagline": "AI can’t build great software, without you",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
++  "settings.about.copyright": "© Loophole AI",
+   "settings.preferences.description": "Customize preferences and theme and default behavior",
+   "settings.appearance.description": "Customize theme and fonts",
+   "settings.appearance.row.tabs.title": "Tabs",
+diff --git a/packages/app/src/settings/about/about.tsx b/packages/app/src/settings/about/about.tsx
+index be70b069d9..09c9bc29bc 100644
+--- a/packages/app/src/settings/about/about.tsx
++++ b/packages/app/src/settings/about/about.tsx
+@@ -1,60 +1,18 @@
+-import { createResource } from "solid-js"
+ import { useDialog } from "@opencode/ui/context/dialog"
++import { Logo } from "@opencode/ui/logo"
+ import { useLanguage } from "@/runtime/i18n/language"
+ import { usePlatform } from "@/runtime/platform/platform"
+ import { ExternalLink } from "@/runtime/platform/external-link"
+ import { showToast } from "@/shell/notifications/toast"
+-import legal from "./legal.svg"
+-import anomalyBrush from "./anomaly-brush.svg"
+-import { FALLBACK_OTHER_CONTRIBUTORS, loadOtherContributorCount } from "./contributors"
+ 
+-const writers = [
+-  "thdxr",
+-  "adamdotdev",
+-  "rekram1-node",
+-  "kitlangton",
+-  "iamdavidhill",
+-  "jayair",
+-  "fwang",
+-  "brendonovich",
+-  "nexxeln",
+-  "hona",
+-  "kommander",
+-  "jlongster",
+-  "vimtor",
+-  "r44vcorp",
+-  "simonklee",
+-  "arvsrn",
+-] as const
++const website = "https://www.loopholeeditor.in"
++const repository = "https://github.com/loophole-ai/loophole-app"
+ 
+-const illustrators = ["usrnk1", "ludvigrask_", "arvsrn", "iamdavidhill"] as const
+-
+-export function SettingsAbout(props: { active: boolean }) {
++export function SettingsAbout(_props: { active: boolean }) {
+   const language = useLanguage()
+   const platform = usePlatform()
+   const dialog = useDialog()
+ 
+-  const [otherContributors] = createResource(
+-    () => props.active || undefined,
+-    () => loadOtherContributorCount(platform.fetch ?? fetch),
+-    { initialValue: FALLBACK_OTHER_CONTRIBUTORS },
+-  )
+-
+-  const credit = (name: string) => (
+-    <bdi dir="ltr">
+-      <ExternalLink href={profile(name)}>{name}</ExternalLink>
+-    </bdi>
+-  )
+-
+-  const writerCredits = () => [
+-    ...writers.map(credit),
+-    <ExternalLink href="https://github.com/anomalyco/opencode/graphs/contributors">
+-      {language.plural("settings.about.otherContributor", otherContributors.latest, {
+-        count: otherContributors.latest,
+-      })}
+-    </ExternalLink>,
+-  ]
+-
+   const showNotices = async () => {
+     // The license texts load only when someone reads them.
+     const loaded = await import("./notices/dialog").catch(() => undefined)
+@@ -70,7 +28,9 @@ export function SettingsAbout(props: { active: boolean }) {
+ 
+   return (
+     <div class="settings-about-content">
++      <Logo class="settings-about-logo" />
+       <div class="settings-about-intro">
++        <h2 class="settings-about-name">Loophole Desktop</h2>
+         <p>
+           {language.t("settings.about.version", {
+             version: platform.version ?? language.t("settings.about.devVersion"),
+@@ -78,54 +38,25 @@ export function SettingsAbout(props: { active: boolean }) {
+         </p>
+         <p>{language.t("settings.about.license")}</p>
+       </div>
+-
+-      <h2 class="settings-about-name">Loophole Desktop</h2>
+-
+-      <div class="settings-about-credits">
+-        <p>{language.rich("settings.about.writtenByNames", { names: language.list(writerCredits()) })}</p>
+-        <p>
+-          {language.rich("settings.about.illustratedByNames", {
+-            names: language.list(illustrators.map(credit)),
+-          })}
+-        </p>
+-      </div>
+-
+-      <div class="settings-about-publication">
+-        <p>{language.t("settings.about.firstPublished")}</p>
+-        <p>{language.t("settings.about.firstIllustrated")}</p>
+-      </div>
+-
+-      <p class="settings-about-faint">
+-        <ExternalLink href="https://www.loopholeeditor.in">
++      <p class="settings-about-description">{language.t("settings.about.description")}</p>
++      <div class="settings-about-links">
++        <ExternalLink href={website}>
+           <bdi dir="ltr">{language.t("settings.about.website")}</bdi>
+         </ExternalLink>
+-      </p>
+-
+-      <div class="settings-about-details">
+-        <p>{language.t("settings.about.description")}</p>
+-        <p>{language.t("settings.about.trademark")}</p>
+-        <p>{language.t("settings.about.typeset")}</p>
+-        <p>
+-          <button type="button" class="settings-about-link" onClick={() => void showNotices()}>
+-            {language.t("settings.about.notices.title")}
+-          </button>
+-        </p>
+-      </div>
+-
+-      <p>{language.t("settings.about.tagline")}</p>
+-      <img class="settings-about-legal" src={legal} alt="" />
+-      <div class="settings-about-copyright">
+-        <p>{language.t("settings.about.copyright")}</p>
+-        <img class="settings-about-anomaly-brush" src={anomalyBrush} alt="" />
++        <span class="settings-about-separator" aria-hidden="true">
++          ·
++        </span>
++        <ExternalLink href={repository}>
++          <bdi dir="ltr">GitHub</bdi>
++        </ExternalLink>
++        <span class="settings-about-separator" aria-hidden="true">
++          ·
++        </span>
++        <button type="button" class="settings-about-link" onClick={() => void showNotices()}>
++          {language.t("settings.about.notices.title")}
++        </button>
+       </div>
++      <p class="settings-about-copyright">{language.t("settings.about.copyright")}</p>
+     </div>
+   )
+ }
+-
+-function profile(name: string) {
+-  if (name === "r44vcorp") return "https://github.com/R44VC0RP"
+-
+-  if (name === "ludvigrask_") return "https://x.com/ludvigrask_"
+-
+-  return `https://github.com/${name}`
+-}
+diff --git a/packages/app/src/settings/settings.css b/packages/app/src/settings/settings.css
+index dcb47ac6a0..e98ead69b2 100644
+--- a/packages/app/src/settings/settings.css
++++ b/packages/app/src/settings/settings.css
+@@ -205,7 +205,7 @@
+   min-height: 462px;
+   flex-direction: column;
+   align-items: center;
+-  justify-content: flex-start;
++  justify-content: center;
+   gap: 24px;
+   padding-block: 80px calc(80px + var(--settings-bottom-inset, 0px));
+   color: var(--v2-text-text-muted);
+@@ -220,22 +220,17 @@
+   margin: 0;
+ }
+ 
+-.settings-about-intro,
+-.settings-about-credits,
+-.settings-about-publication,
+-.settings-about-details {
+-  display: flex;
+-  flex-direction: column;
++.settings-about-logo {
++  width: 240px;
++  height: auto;
++  color: var(--v2-text-text-base);
+ }
+ 
+ .settings-about-intro {
+-  gap: 14px;
+-}
+-
+-.settings-about-credits,
+-.settings-about-publication,
+-.settings-about-details {
+-  gap: 16px;
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++  gap: 8px;
+ }
+ 
+ .settings-about-name {
+@@ -248,30 +243,27 @@
+   letter-spacing: -0.02em;
+ }
+ 
+-.settings-about-faint,
+-.settings-about-credits {
+-  color: var(--v2-text-text-faint);
+-}
+-
+-.settings-about-legal {
+-  width: 109.2px;
+-  height: 19.2px;
++.settings-about-description {
++  max-width: 420px;
++  color: var(--v2-text-text-muted);
+ }
+ 
+-.settings-about-copyright {
++.settings-about-links {
+   display: flex;
+-  width: 100%;
+-  flex-shrink: 0;
+-  flex-direction: column;
++  flex-wrap: wrap;
+   align-items: center;
+-  gap: 12px;
++  justify-content: center;
++  gap: 8px 12px;
++  color: var(--v2-text-text-faint);
+ }
+ 
+-.settings-about-anomaly-brush {
+-  width: 126.72px;
+-  height: 48.384px;
+-  flex-shrink: 0;
+-  pointer-events: none;
++.settings-about-separator {
++  color: var(--v2-text-text-faint);
++}
++
++.settings-about-copyright {
++  color: var(--v2-text-text-faint);
++  font-size: 12px;
+ }
+ 
+ .settings-about-content a {
