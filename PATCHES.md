@@ -22,6 +22,7 @@ patches/
   0011-screen-daily-use.patch  daily-use polish for the new screen
   0012-screen-cleanup.patch    screen cleanup
   0013-full-command-set.patch  expose every OpenCode slash command in the new screen
+  0014-kimi-main-screen.patch  Kimi-style welcome box, three-zone footer, @ file mentions
   user/                        optional extra patches, applied after the numbered stack
   series                       legacy list, ignored by the scripts (sorted order wins)
   @ai-sdk%2F...@x.patch         copies of upstream bun patchedDependencies - NEVER applied
@@ -118,6 +119,13 @@ That import is fixed in the applied patch, so the archived copy is obsolete.
 `0009-pi-default-command.patch` makes the pi-TUI screen the default interactive interface
 (`LOOPHOLE_TUI=mini` and piped stdin/stdout keep the old plain UI). `0010`-`0013` build the
 Kimi-style screen on top of it.
+
+`0014-kimi-main-screen.patch` is the visual pass on that screen: the bordered welcome box with the
+mark, greeting and `Directory:` / `Session:` / `Model:` / `Version:` rows, the rule-plus-row footer
+(identity and badges left, directory centred, context percentage and key hints right), `@` file
+mentions wired into the prompt as `file://` attachments, and all nine upstream slash-command aliases
+listed as their own palette rows (47 commands total). It touches only the screen and its controller;
+the engine, the server and command behaviour are unchanged.
 
 `0005-telemetry-posthog.patch` came from the `telemetry-posthog` / `tui-logo-art` branches.
 Every other custom commit on the local branches (Discord report link, service-port isolation,

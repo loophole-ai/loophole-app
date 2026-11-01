@@ -1,0 +1,678 @@
+diff --git a/packages/cli/src/screen/controller.ts b/packages/cli/src/screen/controller.ts
+index f1d8eb0da7..7d266a2f7f 100644
+--- a/packages/cli/src/screen/controller.ts
++++ b/packages/cli/src/screen/controller.ts
+@@ -6,9 +6,10 @@
+  */
+ 
+ import { spawnSync } from "node:child_process"
+-import { readFileSync, writeFileSync } from "node:fs"
++import { readFileSync, statSync, writeFileSync } from "node:fs"
+ import { homedir, tmpdir } from "node:os"
+-import { join, resolve } from "node:path"
++import { basename, isAbsolute, join, resolve } from "node:path"
++import { pathToFileURL } from "node:url"
+ 
+ import type { Endpoint } from "@opencode/client/effect/service"
+ import type {
+@@ -25,6 +26,8 @@ import type {
+ import { Screen, type FormAnswerValue, type FormQuestion, type StreamHandle } from "@loophole/screen"
+ import { getNativeClipboard, type SlashCommand } from "@loophole/tui-engine"
+ 
++import { OPENCODE_VERSION } from "../version"
++
+ export interface ScreenControllerOptions {
+   readonly client: OpenCodeClient
+   readonly endpoint: Endpoint
+@@ -39,15 +42,19 @@ export interface ScreenControllerOptions {
+ 
+ /**
+  * The same commands the OpenCode TUI exposes, so the Loophole screen is not a reduced subset.
+- * Aliases are resolved in runCommand and are called out in the descriptions instead of being
+- * listed a second time.
++ * The nine upstream aliases are listed as their own palette rows (OpenCode shows all 47), while
++ * COMMAND_ALIASES still resolves each alias to its canonical handler in runCommand.
+  */
+ const BUILTIN_COMMANDS: readonly SlashCommand[] = [
+   { name: "help", description: "List available commands" },
+-  { name: "sessions", description: "Switch to another session (aliases: resume, continue)" },
++  { name: "sessions", description: "Switch to another session" },
++  { name: "resume", description: "Alias of /sessions" },
++  { name: "continue", description: "Alias of /sessions" },
+   { name: "new", description: "Start a new session" },
+   { name: "clear", description: "Clear the transcript view" },
+-  { name: "open", description: "Open a session from any project (aliases: projects, project)" },
++  { name: "open", description: "Open a session from any project" },
++  { name: "projects", description: "Alias of /open" },
++  { name: "project", description: "Alias of /open" },
+   { name: "rename", description: "Rename the current session" },
+   { name: "timeline", description: "Show the recent user messages of this session" },
+   { name: "fork", description: "Fork this session" },
+@@ -58,7 +65,9 @@ const BUILTIN_COMMANDS: readonly SlashCommand[] = [
+   { name: "export", description: "Export the session transcript (add `copy` to copy it)" },
+   { name: "models", description: "Choose the model and thinking effort (alias: model)" },
+   { name: "agents", description: "Choose the agent (alias: agent)" },
+-  { name: "variants", description: "Choose the thinking effort (aliases: thinking, effort, variant)" },
++  { name: "variants", description: "Choose the thinking effort" },
++  { name: "thinking", description: "Alias of /variants" },
++  { name: "effort", description: "Alias of /variants" },
+   { name: "usage", description: "Show the current usage limits" },
+   { name: "mcps", description: "List MCP servers and connect or disconnect one" },
+   { name: "connect", description: "Connect a provider or integration" },
+@@ -75,12 +84,15 @@ const BUILTIN_COMMANDS: readonly SlashCommand[] = [
+   { name: "status", description: "Show session status and token usage" },
+   { name: "debug", description: "Show connection and session details" },
+   { name: "highlights", description: "Show this build's version and a short summary" },
+-  { name: "pair", description: "Pair another device with this server (alias: web)" },
++  { name: "pair", description: "Pair another device with this server" },
++  { name: "web", description: "Alias of /pair" },
+   { name: "restart", description: "Show how to restart the local service" },
+   { name: "update", description: "Show how to update Loophole" },
+   { name: "reload", description: "Reload configuration" },
+   { name: "terminal", description: "Show how to run a shell command" },
+-  { name: "exit", description: "Exit Loophole (aliases: quit, q)" },
++  { name: "exit", description: "Exit Loophole" },
++  { name: "quit", description: "Alias of /exit" },
++  { name: "q", description: "Alias of /exit" },
+ ]
+ 
+ /** Slash command aliases kept for compatibility with the old screen and with OpenCode. */
+@@ -114,6 +126,26 @@ const ASIDE_INSTRUCTIONS = [
+ 
+ type PendingPermission = { id: string; sessionID: string; action: string; resources: ReadonlyArray<string> }
+ 
++/** A file attached to a prompt through an `@mention`. */
++type PromptAttachment = {
++  readonly uri: string
++  readonly name: string
++  readonly mention: { readonly start: number; readonly end: number; readonly text: string }
++}
++
++/** Read the `@` token starting at `at`. Quoted paths may contain spaces. */
++function readMentionToken(text: string, at: number): { path: string; end: number } | undefined {
++  const quote = text[at + 1]
++  if (quote === '"' || quote === "'") {
++    const close = text.indexOf(quote, at + 2)
++    if (close === -1) return undefined
++    const path = text.slice(at + 2, close)
++    return path ? { path, end: close + 1 } : undefined
++  }
++  const match = /^\S+/.exec(text.slice(at + 1))
++  return match ? { path: match[0], end: at + 1 + match[0].length } : undefined
++}
++
+ function number(value: unknown): number | undefined {
+   return typeof value === "number" && Number.isFinite(value) ? value : undefined
+ }
+@@ -180,6 +212,8 @@ export class ScreenController {
+   private lastAssistant = ""
+   private tokensIn = 0
+   private tokensOut = 0
++  /** Tokens in the model's context window, from the most recent step. */
++  private contextTokens = 0
+   private stopped = false
+   /** Permission prompts and forms are answered one at a time so two dialogs never fight over the editor slot. */
+   private promptQueue: Promise<void> = Promise.resolve()
+@@ -208,6 +242,7 @@ export class ScreenController {
+   }
+ 
+   async start(): Promise<void> {
++    this.screen.setVersion(OPENCODE_VERSION)
+     this.screen.start()
+     if (this.sessionID) this.ready = this.loadSession()
+     void this.pumpEvents()
+@@ -216,8 +251,10 @@ export class ScreenController {
+     } else {
+       await this.ready
+     }
+-    void this.loadModels()
++    // Await the model list so the welcome panel can show the model's real name before it freezes.
++    await this.loadModels()
+     await this.refreshServerCommands()
++    this.screen.setReady(true)
+     if (this.options.initialMessage?.trim()) await this.send(this.options.initialMessage.trim())
+   }
+ 
+@@ -290,12 +327,83 @@ export class ScreenController {
+     }
+     this.screen.addUser(text)
+     try {
+-      await this.api.session.prompt({ sessionID: this.sessionID, text, delivery: "steer" })
++      const files = this.fileMentions(text)
++      await this.api.session.prompt({
++        sessionID: this.sessionID,
++        text,
++        delivery: "steer",
++        ...(files.length > 0 ? { files } : {}),
++      })
+     } catch (error) {
+       this.screen.addStatus(`Failed to send the message: ${String(error)}`, "error")
+     }
+   }
+ 
++  /**
++   * Turn `@path` tokens in a message into prompt file attachments.
++   *
++   * The server never parses `@` out of the text, so the CLI resolves each mention itself: the
++   * token stays in the message and the attachment records its range so the UI can highlight it.
++   * Quoted paths (with spaces) work, `~` is expanded, and a token only becomes an attachment when
++   * the path actually exists.
++   */
++  private fileMentions(text: string): PromptAttachment[] {
++    const files: PromptAttachment[] = []
++    const seen = new Set<string>()
++    let index = 0
++    while (index < text.length) {
++      const at = text.indexOf("@", index)
++      if (at === -1) break
++      const before = at === 0 ? "" : text[at - 1]
++      if (before !== "" && !/[\s([{;,:=]/.test(before)) {
++        index = at + 1
++        continue
++      }
++      const token = readMentionToken(text, at)
++      if (!token) {
++        index = at + 1
++        continue
++      }
++      const prefix = token.end - token.path.length
++      let absolute = this.resolveMentionPath(token.path)
++      let end = token.end
++      if (!absolute) {
++        // Trailing punctuation usually belongs to the sentence, not the file name.
++        const trimmed = token.path.replace(/[.,;:!?)\]}]+$/, "")
++        if (trimmed && trimmed !== token.path) {
++          absolute = this.resolveMentionPath(trimmed)
++          if (absolute) end = prefix + trimmed.length
++        }
++      }
++      if (!absolute) {
++        index = token.end
++        continue
++      }
++      if (!seen.has(absolute)) {
++        seen.add(absolute)
++        files.push({
++          uri: pathToFileURL(absolute).href,
++          name: basename(absolute),
++          mention: { start: at, end, text: text.slice(at, end) },
++        })
++      }
++      index = token.end
++    }
++    return files
++  }
++
++  private resolveMentionPath(raw: string): string | undefined {
++    if (!raw) return undefined
++    const expanded = raw.startsWith("~") ? join(homedir(), raw.slice(1)) : raw
++    const absolute = isAbsolute(expanded) ? expanded : resolve(this.directory, expanded)
++    try {
++      const info = statSync(absolute)
++      return info.isFile() || info.isDirectory() ? absolute : undefined
++    } catch {
++      return undefined
++    }
++  }
++
+   private async runCommand(name: string, args: string): Promise<void> {
+     const sessionID = this.sessionID
+     const command = COMMAND_ALIASES[name] ?? name
+@@ -847,6 +955,8 @@ export class ScreenController {
+     this.screen.clearTranscript()
+     this.screen.setBusy(false)
+     this.screen.setUsage(0, 0)
++    this.contextTokens = 0
++    this.screen.setContext(0, this.contextWindow())
+     this.ready = this.loadSession(info)
+     await this.ready
+     if (this.transcriptEmpty) this.screen.addStatus(title ? `Session: ${title}` : "Started a new session.")
+@@ -873,6 +983,7 @@ export class ScreenController {
+   private async applyInfo(info: SessionInfo): Promise<void> {
+     this.currentAgent = info.agent
+     this.currentModel = info.model
++    this.screen.setSession(info.title || info.id)
+     if (!this.currentModel) {
+       const fallback = await this.api.model.default({ location: { directory: this.directory } }).catch(() => undefined)
+       if (fallback?.data) this.currentModel = { providerID: fallback.data.providerID, id: fallback.data.modelID }
+@@ -883,6 +994,15 @@ export class ScreenController {
+   private refreshIdentity(): void {
+     this.screen.setAgent(this.currentAgent)
+     this.screen.setModel(this.currentModel ? this.modelLabel(this.currentModel) : undefined)
++    this.screen.setContext(this.contextTokens, this.contextWindow())
++  }
++
++  /** The context window of the active model, or 0 when the server has not reported one yet. */
++  private contextWindow(): number {
++    const model = this.currentModel
++    if (!model) return 0
++    const known = this.models?.find((item) => item.providerID === model.providerID && item.modelID === model.id)
++    return known?.limit.context ?? 0
+   }
+ 
+   private modelLabel(model: ModelRef): string {
+@@ -905,6 +1025,7 @@ export class ScreenController {
+ 
+     let tokensIn = 0
+     let tokensOut = 0
++    let contextTokens = 0
+     let running = false
+     for (const [index, message] of messages.entries()) {
+       switch (message.type) {
+@@ -914,6 +1035,7 @@ export class ScreenController {
+         case "assistant": {
+           tokensIn += message.tokens?.input ?? 0
+           tokensOut += message.tokens?.output ?? 0
++          contextTokens = (message.tokens?.input ?? 0) + (message.tokens?.output ?? 0)
+           // The newest message may still be streaming; the live events draw it instead.
+           const streaming = index === messages.length - 1 && message.time.completed === undefined && message.finish === undefined
+           if (streaming) {
+@@ -944,7 +1066,9 @@ export class ScreenController {
+     }
+     this.tokensIn = tokensIn
+     this.tokensOut = tokensOut
++    this.contextTokens = contextTokens
+     this.screen.setUsage(tokensIn, tokensOut)
++    this.screen.setContext(contextTokens, this.contextWindow())
+     this.screen.setBusy(running)
+     if (response.cursor.next) {
+       this.screen.addStatus(`Showing the last ${String(HISTORY_LIMIT)} messages of this session.`)
+@@ -1312,6 +1436,8 @@ export class ScreenController {
+       case "session.step.ended":
+         this.tokensIn += event.data.tokens.input
+         this.tokensOut += event.data.tokens.output
++        this.contextTokens = event.data.tokens.input + event.data.tokens.output
++        this.screen.setContext(this.contextTokens, this.contextWindow())
+         return this.screen.addUsage(event.data.tokens.input, event.data.tokens.output)
+     }
+   }
+diff --git a/packages/screen/src/components/chrome/footer.ts b/packages/screen/src/components/chrome/footer.ts
+index b0a50b5e6d..94abc5d68a 100644
+--- a/packages/screen/src/components/chrome/footer.ts
++++ b/packages/screen/src/components/chrome/footer.ts
+@@ -12,6 +12,10 @@ export interface FooterState {
+   readonly agent?: string;
+   /** Active model label, including the thinking effort when one is selected. */
+   readonly model?: string;
++  /** Tokens currently in the model's context window. */
++  readonly contextTokens?: number;
++  /** The model's context window size, when the server reports one. */
++  readonly contextLimit?: number;
+   /** The server connection dropped and the screen is trying to reconnect. */
+   readonly offline?: boolean;
+ }
+@@ -27,7 +31,11 @@ function compactCount(value: number): string {
+   return `${(value / 1_000_000).toFixed(1)}m`;
+ }
+ 
+-/** One status row under the editor: project path on the left, usage and key hints on the right. */
++/**
++ * The status row under the editor, modelled on the Kimi Code CLI toolbar: a rule, then the agent and
++ * model on the left, the working directory in the middle and the context usage plus key hints on the
++ * right. Parts drop out from the middle outwards when the terminal is narrow.
++ */
+ export class FooterComponent implements Component {
+   private state: FooterState;
+ 
+@@ -42,27 +50,50 @@ export class FooterComponent implements Component {
+   invalidate(): void {}
+ 
+   render(width: number): string[] {
+-    const { directory, tokensIn, tokensOut, busy, auto, agent, model, offline } = this.state;
+-    const left = currentTheme.fg('textDim', compactPath(directory));
+-    const separator = currentTheme.fg('textMuted', '  ·  ');
++    const { directory, tokensIn, tokensOut, busy, auto, agent, model, contextTokens, contextLimit, offline } = this.state;
++
++    const badges: string[] = [];
++    if (offline) badges.push(currentTheme.fg('error', 'reconnecting'));
++    if (auto) badges.push(currentTheme.fg('warning', 'auto'));
+ 
+-    // Highest priority first: when the row is too narrow the lowest-priority parts are dropped.
+-    const parts: string[] = [];
+-    if (offline) parts.push(currentTheme.fg('error', 'reconnecting…'));
+-    if (auto) parts.push(currentTheme.fg('warning', 'auto-approve'));
+     const identity = [agent, model].filter((value): value is string => Boolean(value)).join(' · ');
+-    if (identity) parts.push(currentTheme.fg('textDim', identity));
+-    if (tokensIn + tokensOut > 0) {
+-      parts.push(currentTheme.fg('textMuted', `${compactCount(tokensIn)} in · ${compactCount(tokensOut)} out`));
++    const leftParts = [...badges];
++    if (identity) leftParts.push(currentTheme.fg('textDim', identity));
++    const left = leftParts.join('  ');
++
++    let usage = '';
++    if (contextLimit !== undefined && contextLimit > 0) {
++      const percent = Math.min(100, Math.round(((contextTokens ?? 0) / contextLimit) * 100));
++      usage = `${String(percent)}% ctx`;
++    } else if (tokensIn + tokensOut > 0) {
++      usage = `${compactCount(tokensIn)} in · ${compactCount(tokensOut)} out`;
+     }
+-    parts.push(currentTheme.fg('textMuted', busy ? 'esc interrupt' : 'ctrl+o expand · ctrl+c exit'));
++    const hint = busy ? 'esc interrupt' : 'ctrl+o expand · ctrl+c exit';
++    const right = [usage, hint]
++      .filter((value) => value.length > 0)
++      .map((value) => currentTheme.fg('textMuted', value))
++      .join('  ·  ');
++
++    const centre = currentTheme.fg('textDim', compactPath(directory));
++    const rule = currentTheme.fg('border', '─'.repeat(Math.max(0, width)));
+ 
+-    while (parts.length > 0) {
+-      const right = parts.join(separator);
+-      const gap = width - visibleWidth(left) - visibleWidth(right);
+-      if (gap >= 2) return [left + ' '.repeat(gap) + right];
+-      parts.pop();
++    const lw = visibleWidth(left);
++    const cw = visibleWidth(centre);
++    const rw = visibleWidth(right);
++
++    if (lw + cw + rw + 4 <= width) {
++      const start = Math.max(lw + 2, Math.floor((width - cw) / 2));
++      if (start + cw + 2 <= width - rw) {
++        return [rule, left + ' '.repeat(start - lw) + centre + ' '.repeat(width - rw - start - cw) + right];
++      }
++    }
++    if (lw + rw + 2 <= width) {
++      return [rule, left + ' '.repeat(width - lw - rw) + right];
++    }
++    if (rw < width) {
++      const room = width - rw - 2;
++      return [rule, truncateToWidth(left, Math.max(0, room), '…') + ' '.repeat(Math.max(2, width - rw - room)) + right];
+     }
+-    return [truncateToWidth(left, Math.max(0, width), '…')];
++    return [rule, truncateToWidth(right, Math.max(0, width), '…')];
+   }
+ }
+diff --git a/packages/screen/src/components/chrome/welcome.ts b/packages/screen/src/components/chrome/welcome.ts
+index 4fc30615ec..ea0793bd04 100644
+--- a/packages/screen/src/components/chrome/welcome.ts
++++ b/packages/screen/src/components/chrome/welcome.ts
+@@ -1,23 +1,121 @@
+-import { type Component } from '@loophole/tui-engine';
++import { truncateToWidth, visibleWidth, type Component } from '@loophole/tui-engine';
+ 
+ import { currentTheme } from '../../theme/index';
+ 
+-/** Opening banner: wordmark, project path and a one-line hint. */
++export interface WelcomeState {
++  readonly directory: string;
++  /** Session title, falling back to the session id when the session has no title. */
++  readonly session?: string;
++  readonly model?: string;
++  readonly version?: string;
++  /** The session is connected and ready to take a prompt. */
++  readonly ready?: boolean;
++  /** The connection dropped and the screen is reconnecting. */
++  readonly offline?: boolean;
++}
++
++/** Compact Loophole mark: a loop, drawn in the brand colour. */
++const MARK = ['▛▀▀▀▜', '▙▄▄▄▟'];
++const MARK_WIDTH = 5;
++const MARK_GAP = 1;
++const PAD_X = 2;
++const MIN_INNER = 24;
++
++type RowStyle = 'greeting' | 'hint' | 'info';
++
++interface Row {
++  /** Mark glyphs shown in the left column (the greeting rows only). */
++  readonly mark?: string;
++  readonly text: string;
++  readonly style: RowStyle;
++}
++
++function shortenHome(directory: string): string {
++  const home = process.env.HOME ?? process.env.USERPROFILE;
++  return home && directory.startsWith(home) ? `~${directory.slice(home.length)}` : directory;
++}
++
++function styleRow(style: RowStyle, text: string): string {
++  if (style === 'greeting') return currentTheme.boldFg('textStrong', text);
++  if (style === 'hint') return currentTheme.fg('textDim', text);
++  return currentTheme.fg('textDim', text);
++}
++
++/**
++ * The opening panel, modelled on the Kimi Code CLI welcome box: a rounded border around the mark,
++ * a greeting with the `/help` hint, and the session facts (directory, session, model, version),
++ * followed by a one-line readiness note.
++ */
+ export class WelcomeComponent implements Component {
+-  constructor(
+-    private readonly directory: string,
+-    private readonly hint = 'Type a message, / for commands, @ to mention a file.',
+-  ) {}
++  private state: WelcomeState;
++  /** The panel is a startup banner: once it is drawn it must never change, or the main-screen
++   * renderer would have to redraw lines that are already in the terminal's scrollback. */
++  private frozen = false;
++
++  constructor(state: WelcomeState) {
++    this.state = state;
++  }
++
++  update(state: WelcomeState): void {
++    if (this.frozen) return;
++    this.state = state;
++  }
+ 
+   invalidate(): void {}
+ 
+-  render(): string[] {
+-    return [
+-      '',
+-      `${currentTheme.fg('primary', '●')} ${currentTheme.boldFg('textStrong', 'loophole')}`,
+-      `  ${currentTheme.fg('textDim', this.directory)}`,
+-      `  ${currentTheme.fg('textMuted', this.hint)}`,
+-      '',
++  render(width: number): string[] {
++    if (this.state.ready) this.frozen = true;
++    const { directory, session, model, version, ready, offline } = this.state;
++
++    const facts: Array<[string, string]> = [['Directory', shortenHome(directory)]];
++    if (session) facts.push(['Session', session]);
++    if (model) facts.push(['Model', model]);
++    if (version) facts.push(['Version', version]);
++    const labelWidth = Math.max(...facts.map(([name]) => name.length));
++
++    const rows: Row[] = [
++      { mark: MARK[0], text: 'Welcome to Loophole!', style: 'greeting' },
++      { mark: MARK[1], text: 'Send /help for help information.', style: 'hint' },
++      { text: '', style: 'info' },
++      ...facts.map(([name, value]): Row => ({ text: `${name.padEnd(labelWidth)}: ${value}`, style: 'info' })),
+     ];
++
++    const rowWidth = (row: Row) => visibleWidth(row.text) + (row.mark ? MARK_WIDTH + MARK_GAP : 0);
++    const natural = Math.max(MIN_INNER, ...rows.map(rowWidth));
++    const maxInner = Math.max(1, width - PAD_X * 2 - 2);
++    const inner = Math.min(natural, maxInner);
++
++    const border = (text: string) => currentTheme.fg('primary', text);
++    const out: string[] = [];
++    out.push(border(`╭${'─'.repeat(inner + PAD_X * 2)}╮`));
++    out.push(border('│') + ' '.repeat(inner + PAD_X * 2) + border('│'));
++
++    for (const row of rows) {
++      const available = inner - (row.mark ? MARK_WIDTH + MARK_GAP : 0);
++      const text = truncateToWidth(row.text, Math.max(0, available), '…');
++      const padded = text + ' '.repeat(Math.max(0, available - visibleWidth(text)));
++      const lead = row.mark ? currentTheme.fg('primary', row.mark) + ' '.repeat(MARK_GAP) : '';
++      const body = lead + styleRow(row.style, padded);
++      out.push(border('│') + ' '.repeat(PAD_X) + body + ' '.repeat(PAD_X) + border('│'));
++    }
++
++    out.push(border('│') + ' '.repeat(inner + PAD_X * 2) + border('│'));
++    out.push(border(`╰${'─'.repeat(inner + PAD_X * 2)}╯`));
++
++    if (offline) {
++      out.push(truncateToWidth(`  ${currentTheme.fg('error', '✗ Offline')}${currentTheme.fg('textMuted', ' · reconnecting…')}`, width, '…'));
++    } else if (ready) {
++      out.push(
++        truncateToWidth(
++          `  ${currentTheme.fg('success', '✓ Ready')}${currentTheme.fg('textMuted', ' · type a message, / for commands, @ for files')}`,
++          width,
++          '…',
++        ),
++      );
++    } else {
++      out.push(truncateToWidth(`  ${currentTheme.fg('textDim', '○ Starting…')}`, width, '…'));
++    }
++
++    return out;
+   }
+ }
+diff --git a/packages/screen/src/screen.ts b/packages/screen/src/screen.ts
+index da57b6f7e1..2eeef17562 100644
+--- a/packages/screen/src/screen.ts
++++ b/packages/screen/src/screen.ts
+@@ -15,7 +15,6 @@
+  */
+ 
+ import {
+-  CombinedAutocompleteProvider,
+   Container,
+   Input,
+   ProcessTerminal,
+@@ -34,6 +33,7 @@ import { FooterComponent } from './components/chrome/footer';
+ import { GutterContainer } from './components/chrome/gutter-container';
+ import { WelcomeComponent } from './components/chrome/welcome';
+ import { CustomEditor } from './components/editor/custom-editor';
++import { FileMentionProvider } from './components/editor/file-mention-provider';
+ import { AssistantMessageComponent } from './components/messages/assistant-message';
+ import { StatusMessageComponent } from './components/messages/status-message';
+ import { ThinkingComponent } from './components/messages/thinking';
+@@ -93,17 +93,24 @@ export class Screen {
+   private readonly activity: ActivityComponent;
+   private readonly footer: FooterComponent;
+   private readonly editor: CustomEditor;
++  private readonly welcome: WelcomeComponent;
+   private readonly tools = new Map<string, ToolCallComponent>();
+   private options: ScreenOptions;
++  private commands: SlashCommand[] | undefined;
+   private themeName: ThemeName = 'dark';
+   private expanded = false;
+   private busy = false;
+   private tokensIn = 0;
+   private tokensOut = 0;
++  private contextTokens = 0;
++  private contextLimit = 0;
+   private lastCtrlC = 0;
+   private prompting = false;
+   private agentLabel: string | undefined;
+   private modelLabel: string | undefined;
++  private sessionLabel: string | undefined;
++  private version: string | undefined;
++  private ready = false;
+   private offline = false;
+ 
+   constructor(options: ScreenOptions) {
+@@ -114,6 +121,7 @@ export class Screen {
+ 
+     this.activity = new ActivityComponent(() => this.ui.requestRender());
+     this.footer = new FooterComponent(this.footerState());
++    this.welcome = new WelcomeComponent(this.welcomeState());
+     this.editor = new CustomEditor(this.ui);
+     this.setCommands(options.commands);
+     this.wireEditor();
+@@ -125,7 +133,7 @@ export class Screen {
+     };
+ 
+     this.promptSlot.addChild(this.editor);
+-    this.ui.addChild(gutter(new WelcomeComponent(options.directory)));
++    this.ui.addChild(gutter(this.welcome));
+     this.ui.addChild(gutter(this.transcript));
+     this.ui.addChild(gutter(this.activity));
+     this.ui.addChild(this.promptSlot);
+@@ -178,24 +186,59 @@ export class Screen {
+   setModel(label: string | undefined): void {
+     this.modelLabel = label;
+     this.refreshFooter();
++    this.refreshWelcome();
++  }
++
++  /** The session shown in the welcome panel: its title, or its id when it has none. */
++  setSession(label: string | undefined): void {
++    this.sessionLabel = label;
++    this.refreshWelcome();
++  }
++
++  /** The CLI build version shown in the welcome panel. */
++  setVersion(version: string | undefined): void {
++    this.version = version;
++    this.refreshWelcome();
++  }
++
++  /** The screen finished connecting and can take a prompt. */
++  setReady(ready: boolean): void {
++    this.ready = ready;
++    this.refreshWelcome();
++  }
++
++  /** Tokens in the model's context window and the window size, for the footer percentage. */
++  setContext(tokens: number, limit: number): void {
++    this.contextTokens = tokens;
++    this.contextLimit = limit;
++    this.refreshFooter();
+   }
+ 
+   /** Show "reconnecting…" in the footer while the server connection is down. */
+   setOffline(offline: boolean): void {
+     this.offline = offline;
+     this.refreshFooter();
++    this.refreshWelcome();
+   }
+ 
+   setCommands(commands: readonly SlashCommand[]): void {
++    this.commands = [...commands];
+     this.editor.setAutocompleteProvider(
+-      new CombinedAutocompleteProvider([...commands], this.options.directory, null),
++      new FileMentionProvider(this.commands, this.options.directory, null),
+     );
+   }
+ 
+   /** Update the directory shown in the footer after /cd or /worktrees moves the session. */
+   setDirectory(directory: string): void {
+     this.options = { ...this.options, directory };
++    // The mention provider scans from the working directory, so it has to be rebuilt.
++    if (this.commands) {
++      this.editor.setAutocompleteProvider(
++        new FileMentionProvider(this.commands, this.options.directory, null),
++      );
++    }
+     this.refreshFooter();
++    this.refreshWelcome();
+   }
+ 
+   /** Resolve and apply a theme by name. 'auto' asks the terminal for its background. */
+@@ -564,6 +607,8 @@ export class Screen {
+       auto: this.options.auto,
+       agent: this.agentLabel,
+       model: this.modelLabel,
++      contextTokens: this.contextTokens,
++      contextLimit: this.contextLimit,
+       offline: this.offline,
+     };
+   }
+@@ -573,6 +618,22 @@ export class Screen {
+     this.ui.requestRender();
+   }
+ 
++  private welcomeState() {
++    return {
++      directory: this.options.directory,
++      session: this.sessionLabel,
++      model: this.modelLabel,
++      version: this.version,
++      ready: this.ready,
++      offline: this.offline,
++    };
++  }
++
++  private refreshWelcome(): void {
++    this.welcome.update(this.welcomeState());
++    this.ui.requestRender();
++  }
++
+   private wireEditor(): void {
+     this.editor.onSubmit = (text) => {
+       this.editor.setText('');
