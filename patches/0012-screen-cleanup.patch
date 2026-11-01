@@ -1,0 +1,141 @@
+diff --git a/packages/screen/src/components/editor/custom-editor.ts b/packages/screen/src/components/editor/custom-editor.ts
+index 40c7a22..5dfe647 100644
+--- a/packages/screen/src/components/editor/custom-editor.ts
++++ b/packages/screen/src/components/editor/custom-editor.ts
+@@ -275,7 +275,7 @@ export class CustomEditor extends Editor {
+ 
+   private cancelAutocompleteActivity(): void {
+     // pi-tui exposes `isShowingAutocomplete()` but keeps cancellation private.
+-    // Kimi needs Esc to win over app-level cancel while the slash menu request is active.
++    // The screen needs Esc to win over app-level cancel while the slash menu request is active.
+     (this as unknown as AutocompleteInternals).cancelAutocomplete();
+   }
+ 
+diff --git a/packages/screen/src/components/editor/file-mention-provider.ts b/packages/screen/src/components/editor/file-mention-provider.ts
+index 8037d4d..6cd6019 100644
+--- a/packages/screen/src/components/editor/file-mention-provider.ts
++++ b/packages/screen/src/components/editor/file-mention-provider.ts
+@@ -37,7 +37,7 @@ export type RemoteMentionSuggest = (
+ ) => Promise<readonly RemoteMentionCandidate[] | undefined>;
+ 
+ /**
+- * Kimi wrapper around pi-tui's combined autocomplete provider.
++ * Loophole wrapper around pi-tui's combined autocomplete provider.
+  *
+  * File / folder mention behavior uses pi-tui's fd-backed provider whenever fd
+  * is available, fanning out across the working directory and any additional
+@@ -45,7 +45,7 @@ export type RemoteMentionSuggest = (
+  * every file. A small filesystem fallback is used only while managed fd is
+  * downloading, when it is unavailable, or if fd fails to spawn. Ordinary path
+  * completion is still handled by pi-tui's readdir-backed path completer. This
+- * wrapper also keeps Kimi-specific slash-command guards.
++ * wrapper also keeps screen-specific slash-command guards.
+  */
+ export class FileMentionProvider implements AutocompleteProvider {
+   private readonly inner: CombinedAutocompleteProvider;
+diff --git a/packages/screen/src/components/markdown/markdown.ts b/packages/screen/src/components/markdown/markdown.ts
+index 0270f41..1aa66e9 100644
+--- a/packages/screen/src/components/markdown/markdown.ts
++++ b/packages/screen/src/components/markdown/markdown.ts
+@@ -8,10 +8,10 @@ import {
+   type TuiMouseEvent,
+ } from '@loophole/tui-engine';
+ 
+-import type { KimiMarkdownTheme } from '../../theme/pi-tui-theme';
++import type { ScreenMarkdownTheme } from '../../theme/pi-tui-theme';
+ import { getMarkdownMermaidMode, type MermaidRenderMode } from '../../utils/markdown-options';
+ 
+-export interface KimiMarkdownOptions extends MarkdownOptions {
++export interface ScreenMarkdownOptions extends MarkdownOptions {
+   copySource?: boolean;
+   onVisualStateChange?: () => void;
+ }
+@@ -29,7 +29,7 @@ export class Markdown extends Container {
+   private readonly paddingY: number;
+   private readonly theme: MarkdownTheme;
+   private readonly defaultTextStyle?: DefaultTextStyle;
+-  private readonly options: KimiMarkdownOptions;
++  private readonly options: ScreenMarkdownOptions;
+   private structure: MarkdownStructure | undefined;
+ 
+   constructor(
+@@ -38,7 +38,7 @@ export class Markdown extends Container {
+     paddingY: number,
+     theme: MarkdownTheme,
+     defaultTextStyle?: DefaultTextStyle,
+-    options?: KimiMarkdownOptions,
++    options?: ScreenMarkdownOptions,
+   ) {
+     super();
+     this.sourceText = text;
+@@ -82,7 +82,7 @@ export class Markdown extends Container {
+ 
+   private ensureStructure(): void {
+     const mode = getMarkdownMermaidMode();
+-    const transient = (this.theme as KimiMarkdownTheme).transient === true;
++    const transient = (this.theme as ScreenMarkdownTheme).transient === true;
+     if (
+       this.structure !== undefined &&
+       this.structure.text === this.sourceText &&
+diff --git a/packages/screen/src/theme/pi-tui-theme.ts b/packages/screen/src/theme/pi-tui-theme.ts
+index 38cab4c..c308db1 100644
+--- a/packages/screen/src/theme/pi-tui-theme.ts
++++ b/packages/screen/src/theme/pi-tui-theme.ts
+@@ -23,11 +23,11 @@ import { codeHighlightTheme } from './highlight-theme';
+ // eslint-disable-next-line no-control-regex -- intentionally matches the ESC byte that opens ANSI SGR sequences.
+ const HEADING_HASH_PREFIX = /^((?:\u001B\[[0-9;]*m)*)#{1,6}[ \t]+/;
+ 
+-export interface KimiMarkdownTheme extends MarkdownTheme {
++export interface ScreenMarkdownTheme extends MarkdownTheme {
+   transient?: boolean;
+ }
+ 
+-export function createMarkdownTheme(options?: { transient?: boolean }): KimiMarkdownTheme {
++export function createMarkdownTheme(options?: { transient?: boolean }): ScreenMarkdownTheme {
+   const transient = options?.transient === true;
+   const stripHash = (text: string): string => text.replace(HEADING_HASH_PREFIX, '$1');
+ 
+diff --git a/packages/screen/src/utils/image-attachment-store.ts b/packages/screen/src/utils/image-attachment-store.ts
+index 23e23f3..4f7ded3 100644
+--- a/packages/screen/src/utils/image-attachment-store.ts
++++ b/packages/screen/src/utils/image-attachment-store.ts
+@@ -12,7 +12,7 @@
+  * daemon references (the paste was uploaded to the daemon file store in
+  * the background, exactly like an uploaded image).
+  *
+- * Scope is per-`KimiTUI` instance. Reloads (`/new`, `/clear`,
++ * Scope is per-screen instance. Reloads (`/new`, `/clear`,
+  * session switch) call `clear()` so ids restart from 1 and stale
+  * prompt attachments are dropped. We intentionally do NOT persist
+  * attachments across sessions — coding-agent doesn't either, and
+diff --git a/packages/screen/src/utils/render-cache.ts b/packages/screen/src/utils/render-cache.ts
+index 628d80f..4b6e264 100644
+--- a/packages/screen/src/utils/render-cache.ts
++++ b/packages/screen/src/utils/render-cache.ts
+@@ -9,11 +9,11 @@
+  * transcript grows long.
+  *
+  * The cache is on by default and can be disabled with
+- * `KIMI_TUI_NO_RENDER_CACHE=1` as an escape hatch (and to let benchmarks
++ * `LOOPHOLE_TUI_NO_RENDER_CACHE=1` as an escape hatch (and to let benchmarks
+  * compare cached vs. uncached runs in the same process).
+  */
+ 
+-let enabled = process.env['KIMI_TUI_NO_RENDER_CACHE'] !== '1';
++let enabled = process.env['LOOPHOLE_TUI_NO_RENDER_CACHE'] !== '1';
+ 
+ export function isRenderCacheEnabled(): boolean {
+   return enabled;
+diff --git a/packages/tui-engine/src/native-module-path.ts b/packages/tui-engine/src/native-module-path.ts
+index 5063bb4..67d8271 100644
+--- a/packages/tui-engine/src/native-module-path.ts
++++ b/packages/tui-engine/src/native-module-path.ts
+@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
+ import { fileURLToPath } from "node:url";
+ 
+ const moduleRequire = createRequire(import.meta.url);
+-const TUI_PACKAGE_NAME = "@moonshot-ai/pi-tui";
++const TUI_PACKAGE_NAME = "@loophole/tui-engine";
+ 
+ export interface NativeModuleCandidateOptions {
+ 	moduleUrl?: string;
