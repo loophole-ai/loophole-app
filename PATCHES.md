@@ -16,13 +16,14 @@ patches/
   0005-telemetry-posthog.patch opt-out aggregate telemetry (LOOPHOLE_TELEMETRY_DISABLE=1)
   0006-main-screen.patch       larger animated wordmark, composer docked to the bottom
   0007-about-page.patch        clean Loophole About page (no upstream credits/trivia)
-  0008-pi-tui.patch            pi-TUI snapshot used by the Kimi-style screen
+  0008-pi-tui.patch            pi-TUI snapshot used by the terminal screen
   0009-pi-default-command.patch make pi-TUI the default interactive CLI
-  0010-loophole-screen.patch   Kimi-style terminal screen (@loophole/screen)
+  0010-loophole-screen.patch   Loophole terminal screen (@loophole/screen)
   0011-screen-daily-use.patch  daily-use polish for the new screen
   0012-screen-cleanup.patch    screen cleanup
   0013-full-command-set.patch  expose every OpenCode slash command in the new screen
-  0014-kimi-main-screen.patch  Kimi-style welcome box, three-zone footer, @ file mentions
+  0014-home-screen.patch       full-width welcome box, three-zone footer, @ file mentions
+  0015-home-composer.patch     Loophole wordmark, borderless composer, /diff fallback
   user/                        optional extra patches, applied after the numbered stack
   series                       legacy list, ignored by the scripts (sorted order wins)
   @ai-sdk%2F...@x.patch         copies of upstream bun patchedDependencies - NEVER applied
@@ -109,7 +110,7 @@ reset to the pin, apply all earlier patches as a throwaway commit, apply the tar
 `dev/update_patches.sh` is the batch version: apply the stack cumulatively, regenerating each
 patch against the state produced by the previous one, then reset.
 
-## pi-TUI and the Kimi-style screen
+## pi-TUI and the Loophole terminal screen
 
 `0008-pi-tui.patch` is the recovered pi-TUI snapshot and **is** part of the applied stack. The
 older note that it "does not compile" applied to the archived copy: its `interactive.ts`
@@ -118,14 +119,19 @@ That import is fixed in the applied patch, so the archived copy is obsolete.
 
 `0009-pi-default-command.patch` makes the pi-TUI screen the default interactive interface
 (`LOOPHOLE_TUI=mini` and piped stdin/stdout keep the old plain UI). `0010`-`0013` build the
-Kimi-style screen on top of it.
+Loophole terminal screen on top of it.
 
-`0014-kimi-main-screen.patch` is the visual pass on that screen: the bordered welcome box with the
-mark, greeting and `Directory:` / `Session:` / `Model:` / `Version:` rows, the rule-plus-row footer
+`0014-home-screen.patch` is the visual pass on that screen: the bordered welcome box with the
+greeting and `Directory:` / `Session:` / `Model:` / `Version:` rows, the three-zone footer
 (identity and badges left, directory centred, context percentage and key hints right), `@` file
 mentions wired into the prompt as `file://` attachments, and all nine upstream slash-command aliases
 listed as their own palette rows (47 commands total). It touches only the screen and its controller;
 the engine, the server and command behaviour are unchanged.
+
+`0015-home-composer.patch` refines that screen: the welcome box spans the full terminal width and
+carries the `loophole` half-block wordmark, the footer drops its rule, the composer becomes a single
+`── input ──` header with no side or bottom border, `/diff` falls back to the files a session
+touched when no git snapshot exists, and a staged `/undo` is committed before the next prompt.
 
 `0005-telemetry-posthog.patch` came from the `telemetry-posthog` / `tui-logo-art` branches.
 Every other custom commit on the local branches (Discord report link, service-port isolation,

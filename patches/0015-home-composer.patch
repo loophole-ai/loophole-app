@@ -1,0 +1,590 @@
+diff --git a/packages/cli/src/screen/controller.ts b/packages/cli/src/screen/controller.ts
+index 7d266a2f7f..ae468e88da 100644
+--- a/packages/cli/src/screen/controller.ts
++++ b/packages/cli/src/screen/controller.ts
+@@ -225,6 +225,8 @@ export class ScreenController {
+   private currentModel: ModelRef | undefined
+   private currentAgent: string | undefined
+   private models: ModelInfo[] | undefined
++  /** A staged /undo revert must be committed before the next prompt is admitted. */
++  private pendingRevert = false
+ 
+   constructor(private readonly options: ScreenControllerOptions) {
+     this.api = options.client
+@@ -327,6 +329,12 @@ export class ScreenController {
+     }
+     this.screen.addUser(text)
+     try {
++      // A staged rewind is only a preview until the next prompt is sent: commit it first, or the
++      // new message lands before the boundary the server still has staged.
++      if (this.pendingRevert) {
++        this.pendingRevert = false
++        await this.api.session.revert.commit({ sessionID: this.sessionID }).catch(() => {})
++      }
+       const files = this.fileMentions(text)
+       await this.api.session.prompt({
+         sessionID: this.sessionID,
+@@ -451,6 +459,7 @@ export class ScreenController {
+         case "redo":
+           if (!sessionID) return this.screen.addStatus("There is no session.", "warning")
+           await this.api.session.revert.clear({ sessionID })
++          this.pendingRevert = false
+           return this.screen.addStatus("Revert point cleared.")
+         case "copy":
+           return await this.copyLast()
+@@ -820,13 +829,52 @@ export class ScreenController {
+   private async showDiff(): Promise<void> {
+     const sessionID = this.sessionID
+     if (!sessionID) return this.screen.addStatus("There is no session.", "warning")
+-    const diffs = await this.api.session.diff({ sessionID })
+-    if (diffs.length === 0) return this.screen.addStatus("This session has not changed any files.")
+-    const rows = diffs
+-      .slice(0, 40)
+-      .map((diff) => `  ${diff.status.padEnd(8)} ${diff.file} (+${String(diff.additions)} -${String(diff.deletions)})`)
+-    const more = diffs.length > 40 ? `\n  … ${String(diffs.length - 40)} more` : ""
+-    this.screen.addStatus(`Files changed\n${rows.join("\n")}${more}`)
++    const diffs = await this.api.session.diff({ sessionID }).catch(() => [])
++    if (diffs.length > 0) {
++      const rows = diffs
++        .slice(0, 40)
++        .map((diff) => `  ${diff.status.padEnd(8)} ${diff.file} (+${String(diff.additions)} -${String(diff.deletions)})`)
++      const more = diffs.length > 40 ? `\n  … ${String(diffs.length - 40)} more` : ""
++      return this.screen.addStatus(`Files changed\n${rows.join("\n")}${more}`)
++    }
++
++    // The server computes turn diffs from git snapshots, so a directory that is
++    // not a git repository (or a session that predates snapshots) reports
++    // nothing even after files were edited. Fall back to the files the session
++    // actually touched so /diff is still useful there.
++    const files = await this.changedFiles(sessionID)
++    if (files.length === 0) return this.screen.addStatus("This session has not changed any files.")
++    const rows = files.slice(0, 40).map((file) => `  ${file}`)
++    const more = files.length > 40 ? `\n  … ${String(files.length - 40)} more` : ""
++    this.screen.addStatus(
++      `Files changed\n${rows.join("\n")}${more}\n\nNo git snapshot is available here, so this lists the files the session touched.`,
++    )
++  }
++
++  /** Files a session touched, from assistant snapshots and tool inputs. */
++  private async changedFiles(sessionID: string): Promise<string[]> {
++    const response = await this.api.message.list({ sessionID, limit: 500, order: "asc" }).catch(() => undefined)
++    if (!response) return []
++    const files = new Set<string>()
++    const add = (value: unknown) => {
++      if (typeof value === "string" && value.length > 0) files.add(value)
++    }
++    for (const message of response.data) {
++      if (message.type !== "assistant") continue
++      for (const file of message.snapshot?.files ?? []) add(file)
++      for (const part of message.content) {
++        if (part.type !== "tool") continue
++        const state = part.state
++        if (state.status !== "completed" && state.status !== "error") continue
++        const input = state.input as Record<string, unknown>
++        add(input.filePath)
++        add(input.file_path)
++        add(input.path)
++        const paths = input.paths
++        if (Array.isArray(paths)) for (const path of paths) add(path)
++      }
++    }
++    return [...files].sort()
+   }
+ 
+   private async showStats(): Promise<void> {
+@@ -919,7 +967,7 @@ export class ScreenController {
+   private async showHighlights(): Promise<void> {
+     const info = await this.api.server.info().catch(() => undefined)
+     this.screen.addStatus(
+-      `Loophole ${info?.version ?? ""}\nThe Kimi-style screen with the OpenCode engine: sessions, agents, tools, MCP, skills, plugins and the full command set.`,
++      `Loophole ${info?.version ?? ""}\nThe Loophole terminal screen on the OpenCode engine: sessions, agents, tools, MCP, skills, plugins and the full command set.`,
+     )
+   }
+ 
+@@ -940,6 +988,7 @@ export class ScreenController {
+     await this.api.session.interrupt({ sessionID })
+     await this.api.session.wait({ sessionID }).catch(() => {})
+     await this.api.session.revert.stage({ sessionID, messageID: lastUser.id })
++    this.pendingRevert = true
+     this.screen.setPrompt(lastUser.text)
+     this.screen.addStatus("Undid the last message. It is back in the prompt; edit and send it again.")
+   }
+@@ -948,6 +997,7 @@ export class ScreenController {
+     this.sessionID = id
+     this.tokensIn = 0
+     this.tokensOut = 0
++    this.pendingRevert = false
+     this.lastAssistant = ""
+     this.texts.clear()
+     this.reasonings.clear()
+@@ -983,6 +1033,7 @@ export class ScreenController {
+   private async applyInfo(info: SessionInfo): Promise<void> {
+     this.currentAgent = info.agent
+     this.currentModel = info.model
++    this.pendingRevert = info.revert !== undefined
+     this.screen.setSession(info.title || info.id)
+     if (!this.currentModel) {
+       const fallback = await this.api.model.default({ location: { directory: this.directory } }).catch(() => undefined)
+diff --git a/packages/screen/src/components/chrome/footer.ts b/packages/screen/src/components/chrome/footer.ts
+index 94abc5d68a..4049e275ce 100644
+--- a/packages/screen/src/components/chrome/footer.ts
++++ b/packages/screen/src/components/chrome/footer.ts
+@@ -32,9 +32,10 @@ function compactCount(value: number): string {
+ }
+ 
+ /**
+- * The status row under the editor, modelled on the Kimi Code CLI toolbar: a rule, then the agent and
+- * model on the left, the working directory in the middle and the context usage plus key hints on the
+- * right. Parts drop out from the middle outwards when the terminal is narrow.
++ * The status row under the editor: the agent and model on the left, the working directory in the
++ * middle and the context usage plus key hints on the right. There is no rule above it — the input
++ * header already separates the composer from the transcript. Parts drop out from the middle
++ * outwards when the terminal is narrow.
+  */
+ export class FooterComponent implements Component {
+   private state: FooterState;
+@@ -75,7 +76,6 @@ export class FooterComponent implements Component {
+       .join('  ·  ');
+ 
+     const centre = currentTheme.fg('textDim', compactPath(directory));
+-    const rule = currentTheme.fg('border', '─'.repeat(Math.max(0, width)));
+ 
+     const lw = visibleWidth(left);
+     const cw = visibleWidth(centre);
+@@ -84,16 +84,16 @@ export class FooterComponent implements Component {
+     if (lw + cw + rw + 4 <= width) {
+       const start = Math.max(lw + 2, Math.floor((width - cw) / 2));
+       if (start + cw + 2 <= width - rw) {
+-        return [rule, left + ' '.repeat(start - lw) + centre + ' '.repeat(width - rw - start - cw) + right];
++        return [left + ' '.repeat(start - lw) + centre + ' '.repeat(width - rw - start - cw) + right];
+       }
+     }
+     if (lw + rw + 2 <= width) {
+-      return [rule, left + ' '.repeat(width - lw - rw) + right];
++      return [left + ' '.repeat(width - lw - rw) + right];
+     }
+     if (rw < width) {
+       const room = width - rw - 2;
+-      return [rule, truncateToWidth(left, Math.max(0, room), '…') + ' '.repeat(Math.max(2, width - rw - room)) + right];
++      return [truncateToWidth(left, Math.max(0, room), '…') + ' '.repeat(Math.max(2, width - rw - room)) + right];
+     }
+-    return [rule, truncateToWidth(right, Math.max(0, width), '…')];
++    return [truncateToWidth(right, Math.max(0, width), '…')];
+   }
+ }
+diff --git a/packages/screen/src/components/chrome/welcome.ts b/packages/screen/src/components/chrome/welcome.ts
+index ea0793bd04..ab421bceaf 100644
+--- a/packages/screen/src/components/chrome/welcome.ts
++++ b/packages/screen/src/components/chrome/welcome.ts
+@@ -14,37 +14,31 @@ export interface WelcomeState {
+   readonly offline?: boolean;
+ }
+ 
+-/** Compact Loophole mark: a loop, drawn in the brand colour. */
+-const MARK = ['▛▀▀▀▜', '▙▄▄▄▟'];
+-const MARK_WIDTH = 5;
+-const MARK_GAP = 1;
+-const PAD_X = 2;
+-const MIN_INNER = 24;
+-
+-type RowStyle = 'greeting' | 'hint' | 'info';
+-
+-interface Row {
+-  /** Mark glyphs shown in the left column (the greeting rows only). */
+-  readonly mark?: string;
+-  readonly text: string;
+-  readonly style: RowStyle;
+-}
+-
+-function shortenHome(directory: string): string {
+-  const home = process.env.HOME ?? process.env.USERPROFILE;
+-  return home && directory.startsWith(home) ? `~${directory.slice(home.length)}` : directory;
+-}
++/**
++ * The Loophole wordmark: `packages/ui/src/assets/logo/wordmark.svg` rasterized
++ * into terminal half-block art (the `tiny` variant from `packages/tui/src/logo.ts`,
++ * copied here so the screen package keeps its narrow dependency surface). Kept
++ * small on purpose — the panel is a banner, not a splash screen.
++ */
++const WORDMARK = [
++  '█                █         █',
++  '█ ████ ████ ████ ████ ████ █  █▀██',
++  '█ █  █ █  █ █▄▄█ █  █ █  █ █  ████',
++  '█ ████ ████ █▀▀▀ █  █ ████ █  █▄▄▄',
++  '            █',
++];
++const WORDMARK_WIDTH = Math.max(...WORDMARK.map((row) => visibleWidth(row)));
++const WORDMARK_HEIGHT = WORDMARK.length;
+ 
+-function styleRow(style: RowStyle, text: string): string {
+-  if (style === 'greeting') return currentTheme.boldFg('textStrong', text);
+-  if (style === 'hint') return currentTheme.fg('textDim', text);
+-  return currentTheme.fg('textDim', text);
+-}
++const PAD_X = 2;
++const COLUMN_GAP = 3;
++/** Below this inner width the wordmark and greeting stack instead of sitting side by side. */
++const COLUMN_MIN = 24;
+ 
+ /**
+- * The opening panel, modelled on the Kimi Code CLI welcome box: a rounded border around the mark,
+- * a greeting with the `/help` hint, and the session facts (directory, session, model, version),
+- * followed by a one-line readiness note.
++ * The opening panel, modelled on a modern CLI welcome box: a rounded border around the
++ * wordmark, a greeting with the `/help` hint, and the session facts (directory, session, model,
++ * version), followed by a one-line readiness note. The panel always spans the terminal width.
+  */
+ export class WelcomeComponent implements Component {
+   private state: WelcomeState;
+@@ -73,37 +67,38 @@ export class WelcomeComponent implements Component {
+     if (version) facts.push(['Version', version]);
+     const labelWidth = Math.max(...facts.map(([name]) => name.length));
+ 
+-    const rows: Row[] = [
+-      { mark: MARK[0], text: 'Welcome to Loophole!', style: 'greeting' },
+-      { mark: MARK[1], text: 'Send /help for help information.', style: 'hint' },
+-      { text: '', style: 'info' },
+-      ...facts.map(([name, value]): Row => ({ text: `${name.padEnd(labelWidth)}: ${value}`, style: 'info' })),
+-    ];
+-
+-    const rowWidth = (row: Row) => visibleWidth(row.text) + (row.mark ? MARK_WIDTH + MARK_GAP : 0);
+-    const natural = Math.max(MIN_INNER, ...rows.map(rowWidth));
+-    const maxInner = Math.max(1, width - PAD_X * 2 - 2);
+-    const inner = Math.min(natural, maxInner);
+-
++    // The panel is the page frame, so it always fills the terminal: one column for each border
++    // and PAD_X columns of padding on either side.
++    const inner = Math.max(1, width - PAD_X * 2 - 2);
+     const border = (text: string) => currentTheme.fg('primary', text);
++    const rule = '─'.repeat(inner + PAD_X * 2);
++
+     const out: string[] = [];
+-    out.push(border(`╭${'─'.repeat(inner + PAD_X * 2)}╮`));
+-    out.push(border('│') + ' '.repeat(inner + PAD_X * 2) + border('│'));
+-
+-    for (const row of rows) {
+-      const available = inner - (row.mark ? MARK_WIDTH + MARK_GAP : 0);
+-      const text = truncateToWidth(row.text, Math.max(0, available), '…');
+-      const padded = text + ' '.repeat(Math.max(0, available - visibleWidth(text)));
+-      const lead = row.mark ? currentTheme.fg('primary', row.mark) + ' '.repeat(MARK_GAP) : '';
+-      const body = lead + styleRow(row.style, padded);
+-      out.push(border('│') + ' '.repeat(PAD_X) + body + ' '.repeat(PAD_X) + border('│'));
++    const blank = () => border('│') + ' '.repeat(inner + PAD_X * 2) + border('│');
++    const row = (body: string) =>
++      border('│') + ' '.repeat(PAD_X) + truncateToWidth(body, inner, '…', true) + ' '.repeat(PAD_X) + border('│');
++
++    out.push(border(`╭${rule}╮`));
++    out.push(blank());
++
++    for (const line of this.intro(inner)) out.push(row(line));
++    out.push(blank());
++
++    for (const [name, value] of facts) {
++      out.push(row(`${currentTheme.fg('textDim', `${name.padEnd(labelWidth)}:`)} ${value}`));
+     }
+ 
+-    out.push(border('│') + ' '.repeat(inner + PAD_X * 2) + border('│'));
+-    out.push(border(`╰${'─'.repeat(inner + PAD_X * 2)}╯`));
++    out.push(blank());
++    out.push(border(`╰${rule}╯`));
+ 
+     if (offline) {
+-      out.push(truncateToWidth(`  ${currentTheme.fg('error', '✗ Offline')}${currentTheme.fg('textMuted', ' · reconnecting…')}`, width, '…'));
++      out.push(
++        truncateToWidth(
++          `  ${currentTheme.fg('error', '✗ Offline')}${currentTheme.fg('textMuted', ' · reconnecting…')}`,
++          width,
++          '…',
++        ),
++      );
+     } else if (ready) {
+       out.push(
+         truncateToWidth(
+@@ -118,4 +113,28 @@ export class WelcomeComponent implements Component {
+ 
+     return out;
+   }
++
++  /** The wordmark and greeting block: side by side when there is room, stacked otherwise. */
++  private intro(inner: number): string[] {
++    const greeting = currentTheme.boldFg('textStrong', 'Welcome to Loophole!');
++    const hint = currentTheme.fg('textDim', 'Send /help for help information.');
++    const rightColumn = [greeting, hint];
++    const rightWidth = Math.max(...rightColumn.map((line) => visibleWidth(line)));
++
++    if (inner < WORDMARK_WIDTH + COLUMN_GAP + Math.max(COLUMN_MIN, rightWidth)) {
++      return [...WORDMARK.map((line) => currentTheme.fg('primary', line)), '', greeting, hint];
++    }
++
++    const topOffset = Math.max(0, Math.floor((WORDMARK_HEIGHT - rightColumn.length) / 2));
++    return Array.from({ length: WORDMARK_HEIGHT }, (_, index) => {
++      const line = WORDMARK[index] ?? '';
++      const logo = currentTheme.fg('primary', line) + ' '.repeat(Math.max(0, WORDMARK_WIDTH - visibleWidth(line)));
++      return logo + ' '.repeat(COLUMN_GAP) + (rightColumn[index - topOffset] ?? '');
++    });
++  }
++}
++
++function shortenHome(directory: string): string {
++  const home = process.env.HOME ?? process.env.USERPROFILE;
++  return home && directory.startsWith(home) ? `~${directory.slice(home.length)}` : directory;
+ }
+diff --git a/packages/screen/src/components/editor/custom-editor.ts b/packages/screen/src/components/editor/custom-editor.ts
+index 5dfe647587..109f6e808b 100644
+--- a/packages/screen/src/components/editor/custom-editor.ts
++++ b/packages/screen/src/components/editor/custom-editor.ts
+@@ -13,6 +13,8 @@ import {
+   visibleWidth,
+   type SelectItem,
+   type TUI,
++  type TuiMouseEvent,
++  type TuiMouseEventResult,
+ } from '@loophole/tui-engine';
+ 
+ import { currentTheme } from '../../theme/index';
+@@ -342,13 +344,13 @@ export class CustomEditor extends Editor {
+     }
+     // While another component holds the keyboard or the terminal window is
+     // inactive, the editor looks inactive: no block cursor (pi-tui draws it
+-    // focused or not), and the whole box fades.
++    // focused or not), and the whole composer fades.
+     const inactive = !this.focused || !this.terminalFocused;
+     // `this.borderColor` is pi-tui's per-render paint function. The host may
+     // overwrite it (e.g. plan-mode / slash-context highlight via
+-    // `editor.borderColor = chalk.hex(primary)`), so we route corners and
+-    // side bars through the same hook to stay in sync.
+-    const framed = wrapWithSideBorders(
++    // `editor.borderColor = chalk.hex(primary)`), so the header goes through
++    // the same hook to stay in sync.
++    const framed = wrapWithInputHeader(
+       inactive
+         ? lines.map((line) =>
+             line
+@@ -359,13 +361,24 @@ export class CustomEditor extends Editor {
+         : lines,
+       (s: string) => this.borderColor(s),
+       {
+-        connectedAbove: this.connectedAbove && !this.borderHighlighted,
+-        label: isBash ? ` ${currentTheme.boldFg('shellMode', '! shell mode')} ` : undefined,
++        visibleLineCount: (this as unknown as { renderedVisibleLineCount: number }).renderedVisibleLineCount,
++        title: isBash ? 'shell' : 'input',
+       },
+     );
+     return inactive ? framed.map((line) => currentTheme.fade(line)) : framed;
+   }
+ 
++  override handleMouse(event: TuiMouseEvent): TuiMouseEventResult | undefined {
++    // The composer drops the editor's bottom border, so the autocomplete list
++    // sits one row higher than pi-tui's mouse math expects. Shift clicks that
++    // land below the content down by one row before delegating.
++    const internals = this as unknown as { renderedVisibleLineCount: number };
++    if (event.y > internals.renderedVisibleLineCount) {
++      return super.handleMouse({ ...event, y: event.y + 1 });
++    }
++    return super.handleMouse(event);
++  }
++
+   private computeArgumentHint(): string | undefined {
+     // Argument hints describe slash commands, which do not exist in bash mode.
+     if (this.inputMode === 'bash') return undefined;
+@@ -809,9 +822,8 @@ function truncateHint(hint: string, maxLen: number): string {
+ 
+ /**
+  * Overlay a terminal-style `> ` prompt symbol on the first content line.
+- * Column 0 is reserved for the left vertical border (overlaid later by
+- * wrapWithSideBorders); column 1 is a single-space gap, so the `>` token
+- * lives at column 2 with column 3 separating it from content.
++ * The composer has no side borders, so the symbol simply sits in the leading
++ * padding: two spaces, the `>` token and one space before the text.
+  * Relies on the editor being configured with `paddingX >= 4` so the line
+  * starts with at least four literal spaces. Emits no SGR so the terminal's
+  * default foreground colour renders the symbol. Returns `undefined` if the
+@@ -831,55 +843,34 @@ export function injectPromptSymbol(
+ }
+ 
+ /**
+- * Post-process pi-tui's editor output to draw a full box around it.
++ * Post-process pi-tui's editor output into the compact composer used by the
++ * home screen: a single labelled header rule (`── input ─────…`) with no side
++ * borders and no bottom border, so the composer reads as a prompt rather than
++ * a box.
+  *
+- * pi-tui only renders horizontal top/bottom borders; we wrap them with
+- * `╭╮╰╯` corners and add vertical `│` bars on each row's outer columns.
+- * Horizontal-border rows (those whose first visible char is `─`, including
+- * scroll indicators like `── ↑ N more ──`) are stripped of their existing
+- * SGR and repainted as a single box-drawn span. Content rows keep their
+- * inner SGR intact; only column 0 and the last column are overlaid, and
+- * only if they're literal spaces — that protects the cursor-overflow
+- * case where the rightmost column is an SGR-tagged inverse cursor.
++ * pi-tui emits a top border, the visible content lines and a bottom border,
++ * followed by any autocomplete rows. The top border becomes the header, the
++ * content keeps its padding untouched and the bottom border is dropped.
+  *
+- * When `options.label` is set, it is overlaid on the left of the top border
+- * (e.g. the `! shell mode` badge), replacing the leading dashes. It is only
+- * applied to a plain dash run, never to a `↑/↓ N more` scroll indicator.
++ * A `↑/↓ N more` scroll indicator is not a plain dash run, so it is kept as
++ * the header instead of the title (the arrow is more useful than the label).
+  */
+-export function wrapWithSideBorders(
++export function wrapWithInputHeader(
+   lines: string[],
+   paint: (s: string) => string,
+-  options: { readonly connectedAbove?: boolean; readonly label?: string } = {},
++  options: { readonly visibleLineCount: number; readonly title: string },
+ ): string[] {
+-  let seenTop = false;
+-  return lines.map((line) => {
+-    const plain = stripSgr(line);
+-    if (plain.length > 0 && plain[0] === '─') {
+-      const isTop = !seenTop;
+-      const leftCorner = seenTop ? '╰' : options.connectedAbove === true ? '├' : '╭';
+-      const rightCorner = seenTop ? '╯' : options.connectedAbove === true ? '┤' : '╮';
+-      seenTop = true;
+-      if (plain.length === 1) return paint(leftCorner);
+-      const middle = plain.slice(1, -1);
+-      if (isTop && options.label !== undefined && /^─+$/.test(middle)) {
+-        const labelWidth = visibleWidth(options.label);
+-        if (labelWidth <= middle.length) {
+-          return (
+-            paint(leftCorner) +
+-            options.label +
+-            paint('─'.repeat(middle.length - labelWidth)) +
+-            paint(rightCorner)
+-          );
+-        }
+-      }
+-      return paint(leftCorner + middle + rightCorner);
+-    }
+-    if (line.length === 0) return line;
+-    const firstCh = line[0];
+-    const lastCh = line.at(-1);
+-    const head = firstCh === ' ' ? paint('│') : (firstCh ?? '');
+-    const tail = line.length > 1 && lastCh === ' ' ? paint('│') : (lastCh ?? '');
+-    if (line.length === 1) return head;
+-    return head + line.slice(1, -1) + tail;
+-  });
++  const contentCount = Math.max(1, options.visibleLineCount);
++  const content = lines.slice(1, 1 + contentCount);
++  const autocomplete = lines.slice(1 + contentCount + 1);
++  return [renderInputHeader(lines[0] ?? '', options.title, paint), ...content, ...autocomplete];
++}
++
++function renderInputHeader(line: string, title: string, paint: (s: string) => string): string {
++  const plain = stripSgr(line);
++  const width = visibleWidth(plain);
++  if (!/^─+$/.test(plain)) return paint(plain);
++  const label = ` ${title} `;
++  if (width < visibleWidth(label) + 2) return paint('─'.repeat(width));
++  return paint('──') + currentTheme.fg('textMuted', label) + paint('─'.repeat(width - 2 - visibleWidth(label)));
+ }
+diff --git a/packages/screen/src/utils/image-attachment-store.ts b/packages/screen/src/utils/image-attachment-store.ts
+index 4f7ded3276..423758277f 100644
+--- a/packages/screen/src/utils/image-attachment-store.ts
++++ b/packages/screen/src/utils/image-attachment-store.ts
+@@ -8,8 +8,8 @@
+  * walks the text and expands image placeholders to image content parts
+  * (dispatch-time caption resolution then precedes them with a compression
+  * caption when paste-time compression shrank the bytes — see
+- * `ImageAttachment.original`) and video placeholders to `kimi-file://`
+- * daemon references (the paste was uploaded to the daemon file store in
++ * `ImageAttachment.original`) and video placeholders to daemon file
++ * references (the paste was uploaded to the daemon file store in
+  * the background, exactly like an uploaded image).
+  *
+  * Scope is per-screen instance. Reloads (`/new`, `/clear`,
+@@ -56,7 +56,7 @@ export interface ImageAttachment {
+   readonly original?: ImageAttachmentOriginal | undefined;
+   /**
+    * Daemon file-store id, set when the bytes were uploaded at paste time
+-   * (v2 engine only). Submit-time expansion then emits a `kimi-file://`
++   * (v2 engine only). Submit-time expansion then emits a daemon file
+    * reference plus an `<image path>` tag instead of inline base64; absent
+    * means the inline form is used.
+    */
+@@ -85,7 +85,7 @@ export interface VideoAttachment {
+   readonly label: string;
+   /**
+    * Daemon file-store id, set when the source file was uploaded at paste
+-   * time. Submit-time expansion emits a `kimi-file://` video reference;
++   * time. Submit-time expansion emits a daemon file video reference;
+    * absent means the upload failed or is still in flight (`pending`), and
+    * expansion refuses the submission — a video has no inline fallback.
+    */
+diff --git a/packages/tui/src/logo.ts b/packages/tui/src/logo.ts
+index 92a727dd0b..ffc503c02c 100644
+--- a/packages/tui/src/logo.ts
++++ b/packages/tui/src/logo.ts
+@@ -2,20 +2,28 @@
+ // terminal half-block art: wide for full-size splashes, narrow for tight terminals.
+ export const logo = {
+   wide: [
+-    "███                                ██                 ███",
+-    "███  ▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄  ██▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄ ███  ▄▄▄▄▄▄▄▄▄",
+-    "███  ██▀▀▀▀██  ██▀▀▀▀██  ██▀▀▀▀██  ██▀▀▀▀██  ██▀▀▀███ ███  ███▀▀▀███",
+-    "███  ██    ██  ██    ██  ██▄▄▄▄██  ██    ██  ██   ███ ███  █████████",
+-    "███▄ ██▄▄▄▄██  ██▄▄▄▄██  ████████  ██    ██  ██▄▄▄███ ███▄ ███",
+-    "████ ████████  ████████  ██        ██    ██  ████████ ████ █████████",
+-    "                          ██",
++    "██                                ██                 ███",
++    "██  ▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄  ██▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄ ███  ▄▄▄▄▄▄▄▄▄",
++    "██  ██▀▀▀▀██  ██▀▀▀▀██  ██▀▀▀▀██  ██▀▀▀▀██  ██▀▀▀▀██ ███  ███▀▀▀███",
++    "██  ██    ██  ██    ██  ██    ██  ██    ██  ██    ██ ███  █████████",
++    "██  ██    ██  ██    ██  ████████  ██    ██  ██    ██ ███  ███",
++    "██  ████████  ████████  ██        ██    ██  ████████ ███  █████████",
++    "                        ██",
+   ],
+   narrow: [
+-    "██                   ██           █",
+-    "██ █████ █████ ████████████ █████ █  █████",
+-    "██ ██  █ ██  █ ██▄▄████  ██ █  ██ █  █████",
+-    "██ ██▄▄█ ██▄▄█ ██▀▀▀▀██  ██ █▄▄██ █▄ █▄▄▄▄",
+-    "               ██",
++    "██                      ██            ██",
++    "██ ██████ ██████ ██████ ██████ ██████ ██  ██▀██",
++    "██ ██  ██ ██  ██ ██▄▄██ ██  ██ ██  ██ ██  ██▄██",
++    "██ ██████ ██████ ██▀▀▀▀ ██  ██ ██████ ██  █▄▄▄▄",
++    "                 ██",
++  ],
++
++  tiny: [
++    "█                █         █",
++    "█ ████ ████ ████ ████ ████ █  █▀██",
++    "█ █  █ █  █ █▄▄█ █  █ █  █ █  ████",
++    "█ ████ ████ █▀▀▀ █  █ ████ █  █▄▄▄",
++    "            █",
+   ],
+ }
+ 
+@@ -24,20 +32,20 @@ export const logo = {
+ export const go = {
+   left: [
+     "        ",
+-    "███     ",
+-    "███     ",
+-    "███     ",
+-    "███     ",
+-    "███     ",
++    "██     ",
++    "██     ",
++    "██     ",
++    "██     ",
++    "██     ",
+     "██████  ",
+   ],
+   right: [
+     "        ",
+-    "███     ",
+-    "███     ",
+-    "███     ",
+-    "███     ",
+-    "███     ",
++    "██     ",
++    "██     ",
++    "██     ",
++    "██     ",
++    "██     ",
+     "██████  ",
+   ],
+ }
