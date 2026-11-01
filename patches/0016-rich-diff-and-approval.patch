@@ -1,0 +1,890 @@
+diff --git a/packages/cli/src/screen/controller.ts b/packages/cli/src/screen/controller.ts
+index ae468e88da..b8d1a71c6e 100644
+--- a/packages/cli/src/screen/controller.ts
++++ b/packages/cli/src/screen/controller.ts
+@@ -23,7 +23,13 @@ import type {
+   SessionInfo,
+   SessionMessageInfo,
+ } from "@opencode/client/promise"
+-import { Screen, type FormAnswerValue, type FormQuestion, type StreamHandle } from "@loophole/screen"
++import {
++  Screen,
++  type FormAnswerValue,
++  type FormQuestion,
++  type PermissionDecision,
++  type StreamHandle,
++} from "@loophole/screen"
+ import { getNativeClipboard, type SlashCommand } from "@loophole/tui-engine"
+ 
+ import { OPENCODE_VERSION } from "../version"
+@@ -124,7 +130,14 @@ const ASIDE_INSTRUCTIONS = [
+   "Do not call any tools and do not take any actions.",
+ ].join(" ")
+ 
+-type PendingPermission = { id: string; sessionID: string; action: string; resources: ReadonlyArray<string> }
++type PendingPermission = {
++  id: string
++  sessionID: string
++  action: string
++  resources: ReadonlyArray<string>
++  message?: string
++  metadata?: Record<string, unknown>
++}
+ 
+ /** A file attached to a prompt through an `@mention`. */
+ type PromptAttachment = {
+@@ -831,11 +844,14 @@ export class ScreenController {
+     if (!sessionID) return this.screen.addStatus("There is no session.", "warning")
+     const diffs = await this.api.session.diff({ sessionID }).catch(() => [])
+     if (diffs.length > 0) {
+-      const rows = diffs
+-        .slice(0, 40)
+-        .map((diff) => `  ${diff.status.padEnd(8)} ${diff.file} (+${String(diff.additions)} -${String(diff.deletions)})`)
+-      const more = diffs.length > 40 ? `\n  … ${String(diffs.length - 40)} more` : ""
+-      return this.screen.addStatus(`Files changed\n${rows.join("\n")}${more}`)
++      // `more: true` rows are folder placeholders from the VCS plugin, not files.
++      const files = diffs.filter((diff) => diff.more !== true)
++      const shown = files.slice(0, 20)
++      this.screen.addDiff(shown)
++      if (files.length > shown.length) {
++        this.screen.addStatus(`… ${String(files.length - shown.length)} more changed files.`)
++      }
++      return
+     }
+ 
+     // The server computes turn diffs from git snapshots, so a directory that is
+@@ -1502,13 +1518,14 @@ export class ScreenController {
+   }
+ 
+   private async answerPermission(request: PendingPermission): Promise<void> {
+-    const choice = this.auto ? "once" : await this.screen.askPermission(request)
++    const decision: PermissionDecision = this.auto ? { decision: "once" } : await this.screen.askPermission(request)
+     await this.api.permission
+       .reply({
+         sessionID: request.sessionID,
+         requestID: request.id,
+-        decision: choice,
+-        ...(choice === "reject" ? { message: "The user rejected this action. Continue without it." } : {}),
++        decision: decision.decision,
++        // Feedback turns a plain decline into a correction the model can act on.
++        ...(decision.decision === "reject" && decision.message ? { message: decision.message } : {}),
+       })
+       .catch(() => {})
+   }
+diff --git a/packages/screen/src/components/chrome/panel.ts b/packages/screen/src/components/chrome/panel.ts
+new file mode 100644
+index 0000000000..fdf6b38476
+--- /dev/null
++++ b/packages/screen/src/components/chrome/panel.ts
+@@ -0,0 +1,66 @@
++/**
++ * A bordered panel used by the prompt slot: the approval dialog, structured
++ * questions and the pickers. Content is stretched to the terminal width and
++ * the title sits in the top rule (`╭─ approval ─────…`).
++ */
++
++import { truncateToWidth, visibleWidth, type Component } from '@loophole/tui-engine';
++
++import { currentTheme, type ColorToken } from '../../theme/index';
++
++export interface PanelOptions {
++  /** Optional label in the top border. */
++  readonly title?: string;
++  /** Border colour. Defaults to the focus border. */
++  readonly accent?: ColorToken;
++  /** Spaces between the border and the content. Defaults to 1. */
++  readonly paddingX?: number;
++  /** Blank rows above and below the content. Defaults to 0. */
++  readonly paddingY?: number;
++}
++
++export class PanelComponent implements Component {
++  private readonly children: Component[] = [];
++
++  constructor(private readonly options: PanelOptions = {}) {}
++
++  addChild(child: Component): void {
++    this.children.push(child);
++  }
++
++  invalidate(): void {
++    for (const child of this.children) child.invalidate();
++  }
++
++  render(width: number): string[] {
++    const requestedPadding = Math.max(0, this.options.paddingX ?? 1);
++    const paddingX = Math.min(requestedPadding, Math.max(0, Math.floor((width - 3) / 2)));
++    const paddingY = Math.max(0, this.options.paddingY ?? 0);
++    const inner = Math.max(1, width - 2 - paddingX * 2);
++    const paint = (text: string) => currentTheme.fg(this.options.accent ?? 'borderFocus', text);
++
++    const blank = () => paint('│') + ' '.repeat(inner + paddingX * 2) + paint('│');
++    const row = (content: string) =>
++      paint('│') +
++      ' '.repeat(paddingX) +
++      truncateToWidth(content, inner, '…', true) +
++      ' '.repeat(paddingX) +
++      paint('│');
++
++    const title = this.options.title ? ` ${this.options.title} ` : '';
++    const top = title
++      ? paint('╭─') +
++        currentTheme.boldFg(this.options.accent ?? 'borderFocus', title) +
++        paint(`${'─'.repeat(Math.max(0, width - 3 - visibleWidth(title)))}╮`)
++      : paint(`╭${'─'.repeat(Math.max(0, width - 2))}╮`);
++
++    const out: string[] = [top];
++    for (let i = 0; i < paddingY; i++) out.push(blank());
++    for (const child of this.children) {
++      for (const line of child.render(inner)) out.push(row(line));
++    }
++    for (let i = 0; i < paddingY; i++) out.push(blank());
++    out.push(paint(`╰${'─'.repeat(Math.max(0, width - 2))}╯`));
++    return out;
++  }
++}
+diff --git a/packages/screen/src/components/media/diff-preview.ts b/packages/screen/src/components/media/diff-preview.ts
+index 44bc0f0d3b..44e2cb6fa7 100644
+--- a/packages/screen/src/components/media/diff-preview.ts
++++ b/packages/screen/src/components/media/diff-preview.ts
+@@ -5,6 +5,7 @@
+  * formatted text lines instead of React elements.
+  */
+ 
++import { visibleWidth } from '@loophole/tui-engine';
+ import chalk from 'chalk';
+ 
+ import { currentTheme } from '../../theme/index';
+@@ -16,6 +17,8 @@ interface DiffStyles {
+   del: (s: string) => string;
+   addBold: (s: string) => string;
+   delBold: (s: string) => string;
++  addBg: (s: string) => string;
++  delBg: (s: string) => string;
+   gutter: (s: string) => string;
+   meta: (s: string) => string;
+ }
+@@ -27,6 +30,8 @@ function makeDiffStyles(): DiffStyles {
+     del: (s) => chalk.hex(palette.diffRemoved)(s),
+     addBold: (s) => chalk.bold.hex(palette.diffAddedStrong)(s),
+     delBold: (s) => chalk.bold.hex(palette.diffRemovedStrong)(s),
++    addBg: (s) => chalk.bgHex(palette.diffAddedBg).hex(palette.diffAdded)(s),
++    delBg: (s) => chalk.bgHex(palette.diffRemovedBg).hex(palette.diffRemoved)(s),
+     gutter: (s) => chalk.hex(palette.diffGutter)(s),
+     meta: (s) => chalk.hex(palette.diffMeta)(s),
+   };
+@@ -315,3 +320,166 @@ export function renderDiffLinesClustered(
+ 
+   return output;
+ }
++
++// ---------------------------------------------------------------------------
++// Unified diffs (FileDiffInfo.patch): line numbers, +/- markers and row tints.
++// ---------------------------------------------------------------------------
++
++export type UnifiedRowKind = 'hunk' | 'add' | 'delete' | 'context';
++
++export interface UnifiedDiffRow {
++  readonly kind: UnifiedRowKind;
++  readonly text: string;
++  readonly oldLine?: number;
++  readonly newLine?: number;
++}
++
++/**
++ * Parse a standard unified diff into renderable rows.
++ *
++ * File headers (`diff --git`, `index`, `---`, `+++`) are dropped; everything
++ * from the first `@@` header on is kept, including context lines. Line numbers
++ * come from the hunk headers, so a multi-file patch renders each file's rows
++ * with the right numbers.
++ */
++export function parseUnifiedDiff(patch: string): UnifiedDiffRow[] {
++  const rows: UnifiedDiffRow[] = [];
++  let oldLine = 0;
++  let newLine = 0;
++  for (const rawLine of patch.split('\n')) {
++    const raw = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine;
++    if (raw.startsWith('@@')) {
++      const match = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/.exec(raw);
++      if (match) {
++        oldLine = Number(match[1]);
++        newLine = Number(match[2]);
++      }
++      rows.push({ kind: 'hunk', text: raw });
++      continue;
++    }
++    if (raw.startsWith('\\ No newline')) continue;
++    // A new file section resets the hunk cursors so its `---`/`+++` headers are
++    // skipped too (createTwoFilesPatch and multi-file patches emit separators).
++    if (/^=+$/.test(raw) || raw.startsWith('diff --git ') || raw.startsWith('Index: ')) {
++      oldLine = 0;
++      newLine = 0;
++      continue;
++    }
++    if (oldLine === 0 && newLine === 0 && (raw.startsWith('index ') || raw.startsWith('--- ') || raw.startsWith('+++ '))) {
++      continue;
++    }
++    if (raw.startsWith('+')) {
++      rows.push({ kind: 'add', text: raw.slice(1), newLine });
++      newLine++;
++    } else if (raw.startsWith('-')) {
++      rows.push({ kind: 'delete', text: raw.slice(1), oldLine });
++      oldLine++;
++    } else if (raw.startsWith(' ')) {
++      rows.push({ kind: 'context', text: raw.slice(1), oldLine, newLine });
++      oldLine++;
++      newLine++;
++    } else if (raw.length > 0) {
++      // Some producers omit the leading space on context rows.
++      rows.push({ kind: 'context', text: raw, oldLine, newLine });
++      oldLine++;
++      newLine++;
++    }
++  }
++  return rows;
++}
++
++export function diffStats(patch: string): { added: number; removed: number } {
++  let added = 0;
++  let removed = 0;
++  for (const row of parseUnifiedDiff(patch)) {
++    if (row.kind === 'add') added++;
++    else if (row.kind === 'delete') removed++;
++  }
++  return { added, removed };
++}
++
++export interface UnifiedDiffRenderOptions {
++  /** Maximum rows to emit before a "more lines" footer. */
++  readonly maxLines?: number;
++  /** Show only changed rows (used by the approval preview). */
++  readonly changedOnly?: boolean;
++  /** Pad every row to this width so the background tint fills the panel. */
++  readonly width?: number;
++}
++
++export function renderUnifiedDiff(patch: string, options: UnifiedDiffRenderOptions = {}): string[] {
++  const s = makeDiffStyles();
++  const all = parseUnifiedDiff(patch);
++  const rows = options.changedOnly
++    ? all.filter((row) => row.kind === 'add' || row.kind === 'delete')
++    : all;
++  if (rows.length === 0) return [];
++
++  let maxNumber = 0;
++  for (const row of rows) {
++    maxNumber = Math.max(maxNumber, row.oldLine ?? 0, row.newLine ?? 0);
++  }
++  const numberWidth = Math.max(2, String(maxNumber).length);
++  const cap = options.maxLines !== undefined && options.maxLines >= 0 ? options.maxLines : Number.POSITIVE_INFINITY;
++
++  const output: string[] = [];
++  let emitted = 0;
++  for (const row of rows) {
++    if (emitted >= cap) break;
++    output.push(formatUnifiedRow(row, numberWidth, s, options.width));
++    emitted++;
++  }
++
++  const hidden = rows.length - emitted;
++  if (hidden > 0) {
++    const label = `… ${String(hidden)} more line${hidden === 1 ? '' : 's'}`;
++    const text = s.meta(label);
++    output.push(options.width !== undefined ? padStyled(text, visibleLength(label), options.width) : text);
++  }
++  return output;
++}
++
++/** Compact changed-lines-only preview (approval panels). */
++export function renderUnifiedDiffPreview(patch: string, maxLines = 8): string[] {
++  return renderUnifiedDiff(patch, { changedOnly: true, maxLines });
++}
++
++function formatUnifiedRow(
++  row: UnifiedDiffRow,
++  numberWidth: number,
++  s: DiffStyles,
++  width: number | undefined,
++): string {
++  if (row.kind === 'hunk') {
++    return width === undefined
++      ? s.meta(row.text)
++      : padStyled(s.meta(row.text), visibleLength(row.text), width);
++  }
++  const number = row.kind === 'delete' ? row.oldLine : row.newLine;
++  const gutter = s.gutter(String(number ?? '').padStart(numberWidth) + ' ');
++  if (row.kind === 'add') {
++    const line = `${gutter}${s.add(' + ')}${s.addBg(row.text)}`;
++    return width === undefined ? line : padStyled(line, visibleLength(row.text) + numberWidth + 4, width, s.addBg);
++  }
++  if (row.kind === 'delete') {
++    const line = `${gutter}${s.del(' - ')}${s.delBg(row.text)}`;
++    return width === undefined ? line : padStyled(line, visibleLength(row.text) + numberWidth + 4, width, s.delBg);
++  }
++  const line = `${gutter}   ${row.text}`;
++  return width === undefined ? line : padStyled(line, visibleLength(row.text) + numberWidth + 4, width);
++}
++
++function visibleLength(text: string): number {
++  return visibleWidth(text);
++}
++
++/** Pad a styled row to `width` cells, painting the padding with `fill`. */
++function padStyled(
++  styled: string,
++  plainLength: number,
++  width: number,
++  fill: (s: string) => string = (s) => s,
++): string {
++  const padding = Math.max(0, width - plainLength);
++  return styled + fill(' '.repeat(padding));
++}
+diff --git a/packages/screen/src/components/messages/diff-files.ts b/packages/screen/src/components/messages/diff-files.ts
+new file mode 100644
+index 0000000000..ca2b0a507a
+--- /dev/null
++++ b/packages/screen/src/components/messages/diff-files.ts
+@@ -0,0 +1,72 @@
++/**
++ * The `/diff` transcript block: one bordered panel per changed file with
++ * line-numbered, tinted hunks (the same visual language as the approval
++ * preview). Kept separate from `StatusMessageComponent`, which renders a
++ * single colour for the whole message.
++ */
++
++import { truncateToWidth, visibleWidth, type Component } from '@loophole/tui-engine';
++
++import { currentTheme } from '../../theme/index';
++import { renderUnifiedDiff } from '../media/diff-preview';
++
++export interface DiffFileSummary {
++  readonly file: string;
++  readonly patch: string;
++  readonly additions: number;
++  readonly deletions: number;
++  readonly status: 'added' | 'deleted' | 'modified';
++}
++
++const STATUS_LABEL: Record<DiffFileSummary['status'], string> = {
++  added: 'added',
++  deleted: 'deleted',
++  modified: 'modified',
++};
++
++export class DiffFilesComponent implements Component {
++  constructor(
++    private readonly files: readonly DiffFileSummary[],
++    private readonly maxLinesPerFile = 18,
++  ) {}
++
++  invalidate(): void {}
++
++  render(width: number): string[] {
++    const out: string[] = [currentTheme.boldFg('textStrong', 'Files changed')];
++    for (const file of this.files) {
++      out.push('');
++      out.push(...this.renderFile(file, width));
++    }
++    return out;
++  }
++
++  private renderFile(file: DiffFileSummary, width: number): string[] {
++    const border = (text: string) => currentTheme.fg('border', text);
++    const inner = Math.max(1, width - 4);
++    const counts = [
++      file.additions > 0 ? currentTheme.fg('diffAdded', `+${String(file.additions)}`) : '',
++      file.deletions > 0 ? currentTheme.fg('diffRemoved', `-${String(file.deletions)}`) : '',
++    ]
++      .filter((part) => part.length > 0)
++      .join(' ');
++    const status = currentTheme.fg('textMuted', STATUS_LABEL[file.status]);
++    const title = truncateToWidth(
++      ` ${file.file}  ${status}${counts ? `  ${counts}` : ''} `,
++      Math.max(0, width - 4),
++      '…',
++    );
++    const fill = Math.max(0, width - 3 - visibleWidth(title));
++
++    const out: string[] = [border('╭─') + title + border(`${'─'.repeat(fill)}╮`)];
++    const rows = file.patch.trim().length > 0
++      ? renderUnifiedDiff(file.patch, { width: inner, maxLines: this.maxLinesPerFile })
++      : [currentTheme.fg('textMuted', 'No textual diff')];
++    for (const row of rows) {
++      const line = truncateToWidth(row, inner, '…', true);
++      out.push(border('│') + ' ' + line + ' ' + border('│'));
++    }
++    out.push(border(`╰${'─'.repeat(width - 2)}╯`));
++    return out;
++  }
++}
+diff --git a/packages/screen/src/components/messages/tool-call.ts b/packages/screen/src/components/messages/tool-call.ts
+index e3490f30ef..3ab0289106 100644
+--- a/packages/screen/src/components/messages/tool-call.ts
++++ b/packages/screen/src/components/messages/tool-call.ts
+@@ -10,11 +10,11 @@
+ 
+ import { Container, Spacer, Text, type Component } from '@loophole/tui-engine';
+ 
+-import { renderDiffLinesClustered } from '../media/diff-preview';
++import { renderDiffLinesClustered, renderUnifiedDiff } from '../media/diff-preview';
+ import { TruncatedHeaderLine } from './truncated-header-line';
+ import { outcomeRows } from './tool-renderers/outcome';
+ import { TruncatedOutputComponent } from './tool-renderers/truncated';
+-import { STATUS_BULLET } from '../../constant/symbols';
++import { FAILURE_MARK, SUCCESS_MARK } from '../../constant/symbols';
+ import { currentTheme } from '../../theme/index';
+ 
+ export type ToolCallState = 'streaming' | 'running' | 'success' | 'error';
+@@ -111,6 +111,8 @@ export class ToolCallComponent extends Container {
+   private expanded = false;
+   private frame = 0;
+   private timer: ReturnType<typeof setInterval> | undefined;
++  private startedAt = Date.now();
++  private finishedAt: number | undefined;
+ 
+   constructor(init: ToolCallInit) {
+     super();
+@@ -130,6 +132,8 @@ export class ToolCallComponent extends Container {
+ 
+   setRunning(): void {
+     this.state = 'running';
++    this.startedAt = Date.now();
++    this.finishedAt = undefined;
+     this.startSpinner();
+     this.rebuild();
+   }
+@@ -143,6 +147,7 @@ export class ToolCallComponent extends Container {
+     this.state = result.isError ? 'error' : 'success';
+     this.output = result.output;
+     this.diff = diffFrom(result.metadata);
++    this.finishedAt = Date.now();
+     this.stopSpinner();
+     this.rebuild();
+   }
+@@ -177,14 +182,25 @@ export class ToolCallComponent extends Container {
+   private bullet(): string {
+     switch (this.state) {
+       case 'success':
+-        return currentTheme.fg('success', STATUS_BULLET);
++        return currentTheme.fg('success', SUCCESS_MARK);
+       case 'error':
+-        return currentTheme.fg('error', STATUS_BULLET);
++        return currentTheme.fg('error', FAILURE_MARK);
+       default:
+         return currentTheme.fg('primary', `${SPINNER[this.frame] ?? '⠋'} `);
+     }
+   }
+ 
++  /** Elapsed time for finished calls, shown next to the key argument. */
++  private duration(): string {
++    if (this.state === 'streaming' || this.state === 'running') return '';
++    const elapsed = Math.max(0, (this.finishedAt ?? Date.now()) - this.startedAt);
++    if (elapsed < 1_000) return `${String(elapsed)}ms`;
++    const seconds = elapsed / 1_000;
++    if (seconds < 60) return `${seconds.toFixed(1)}s`;
++    const minutes = Math.floor(seconds / 60);
++    return `${String(minutes)}m ${String(Math.round(seconds % 60))}s`;
++  }
++
+   private rebuild(): void {
+     this.clear();
+     const name = this.init.name;
+@@ -194,7 +210,10 @@ export class ToolCallComponent extends Container {
+       new TruncatedHeaderLine({
+         head: `${this.bullet()}${currentTheme.boldFg('text', label)}  `,
+         flex: { text: argument, style: (value) => currentTheme.fg('textDim', value), keep: name === 'bash' || name === 'shell' ? 'head' : 'tail' },
+-        tail: '',
++        tail: (() => {
++          const elapsed = this.duration();
++          return elapsed ? currentTheme.fg('textMuted', `  ${elapsed}`) : '';
++        })(),
+       }),
+     );
+     for (const row of this.body()) this.addChild(row);
+@@ -224,7 +243,7 @@ export class ToolCallComponent extends Container {
+     if (before || after) {
+       lines = renderDiffLinesClustered(before, after, path, { maxLines: this.expanded ? undefined : 12 });
+     } else if (this.diff) {
+-      lines = colorUnifiedDiff(this.diff, this.expanded ? Infinity : 12);
++      lines = renderUnifiedDiff(this.diff, { maxLines: this.expanded ? undefined : 12 });
+     } else if (this.state === 'success' && text(this.input.content)) {
+       const total = text(this.input.content).split('\n').length;
+       lines = [currentTheme.fg('textDim', `${String(total)} lines`)];
+@@ -247,19 +266,4 @@ function diffFrom(metadata: Record<string, unknown> | undefined): string {
+   return '';
+ }
+ 
+-function colorUnifiedDiff(diff: string, max: number): string[] {
+-  const rows: string[] = [];
+-  const all = diff.split('\n');
+-  for (const line of all) {
+-    if (rows.length >= max) break;
+-    if (line.startsWith('+++') || line.startsWith('---') || line.startsWith('Index:') || line.startsWith('===')) continue;
+-    if (line.startsWith('@@')) rows.push(currentTheme.fg('diffMeta', line));
+-    else if (line.startsWith('+')) rows.push(currentTheme.fg('diffAdded', line));
+-    else if (line.startsWith('-')) rows.push(currentTheme.fg('diffRemoved', line));
+-    else rows.push(currentTheme.fg('textDim', line));
+-  }
+-  if (rows.length >= max && all.length > rows.length) {
+-    rows.push(currentTheme.fg('textMuted', `… more changes (ctrl+o to expand)`));
+-  }
+-  return rows;
+-}
++
+diff --git a/packages/screen/src/index.ts b/packages/screen/src/index.ts
+index 53762d5907..feb22539b1 100644
+--- a/packages/screen/src/index.ts
++++ b/packages/screen/src/index.ts
+@@ -3,6 +3,7 @@ export type {
+   FormAnswerValue,
+   FormQuestion,
+   PermissionChoice,
++  PermissionDecision,
+   PermissionRequest,
+   ScreenOptions,
+   StreamHandle,
+diff --git a/packages/screen/src/screen.ts b/packages/screen/src/screen.ts
+index 2eeef17562..a85073e9cd 100644
+--- a/packages/screen/src/screen.ts
++++ b/packages/screen/src/screen.ts
+@@ -31,11 +31,14 @@ import {
+ import { ActivityComponent } from './components/chrome/activity';
+ import { FooterComponent } from './components/chrome/footer';
+ import { GutterContainer } from './components/chrome/gutter-container';
++import { PanelComponent } from './components/chrome/panel';
+ import { WelcomeComponent } from './components/chrome/welcome';
+ import { CustomEditor } from './components/editor/custom-editor';
+ import { FileMentionProvider } from './components/editor/file-mention-provider';
+ import { AssistantMessageComponent } from './components/messages/assistant-message';
++import { DiffFilesComponent, type DiffFileSummary } from './components/messages/diff-files';
+ import { StatusMessageComponent } from './components/messages/status-message';
++import { renderUnifiedDiffPreview } from './components/media/diff-preview';
+ import { ThinkingComponent } from './components/messages/thinking';
+ import { ToolCallComponent } from './components/messages/tool-call';
+ import { UserMessageComponent } from './components/messages/user-message';
+@@ -84,6 +87,29 @@ export interface StreamHandle {
+ export interface PermissionRequest {
+   readonly action: string;
+   readonly resources: readonly string[];
++  /** A message the tool or plugin attached to the request. */
++  readonly message?: string;
++  /** Tool metadata; edits carry `{ files: [{ patch }] }` for a diff preview. */
++  readonly metadata?: Record<string, unknown>;
++}
++
++export interface PermissionDecision {
++  readonly decision: PermissionChoice;
++  /** Rejection feedback forwarded to the model (turns the decline into a correction). */
++  readonly message?: string;
++}
++
++interface PromptOptions {
++  /** Label in the panel's top border. */
++  readonly title?: string;
++  /** Panel border colour. */
++  readonly accent?: ColorToken;
++  /** Selected-row colour; defaults to the accent. */
++  readonly selection?: ColorToken;
++  /** Number keys select an item directly. */
++  readonly numbered?: boolean;
++  /** Hint line under the list. */
++  readonly footer?: string;
+ }
+ 
+ export class Screen {
+@@ -303,6 +329,13 @@ export class Screen {
+     this.ui.requestRender();
+   }
+ 
++  /** Rich per-file diff panels (used by `/diff`). */
++  addDiff(files: readonly DiffFileSummary[]): void {
++    this.transcript.addChild(new Spacer(1));
++    this.transcript.addChild(new DiffFilesComponent(files));
++    this.ui.requestRender();
++  }
++
+   beginText(): StreamHandle {
+     const view = new AssistantMessageComponent();
+     this.transcript.addChild(new Spacer(1));
+@@ -368,26 +401,52 @@ export class Screen {
+ 
+   // --- prompts that replace the editor ---------------------------------------------------------------
+ 
+-  /** Ask whether the agent may run an action. Resolves with the user's choice. */
+-  askPermission(request: PermissionRequest): Promise<PermissionChoice> {
++  /** Ask whether the agent may run an action. Resolves with the user's choice and optional feedback. */
++  async askPermission(request: PermissionRequest): Promise<PermissionDecision> {
+     const items: SelectItem[] = [
+-      { value: 'once', label: 'Allow once' },
+-      { value: 'always', label: 'Always allow for this session' },
+-      { value: 'reject', label: 'Reject' },
++      { value: 'once', label: '[1] Approve once' },
++      { value: 'always', label: '[2] Approve for this session' },
++      { value: 'reject', label: '[3] Reject' },
++      { value: 'reject-feedback', label: '[4] Reject, tell the model what to do instead' },
+     ];
+-    const heading = [
+-      currentTheme.boldFg('warning', `Permission: ${request.action}`),
+-      ...request.resources.slice(0, 6).map((resource) => `  ${currentTheme.fg('textDim', resource)}`),
+-      ...(request.resources.length > 6
+-        ? [`  ${currentTheme.fg('textMuted', `… ${String(request.resources.length - 6)} more`)}`]
+-        : []),
++    const value = await this.prompt(this.permissionHeading(request), items, 'reject', 0, {
++      title: 'approval',
++      accent: 'warning',
++      numbered: true,
++      footer: '▲/▼ select · 1–4 choose · enter confirm · esc reject',
++    });
++    if (value === 'reject-feedback') {
++      const message = await this.askText('Reject this action', 'Tell the model what to do instead');
++      const feedback = message?.trim();
++      return { decision: 'reject', ...(feedback ? { message: feedback } : {}) };
++    }
++    return { decision: (value ?? 'reject') as PermissionChoice };
++  }
++
++  /** The approval body: action, resources, and a diff preview when the tool sent one. */
++  private permissionHeading(request: PermissionRequest): string[] {
++    const lines = [
++      currentTheme.boldFg('warning', `The agent is requesting approval to ${request.action}:`),
+     ];
+-    return this.prompt(heading, items, 'reject').then((value) => (value ?? 'reject') as PermissionChoice);
++    if (request.message) lines.push(currentTheme.fg('text', request.message));
++    const shown = request.resources.slice(0, 4);
++    for (const resource of shown) lines.push(`  ${currentTheme.fg('textDim', resource)}`);
++    if (request.resources.length > shown.length) {
++      lines.push(
++        `  ${currentTheme.fg('textMuted', `… ${String(request.resources.length - shown.length)} more`)}`,
++      );
++    }
++    const patch = permissionPatch(request.metadata);
++    if (patch) {
++      lines.push('');
++      for (const line of renderUnifiedDiffPreview(patch, 5)) lines.push(`  ${line}`);
++    }
++    return lines;
+   }
+ 
+   /** Let the user pick one item from a list. Resolves with its value, or undefined when cancelled. */
+   pick(title: string, items: SelectItem[]): Promise<string | undefined> {
+-    return this.prompt([currentTheme.boldFg('primary', title)], items, undefined);
++    return this.prompt([], items, undefined, 0, { title, accent: 'border' });
+   }
+ 
+   private prompt(
+@@ -395,21 +454,33 @@ export class Screen {
+     items: SelectItem[],
+     cancelValue: string | undefined,
+     initialIndex = 0,
++    options: PromptOptions = {},
+   ): Promise<string | undefined> {
+     return new Promise((resolve) => {
++      const selection = options.selection ?? options.accent ?? 'primary';
+       const list = new SelectList(items, 10, {
+-        selectedPrefix: (text) => currentTheme.fg('primary', text),
+-        selectedText: (text) => currentTheme.fg('primary', text),
++        selectedPrefix: (text) => currentTheme.fg(selection, text),
++        selectedText: (text) => currentTheme.fg(selection, text),
+         description: (text) => currentTheme.fg('textMuted', text),
+         scrollInfo: (text) => currentTheme.fg('textMuted', text),
+         noMatch: (text) => currentTheme.fg('textMuted', text),
+       });
+       if (initialIndex > 0 && initialIndex < items.length) list.setSelectedIndex(initialIndex);
+-      const panel = new Container();
+-      panel.addChild(new Spacer(1));
+-      panel.addChild(new Text(heading.join('\n'), 1, 0));
+-      panel.addChild(new Spacer(1));
++
++      const panel = new PanelComponent({
++        title: options.title,
++        accent: options.accent ?? 'borderFocus',
++        paddingY: 0,
++      });
++      if (heading.length > 0) {
++        panel.addChild(new Text(heading.join('\n'), 0, 0));
++        panel.addChild(new Spacer(1));
++      }
+       panel.addChild(list);
++      if (options.footer) {
++        panel.addChild(new Spacer(1));
++        panel.addChild(new Text(currentTheme.fg('textMuted', options.footer), 0, 0));
++      }
+ 
+       const finish = (value: string | undefined) => {
+         this.prompting = false;
+@@ -422,8 +493,26 @@ export class Screen {
+       list.onSelect = (item) => finish(item.value);
+       list.onCancel = () => finish(cancelValue);
+ 
++      if (options.numbered) {
++        const handle = list.handleInput.bind(list);
++        list.handleInput = (data: string) => {
++          const match = /^([1-9])$/.exec(data);
++          if (match) {
++            const index = Number(match[1]) - 1;
++            const item = items[index];
++            if (item) {
++              list.setSelectedIndex(index);
++              finish(item.value);
++              return;
++            }
++          }
++          handle(data);
++        };
++      }
++
+       this.prompting = true;
+       this.promptSlot.clear();
++      this.promptSlot.addChild(new Spacer(1));
+       this.promptSlot.addChild(panel);
+       this.ui.setFocus(list);
+       this.ui.requestRender();
+@@ -433,7 +522,7 @@ export class Screen {
+   /** Like `pick`, with the cursor starting on the item whose value is `current`. */
+   pickCurrent(title: string, items: SelectItem[], current: string | undefined): Promise<string | undefined> {
+     const index = Math.max(0, items.findIndex((item) => item.value === current));
+-    return this.prompt([currentTheme.boldFg('primary', title)], items, undefined, index);
++    return this.prompt([], items, undefined, index, { title, accent: 'border' });
+   }
+ 
+   /**
+@@ -451,25 +540,35 @@ export class Screen {
+     switch (question.kind) {
+       case 'boolean': {
+         const items: SelectItem[] = [
+-          { value: 'true', label: 'Yes' },
+-          { value: 'false', label: 'No' },
++          { value: 'true', label: '[1] Yes' },
++          { value: 'false', label: '[2] No' },
+         ];
+         const start = question.defaultValue === false ? 1 : 0;
+-        const value = await this.prompt(heading, items, undefined, start);
++        const value = await this.prompt(heading, items, undefined, start, {
++          title: 'question',
++          accent: 'border',
++          numbered: true,
++          footer: '▲/▼ select · 1–2 choose · enter confirm · esc dismiss',
++        });
+         return value === undefined ? undefined : value === 'true';
+       }
+       case 'single': {
+         const options = question.options ?? [];
+         if (options.length === 0) return this.askFormText({ ...question, kind: 'text' }, heading);
+-        const items: SelectItem[] = options.map((option) => ({
++        const items: SelectItem[] = options.map((option, index) => ({
+           value: option.value,
+-          label: option.label,
++          label: `[${String(index + 1)}] ${option.label}`,
+           description: option.description,
+         }));
+-        if (question.custom) items.push({ value: other, label: 'Type your own answer…' });
++        if (question.custom) items.push({ value: other, label: `[${String(items.length + 1)}] Type your own answer…` });
+         const start =
+           typeof question.defaultValue === 'string' ? Math.max(0, items.findIndex((item) => item.value === question.defaultValue)) : 0;
+-        const value = await this.prompt(heading, items, undefined, start);
++        const value = await this.prompt(heading, items, undefined, start, {
++          title: 'question',
++          accent: 'border',
++          numbered: true,
++          footer: `▲/▼ select · 1–${String(items.length)} choose · enter confirm · esc dismiss`,
++        });
+         if (value === undefined) return undefined;
+         if (value === other) return this.askFormText({ ...question, kind: 'text', required: true }, heading);
+         return value;
+@@ -494,7 +593,10 @@ export class Screen {
+           items.push({ value: done, label: `Done (${String(chosen.size)} selected)` });
+           const hint = currentTheme.fg('textMuted', 'Enter toggles an option. Choose Done to submit, Esc to dismiss.');
+           const lines = [...heading, hint, ...(notice ? [currentTheme.fg('warning', notice)] : [])];
+-          const value = await this.prompt(lines, items, undefined, cursor);
++          const value = await this.prompt(lines, items, undefined, cursor, {
++            title: 'question',
++            accent: 'border',
++          });
+           if (value === undefined) return undefined;
+           cursor = Math.max(0, items.findIndex((item) => item.value === value));
+           notice = '';
+@@ -560,14 +662,16 @@ export class Screen {
+   ): Promise<string | undefined> {
+     return new Promise((resolve) => {
+       const input = new Input({ prompt: '> ', placeholder, placeholderStyle: (text) => currentTheme.fg('textMuted', text) });
+-      const error = new Text('', 1, 0);
+-      const panel = new Container();
+-      panel.addChild(new Spacer(1));
+-      panel.addChild(new Text(heading.join('\n'), 1, 0));
+-      panel.addChild(new Spacer(1));
++      const error = new Text('', 0, 0);
++      const panel = new PanelComponent({ title: 'input', accent: 'borderFocus', paddingY: 0 });
++      if (heading.length > 0) {
++        panel.addChild(new Text(heading.join('\n'), 0, 0));
++        panel.addChild(new Spacer(1));
++      }
+       panel.addChild(input);
+       panel.addChild(error);
+-      panel.addChild(new Text(currentTheme.fg('textMuted', 'Enter to submit, Esc to dismiss.'), 1, 0));
++      panel.addChild(new Spacer(1));
++      panel.addChild(new Text(currentTheme.fg('textMuted', 'Enter to submit, Esc to dismiss.'), 0, 0));
+ 
+       const finish = (value: string | undefined) => {
+         this.prompting = false;
+@@ -590,6 +694,7 @@ export class Screen {
+ 
+       this.prompting = true;
+       this.promptSlot.clear();
++      this.promptSlot.addChild(new Spacer(1));
+       this.promptSlot.addChild(panel);
+       this.ui.setFocus(input);
+       this.ui.requestRender();
+@@ -661,3 +766,19 @@ export class Screen {
+     this.editor.onToggleToolExpand = () => this.toggleExpand();
+   }
+ }
++
++/** The diff carried by permission metadata: `{ diff }` or `{ files: [{ patch }] }`. */
++function permissionPatch(metadata: Record<string, unknown> | undefined): string {
++  if (!metadata) return '';
++  if (typeof metadata.diff === 'string' && metadata.diff.trim().length > 0) return metadata.diff;
++  const files = metadata.files;
++  if (!Array.isArray(files)) return '';
++  return files
++    .map((file) =>
++      file && typeof file === 'object' && typeof (file as { patch?: unknown }).patch === 'string'
++        ? (file as { patch: string }).patch
++        : '',
++    )
++    .filter((patch) => patch.length > 0)
++    .join('\n');
++}
+diff --git a/packages/screen/src/theme/colors.ts b/packages/screen/src/theme/colors.ts
+index 66f9819c3e..16deb62e3b 100644
+--- a/packages/screen/src/theme/colors.ts
++++ b/packages/screen/src/theme/colors.ts
+@@ -66,6 +66,10 @@ export interface ColorPalette {
+   diffGutter: string;
+   /** Meta / hunk headers. */
+   diffMeta: string;
++  /** Background tint behind added diff rows. */
++  diffAddedBg: string;
++  /** Background tint behind removed diff rows. */
++  diffRemovedBg: string;
+ 
+   // ── Roles ──
+   /** User message: bullet & text, skill-activation name. The one role colour
+@@ -101,6 +105,8 @@ export const darkColors: ColorPalette = {
+   diffRemovedStrong: '#F08585',
+   diffGutter: '#6B6B6B',
+   diffMeta: '#888888',
++  diffAddedBg: '#12261E',
++  diffRemovedBg: '#2D1214',
+ 
+   roleUser: '#FFCB6B',
+   shellMode: '#BD93F9',
+@@ -128,6 +134,8 @@ export const lightColors: ColorPalette = {
+   diffRemovedStrong: '#B91C1C',
+   diffGutter: '#737373',
+   diffMeta: '#5F5F5F',
++  diffAddedBg: '#DAFBE1',
++  diffRemovedBg: '#FFEBE9',
+ 
+   roleUser: '#9A4A00',
+   shellMode: '#7C3AED',

@@ -24,6 +24,7 @@ patches/
   0013-full-command-set.patch  expose every OpenCode slash command in the new screen
   0014-home-screen.patch       full-width welcome box, three-zone footer, @ file mentions
   0015-home-composer.patch     Loophole wordmark, borderless composer, /diff fallback
+  0016-rich-diff-and-approval.patch  diff panels, approval dialog with feedback, bordered prompts
   user/                        optional extra patches, applied after the numbered stack
   series                       legacy list, ignored by the scripts (sorted order wins)
   @ai-sdk%2F...@x.patch         copies of upstream bun patchedDependencies - NEVER applied
@@ -132,6 +133,13 @@ the engine, the server and command behaviour are unchanged.
 carries the `loophole` half-block wordmark, the footer drops its rule, the composer becomes a single
 `── input ──` header with no side or bottom border, `/diff` falls back to the files a session
 touched when no git snapshot exists, and a staged `/undo` is committed before the next prompt.
+
+`0016-rich-diff-and-approval.patch` brings the rest of the visual pass: unified diffs are parsed
+into line-numbered rows with tinted additions/removals, `/diff` renders one bordered panel per file,
+the approval dialog is a bordered panel with numbered choices and a diff/command preview, and
+"Reject, tell the model what to do instead" forwards the typed feedback as a permission correction.
+Pickers, structured questions and text prompts share the same bordered panel, and finished tool
+calls show a ✓/✗ mark plus their elapsed time.
 
 `0005-telemetry-posthog.patch` came from the `telemetry-posthog` / `tui-logo-art` branches.
 Every other custom commit on the local branches (Discord report link, service-port isolation,
