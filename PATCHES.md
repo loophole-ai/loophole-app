@@ -25,6 +25,7 @@ patches/
   0014-home-screen.patch       full-width welcome box, three-zone footer, @ file mentions
   0015-home-composer.patch     Loophole wordmark, borderless composer, /diff fallback
   0016-rich-diff-and-approval.patch  diff panels, approval dialog with feedback, bordered prompts
+  0017-home-polish.patch       boxed composer, provider login, flat model picker, settings hub
   user/                        optional extra patches, applied after the numbered stack
   series                       legacy list, ignored by the scripts (sorted order wins)
   @ai-sdk%2F...@x.patch         copies of upstream bun patchedDependencies - NEVER applied
@@ -140,6 +141,16 @@ the approval dialog is a bordered panel with numbered choices and a diff/command
 "Reject, tell the model what to do instead" forwards the typed feedback as a permission correction.
 Pickers, structured questions and text prompts share the same bordered panel, and finished tool
 calls show a ✓/✗ mark plus their elapsed time.
+
+`0017-home-polish.patch` restores the boxed composer (only the footer rule is gone), reports the
+real context usage as `context: N% (used/limit)`, and adds the rest of the home-screen workflow:
+`/connect` (and its `/login` alias) lists providers with their key/OAuth/command/external methods,
+asks optional method form fields, and refreshes models after connecting; `/models` is one flat
+list with the provider in the label and the current row marked; `/settings` is an interactive hub
+for model, thinking effort, agent, theme, auto-approve, directory, providers, config files, MCP,
+plugins, usage and debug info. A one-shot `✦` release announcement sits under the welcome panel,
+the wordmark is trimmed to three rows, and assistant/thinking blocks drop the duplicate leading
+blank line and trailing padding that produced extra gaps in the transcript.
 
 `0005-telemetry-posthog.patch` came from the `telemetry-posthog` / `tui-logo-art` branches.
 Every other custom commit on the local branches (Discord report link, service-port isolation,

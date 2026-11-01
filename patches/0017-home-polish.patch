@@ -1,0 +1,1002 @@
+diff --git a/packages/cli/src/screen/controller.ts b/packages/cli/src/screen/controller.ts
+index b8d1a71c6e..b3688ffb05 100644
+--- a/packages/cli/src/screen/controller.ts
++++ b/packages/cli/src/screen/controller.ts
+@@ -17,6 +17,7 @@ import type {
+   EventSubscribeOutput,
+   FormField,
+   FormInfo,
++  IntegrationInfo,
+   ModelInfo,
+   ModelRef,
+   OpenCodeClient,
+@@ -77,6 +78,7 @@ const BUILTIN_COMMANDS: readonly SlashCommand[] = [
+   { name: "usage", description: "Show the current usage limits" },
+   { name: "mcps", description: "List MCP servers and connect or disconnect one" },
+   { name: "connect", description: "Connect a provider or integration" },
++  { name: "login", description: "Alias of /connect — add a provider API key" },
+   { name: "skills", description: "Insert a skill mention into the prompt" },
+   { name: "worktrees", description: "Move this session to a worktree" },
+   { name: "cd", description: "Change the session's working directory" },
+@@ -113,12 +115,43 @@ const COMMAND_ALIASES: Readonly<Record<string, string>> = {
+   projects: "open",
+   project: "open",
+   web: "pair",
++  login: "connect",
+   quit: "exit",
+   q: "exit",
+ }
+ 
+ const EXIT_WORDS = ["exit", "quit", ":q"]
+ 
++/** Popular integrations first, mirroring the upstream connect dialog. */
++const INTEGRATION_PRIORITY: Readonly<Record<string, number>> = {
++  opencode: 0,
++  "opencode-go": 1,
++  openai: 2,
++  "github-copilot": 3,
++  anthropic: 4,
++  google: 5,
++}
++
++type ConnectMethod = Exclude<IntegrationInfo["methods"][number], { type: "env" }>
++
++function connectMethods(integration: IntegrationInfo): ConnectMethod[] {
++  return integration.methods.filter((method): method is ConnectMethod => method.type !== "env")
++}
++
++function methodLabel(method: ConnectMethod): string {
++  return method.type === "key" ? (method.label ?? "API key") : method.label
++}
++
++function connectionLabels(integration: IntegrationInfo): string[] {
++  return integration.connections.map((connection) =>
++    connection.type === "credential" ? connection.label : `$${connection.name}`,
++  )
++}
++
++function envNames(integration: IntegrationInfo): string[] {
++  return integration.methods.flatMap((method) => (method.type === "env" ? method.names : []))
++}
++
+ /** How many of the newest messages are shown again when a session is opened. */
+ const HISTORY_LIMIT = 80
+ const RECONNECT_MAX_DELAY = 10_000
+@@ -213,7 +246,7 @@ export class ScreenController {
+   private readonly api: OpenCodeClient
+   /** Mutable so /cd and /worktrees can move the session to another directory. */
+   private directory: string
+-  private readonly auto: boolean
++  private auto: boolean
+   private readonly screen: Screen
+   private sessionID: string | undefined
+   private serverCommands: CommandInfo[] = []
+@@ -258,6 +291,12 @@ export class ScreenController {
+ 
+   async start(): Promise<void> {
+     this.screen.setVersion(OPENCODE_VERSION)
++    // One-shot home-screen announcement. Kept before start() so it lands in the
++    // first frame above the transcript instead of being inserted later.
++    this.screen.setAnnouncement({
++      title: `Loophole ${OPENCODE_VERSION} is ready`,
++      detail: "Run /connect or /login to add a provider key. Start a fresh session for the best results.",
++    })
+     this.screen.start()
+     if (this.sessionID) this.ready = this.loadSession()
+     void this.pumpEvents()
+@@ -505,7 +544,7 @@ export class ScreenController {
+         case "plugins":
+           return await this.showPlugins()
+         case "settings":
+-          return await this.showSettings()
++          return await this.showSettingsMenu()
+         case "themes":
+           return await this.pickTheme()
+         case "debug":
+@@ -688,46 +727,189 @@ export class ScreenController {
+   private async connectIntegration(): Promise<void> {
+     const response = await this.api.integration.list({ location: { directory: this.directory } })
+     const integrations = response.data
+-    if (integrations.length === 0) return this.screen.addStatus("No integrations are available.", "warning")
+-    const id = await this.screen.pick(
+-      "Connect an integration",
+-      integrations.map((integration) => ({
+-        value: integration.id,
+-        label: integration.name,
+-        description:
+-          integration.connections.length > 0
+-            ? "connected"
+-            : integration.methods.map((method) => method.type).join(", ") || "no connect method",
+-      })),
++    if (integrations.length === 0) {
++      return this.screen.addStatus(
++        "No integrations are available. Make sure the local service is running, then try /reload.",
++        "warning",
++      )
++    }
++
++    const sorted = [...integrations].sort(
++      (a, b) =>
++        (INTEGRATION_PRIORITY[a.id] ?? 99) - (INTEGRATION_PRIORITY[b.id] ?? 99) ||
++        a.name.localeCompare(b.name) ||
++        a.id.localeCompare(b.id),
++    )
++    const integrationID = await this.screen.pick(
++      "Connect a provider or integration",
++      sorted.map((integration) => {
++        const methods = connectMethods(integration)
++        const connections = connectionLabels(integration)
++        return {
++          value: integration.id,
++          label: `${connections.length > 0 ? "✓ " : ""}${integration.name}`,
++          description:
++            connections.length > 0
++              ? connections.join(", ")
++              : methods.length > 0
++                ? methods.map(methodLabel).join(" · ")
++                : envNames(integration).length > 0
++                  ? `env: ${envNames(integration).join(", ")}`
++                  : "no connect method",
++        }
++      }),
+     )
+-    const integration = integrations.find((item) => item.id === id)
++    if (!integrationID) return
++    const integration = sorted.find((item) => item.id === integrationID)
+     if (!integration) return
+-    if (integration.connections.length > 0) return this.screen.addStatus(`${integration.name} is already connected.`)
+-    const oauth = integration.methods.find((item) => item.type === "oauth")
+-    const keyMethod = integration.methods.find((item) => item.type === "key")
+-    if (!oauth && !keyMethod) {
+-      return this.screen.addStatus(`${integration.name} cannot be connected from this screen.`)
++
++    const methods = connectMethods(integration)
++    if (methods.length === 0) {
++      const env = envNames(integration)
++      return this.screen.addStatus(
++        env.length > 0
++          ? `${integration.name} uses environment variables: ${env.join(", ")}. Set one, then run /reload.`
++          : `${integration.name} cannot be connected from this screen.`,
++      )
++    }
++
++    let method = methods[0]
++    if (methods.length > 1) {
++      const picked = await this.screen.pick(
++        `Connect ${integration.name}`,
++        methods.map((item, index) => ({ value: String(index), label: methodLabel(item) })),
++      )
++      if (picked === undefined) return
++      method = methods[Number(picked)]
+     }
+-    if (!oauth && keyMethod) {
++    if (!method) return
++
++    const answer = await this.askMethodForm(method)
++    if (answer === null) return
++    const formAnswer = answer && Object.keys(answer).length > 0 ? { answer } : {}
++
++    if (method.type === "key") {
+       const key = await this.screen.askText(`API key for ${integration.name}`, "Paste the key")
+       if (!key?.trim()) return
+       await this.api.integration.connect.key({
+         integrationID: integration.id,
+         key: key.trim(),
++        ...formAnswer,
+         location: { directory: this.directory },
+       })
+-      return this.screen.addStatus(`${integration.name} connected.`)
++      return await this.connectedIntegration(integration.name)
+     }
+-    if (!oauth) return
++
++    if (method.type === "external") {
++      await this.api.integration.connect.external({
++        integrationID: integration.id,
++        methodID: method.id,
++        ...formAnswer,
++        location: { directory: this.directory },
++      })
++      return await this.connectedIntegration(integration.name)
++    }
++
++    if (method.type === "command") {
++      const attempt = await this.api.integration.command.connect({
++        integrationID: integration.id,
++        methodID: method.id,
++        location: { directory: this.directory },
++      })
++      this.screen.addStatus(`Waiting for ${integration.name} to finish signing in…`)
++      const result = await this.pollCommand(integration.id, attempt.data.attemptID)
++      if (result === "complete") await this.connectedIntegration(integration.name)
++      return
++    }
++
+     const attempt = await this.api.integration.oauth.connect({
+       integrationID: integration.id,
+-      methodID: oauth.id,
++      methodID: method.id,
++      ...formAnswer,
+       location: { directory: this.directory },
+     })
+     const data = attempt.data
+     this.screen.addStatus(`${integration.name}\n${data.instructions}\n${data.url}\n\nWaiting for sign-in…`)
++
++    if (data.mode === "code") {
++      const code = await this.screen.askText(
++        `Authorization code for ${integration.name}`,
++        "Paste the code from the browser",
++      )
++      if (!code?.trim()) {
++        await this.api.integration.oauth
++          .cancel({ integrationID: integration.id, attemptID: data.attemptID, location: { directory: this.directory } })
++          .catch(() => {})
++        return
++      }
++      await this.api.integration.oauth.complete({
++        integrationID: integration.id,
++        attemptID: data.attemptID,
++        code: code.trim(),
++        location: { directory: this.directory },
++      })
++      return await this.connectedIntegration(integration.name)
++    }
++
+     const result = await this.pollOAuth(integration.id, data.attemptID, data.time.expires)
+-    if (result === "complete") this.screen.addStatus(`${integration.name} connected.`)
++    if (result === "complete") await this.connectedIntegration(integration.name)
++  }
++
++  /** Ask the optional form fields a connect method declares (base URL, region, …). */
++  private async askMethodForm(
++    method: ConnectMethod,
++  ): Promise<Record<string, FormAnswerValue> | null | undefined> {
++    const fields = "form" in method ? (method.form ?? []) : []
++    const answer: Record<string, FormAnswerValue> = {}
++    for (const field of fields) {
++      if (field.type === "external") continue
++      if (field.when && !field.when.every((condition) => whenMatches(condition, answer))) continue
++      if (field.hidden) {
++        if (field.default !== undefined) answer[field.key] = field.default as FormAnswerValue
++        continue
++      }
++      const value = await this.screen.askQuestion(toQuestion(field))
++      if (value === undefined) return null
++      answer[field.key] = value
++    }
++    return answer
++  }
++
++  /** Refresh the model/command lists after a provider or integration is connected. */
++  private async connectedIntegration(name: string): Promise<void> {
++    await this.loadModels(true)
++    if (!this.currentModel) {
++      const fallback = await this.api.model.default({ location: { directory: this.directory } }).catch(() => undefined)
++      if (fallback?.data) {
++        this.currentModel = { providerID: fallback.data.providerID, id: fallback.data.id }
++        this.refreshIdentity()
++      }
++    }
++    await this.refreshServerCommands()
++    this.screen.addStatus(`${name} connected.`)
++  }
++
++  private async pollCommand(
++    integrationID: string,
++    attemptID: string,
++  ): Promise<"complete" | "failed" | "timeout"> {
++    const deadline = Date.now() + 5 * 60_000
++    while (Date.now() < deadline) {
++      await this.sleep(1000)
++      const response = await this.api.integration.command
++        .status({ integrationID, attemptID, location: { directory: this.directory } })
++        .catch(() => undefined)
++      const status = response?.data
++      if (!status) continue
++      if (status.status === "complete") return "complete"
++      if (status.status === "failed") {
++        this.screen.addStatus(status.message, "error")
++        return "failed"
++      }
++      if (status.status === "pending" && status.message) this.screen.addStatus(status.message)
++    }
++    this.screen.addStatus("The sign-in attempt timed out.", "warning")
++    return "timeout"
+   }
+ 
+   private async pollOAuth(
+@@ -925,6 +1107,116 @@ export class ScreenController {
+     return source.type
+   }
+ 
++  /** Interactive settings hub, wired to the engine's live state. */
++  private async showSettingsMenu(): Promise<void> {
++    for (;;) {
++      const picked = await this.screen.pick("Settings", [
++        {
++          value: "model",
++          label: "Model",
++          description: this.currentModel ? this.modelLabel(this.currentModel) : "not set",
++        },
++        {
++          value: "thinking",
++          label: "Thinking effort",
++          description: this.currentModel?.variant ?? "default",
++        },
++        {
++          value: "agent",
++          label: "Agent",
++          description: this.currentAgent ?? "default",
++        },
++        {
++          value: "theme",
++          label: "Theme",
++          description: this.screen.getTheme(),
++        },
++        {
++          value: "auto",
++          label: "Auto-approve",
++          description: this.auto ? "on — permission prompts are skipped" : "off — ask before running tools",
++        },
++        {
++          value: "directory",
++          label: "Working directory",
++          description: this.directory,
++        },
++        {
++          value: "connect",
++          label: "Providers & integrations",
++          description: "add an API key or sign in",
++        },
++        {
++          value: "config",
++          label: "Configuration files",
++          description: "opencode.json and the config files in use",
++        },
++        {
++          value: "mcps",
++          label: "MCP servers",
++          description: "connect or disconnect a server",
++        },
++        {
++          value: "plugins",
++          label: "Plugins",
++          description: "loaded plugins and their state",
++        },
++        {
++          value: "usage",
++          label: "Usage limits",
++          description: "workspace budget and rolling usage",
++        },
++        {
++          value: "debug",
++          label: "Debug info",
++          description: "server, session and model details",
++        },
++        { value: "close", label: "Close settings" },
++      ])
++      if (!picked || picked === "close") return
++      switch (picked) {
++        case "model":
++          await this.pickModel("")
++          break
++        case "thinking":
++          await this.pickVariant("")
++          break
++        case "agent":
++          await this.pickAgent("")
++          break
++        case "theme":
++          await this.pickTheme()
++          break
++        case "auto":
++          this.auto = !this.auto
++          this.screen.setAuto(this.auto)
++          this.screen.addStatus(`Auto-approve ${this.auto ? "on" : "off"}.`)
++          break
++        case "directory":
++          await this.changeDirectory("")
++          break
++        case "connect":
++          await this.connectIntegration()
++          break
++        case "config":
++          await this.showSettings()
++          break
++        case "mcps":
++          await this.pickMcp()
++          break
++        case "plugins":
++          await this.showPlugins()
++          break
++        case "usage":
++          await this.showUsage()
++          break
++        case "debug":
++          await this.showDebug()
++          break
++      }
++    }
++  }
++
+   private async showSettings(): Promise<void> {
+     const entries = await this.api.config.get({ location: { directory: this.directory } })
+     const lines: string[] = []
+@@ -1053,7 +1345,7 @@ export class ScreenController {
+     this.screen.setSession(info.title || info.id)
+     if (!this.currentModel) {
+       const fallback = await this.api.model.default({ location: { directory: this.directory } }).catch(() => undefined)
+-      if (fallback?.data) this.currentModel = { providerID: fallback.data.providerID, id: fallback.data.modelID }
++      if (fallback?.data) this.currentModel = { providerID: fallback.data.providerID, id: fallback.data.id }
+     }
+     this.refreshIdentity()
+   }
+@@ -1068,12 +1360,12 @@ export class ScreenController {
+   private contextWindow(): number {
+     const model = this.currentModel
+     if (!model) return 0
+-    const known = this.models?.find((item) => item.providerID === model.providerID && item.modelID === model.id)
++    const known = this.models?.find((item) => item.providerID === model.providerID && item.id === model.id)
+     return known?.limit.context ?? 0
+   }
+ 
+   private modelLabel(model: ModelRef): string {
+-    const known = this.models?.find((item) => item.providerID === model.providerID && item.modelID === model.id)
++    const known = this.models?.find((item) => item.providerID === model.providerID && item.id === model.id)
+     const base = known ? known.name : `${model.providerID}/${model.id}`
+     return model.variant ? `${base} (${model.variant})` : base
+   }
+@@ -1102,7 +1394,10 @@ export class ScreenController {
+         case "assistant": {
+           tokensIn += message.tokens?.input ?? 0
+           tokensOut += message.tokens?.output ?? 0
+-          contextTokens = (message.tokens?.input ?? 0) + (message.tokens?.output ?? 0)
++          const usage = message.tokens
++        contextTokens = usage
++          ? usage.input + usage.output + usage.reasoning + usage.cache.read + usage.cache.write
++          : 0
+           // The newest message may still be streaming; the live events draw it instead.
+           const streaming = index === messages.length - 1 && message.time.completed === undefined && message.finish === undefined
+           if (streaming) {
+@@ -1205,52 +1500,59 @@ export class ScreenController {
+     // `/model provider/model` selects directly.
+     if (args) {
+       const [reference, variant] = args.split(/\s+/)
+-      const match = models.find((model) => `${model.providerID}/${model.modelID}` === reference)
++      const match = models.find(
++        (model) =>
++          `${model.providerID}/${model.id}` === reference ||
++          `${model.providerID}/${model.modelID}` === reference,
++      )
+       if (!match) return this.screen.addStatus(`Unknown model "${reference}". Use /model to browse.`, "warning")
+       if (variant && !match.variants.some((item) => item.id === variant)) {
+         return this.screen.addStatus(`"${match.name}" has no thinking effort called "${variant}".`, "warning")
+       }
+-      return await this.applyModel({ providerID: match.providerID, id: match.modelID, variant })
++      return await this.applyModel({ providerID: match.providerID, id: match.id, variant })
+     }
+ 
+-    const providers = new Map<string, number>()
+-    for (const model of models) providers.set(model.providerID, (providers.get(model.providerID) ?? 0) + 1)
++    // One flat list (the way the upstream screen does it): provider in the
++    // label, current row marked, context size and thinking efforts in the
++    // description. No provider → model drill-down.
+     const current = this.currentModel
+-    const providerID = await this.screen.pickCurrent(
+-      "Choose a provider",
+-      [...providers.entries()]
+-        .sort(([a], [b]) => (a === current?.providerID ? -1 : b === current?.providerID ? 1 : a.localeCompare(b)))
+-        .map(([id, count]) => ({ value: id, label: id, description: `${String(count)} model${count === 1 ? "" : "s"}` })),
+-      current?.providerID,
+-    )
+-    if (!providerID) return
+-
+-    const options = models.filter((model) => model.providerID === providerID).sort((a, b) => b.time.released - a.time.released)
+-    const modelID = await this.screen.pickCurrent(
+-      `Models from ${providerID}`,
+-      options.map((model) => ({
+-        value: model.modelID,
+-        label: model.name,
+-        description: [
+-          `${String(Math.round(model.limit.context / 1000))}k context`,
+-          model.variants.length > 0 ? "thinking effort" : undefined,
+-        ]
+-          .filter(Boolean)
+-          .join(" · "),
+-      })),
+-      current?.providerID === providerID ? current.id : undefined,
++    const currentReference = current ? `${current.providerID}/${current.id}` : undefined
++    const reference = await this.screen.pickCurrent(
++      "Select a model",
++      [...models]
++        .sort(
++          (a, b) =>
++            a.providerID.localeCompare(b.providerID) ||
++            a.name.localeCompare(b.name) ||
++            a.id.localeCompare(b.id),
++        )
++        .map((model) => {
++          const value = `${model.providerID}/${model.id}`
++          return {
++            value,
++            label: `${model.name}  (${model.providerID})${value === currentReference ? "  ← current" : ""}`,
++            description: [
++              `${String(Math.round(model.limit.context / 1000))}k context`,
++              model.variants.length > 0 ? `thinking: ${model.variants.map((variant) => variant.id).join(", ")}` : undefined,
++            ]
++              .filter((part): part is string => part !== undefined)
++              .join(" · "),
++          }
++        }),
++      currentReference,
+     )
+-    const chosen = options.find((model) => model.modelID === modelID)
++    if (!reference) return
++    const chosen = models.find((model) => `${model.providerID}/${model.id}` === reference)
+     if (!chosen) return
+ 
+     let variant: string | undefined
+     if (chosen.variants.length > 0) {
+-      const sameModel = current?.providerID === chosen.providerID && current.id === chosen.modelID
++      const sameModel = current?.providerID === chosen.providerID && current.id === chosen.id
+       const picked = await this.chooseVariant(chosen, sameModel ? current?.variant : undefined)
+       if (picked === undefined) return
+       variant = picked || undefined
+     }
+-    await this.applyModel({ providerID: chosen.providerID, id: chosen.modelID, variant })
++    await this.applyModel({ providerID: chosen.providerID, id: chosen.id, variant })
+   }
+ 
+   /** Resolves with the variant id, "" for the model's default, or undefined when cancelled. */
+@@ -1266,7 +1568,7 @@ export class ScreenController {
+     const current = this.currentModel
+     if (!current) return this.screen.addStatus("There is no model selected yet. Use /model.", "warning")
+     const models = await this.loadModels()
+-    const info = models.find((model) => model.providerID === current.providerID && model.modelID === current.id)
++    const info = models.find((model) => model.providerID === current.providerID && model.id === current.id)
+     if (!info || info.variants.length === 0) {
+       return this.screen.addStatus(`${this.modelLabel({ ...current, variant: undefined })} has no thinking effort options.`, "warning")
+     }
+@@ -1501,9 +1803,10 @@ export class ScreenController {
+         this.currentModel = event.data.model
+         return this.refreshIdentity()
+       case "session.step.ended":
+-        this.tokensIn += event.data.tokens.input
+-        this.tokensOut += event.data.tokens.output
+-        this.contextTokens = event.data.tokens.input + event.data.tokens.output
++        const step = event.data.tokens
++        this.tokensIn += step.input
++        this.tokensOut += step.output
++        this.contextTokens = step.input + step.output + step.reasoning + step.cache.read + step.cache.write
+         this.screen.setContext(this.contextTokens, this.contextWindow())
+         return this.screen.addUsage(event.data.tokens.input, event.data.tokens.output)
+     }
+diff --git a/packages/screen/src/components/chrome/announcement.ts b/packages/screen/src/components/chrome/announcement.ts
+new file mode 100644
+index 0000000000..21e548665c
+--- /dev/null
++++ b/packages/screen/src/components/chrome/announcement.ts
+@@ -0,0 +1,40 @@
++/**
++ * A one-shot release / status announcement under the welcome panel, modelled on
++ * the Kimi home screen: a rendered star glyph (not an emoji), a bold headline
++ * and an optional dim detail line.
++ */
++
++import { truncateToWidth, type Component } from '@loophole/tui-engine';
++
++import { currentTheme } from '../../theme/index';
++
++export interface AnnouncementState {
++  readonly title: string;
++  readonly detail?: string;
++  /** Hide the whole block (the default before the controller publishes one). */
++  readonly visible?: boolean;
++}
++
++export class AnnouncementComponent implements Component {
++  private state: AnnouncementState;
++
++  constructor(state: AnnouncementState = { title: '', visible: false }) {
++    this.state = state;
++  }
++
++  update(state: AnnouncementState): void {
++    this.state = state;
++  }
++
++  invalidate(): void {}
++
++  render(width: number): string[] {
++    if (this.state.visible === false || this.state.title.length === 0) return [];
++    const star = currentTheme.fg('primary', '✦');
++    const lines = ['', truncateToWidth(`  ${star} ${currentTheme.boldFg('textStrong', this.state.title)}`, width, '…')];
++    if (this.state.detail) {
++      lines.push(truncateToWidth(`    ${currentTheme.fg('textDim', this.state.detail)}`, width, '…'));
++    }
++    return lines;
++  }
++}
+diff --git a/packages/screen/src/components/chrome/footer.ts b/packages/screen/src/components/chrome/footer.ts
+index 4049e275ce..c44890088f 100644
+--- a/packages/screen/src/components/chrome/footer.ts
++++ b/packages/screen/src/components/chrome/footer.ts
+@@ -64,8 +64,9 @@ export class FooterComponent implements Component {
+ 
+     let usage = '';
+     if (contextLimit !== undefined && contextLimit > 0) {
+-      const percent = Math.min(100, Math.round(((contextTokens ?? 0) / contextLimit) * 100));
+-      usage = `${String(percent)}% ctx`;
++      const used = contextTokens ?? 0;
++      const percent = Math.min(100, Math.round((used / contextLimit) * 100));
++      usage = `context: ${String(percent)}% (${compactCount(used)}/${compactCount(contextLimit)})`;
+     } else if (tokensIn + tokensOut > 0) {
+       usage = `${compactCount(tokensIn)} in · ${compactCount(tokensOut)} out`;
+     }
+diff --git a/packages/screen/src/components/chrome/welcome.ts b/packages/screen/src/components/chrome/welcome.ts
+index ab421bceaf..6ef86b9c5f 100644
+--- a/packages/screen/src/components/chrome/welcome.ts
++++ b/packages/screen/src/components/chrome/welcome.ts
+@@ -17,15 +17,13 @@ export interface WelcomeState {
+ /**
+  * The Loophole wordmark: `packages/ui/src/assets/logo/wordmark.svg` rasterized
+  * into terminal half-block art (the `tiny` variant from `packages/tui/src/logo.ts`,
+- * copied here so the screen package keeps its narrow dependency surface). Kept
+- * small on purpose — the panel is a banner, not a splash screen.
++ * trimmed to three rows so it stays compact like the home-screen mark). Copied
++ * here so the screen package keeps its narrow dependency surface.
+  */
+ const WORDMARK = [
+-  '█                █         █',
+   '█ ████ ████ ████ ████ ████ █  █▀██',
+   '█ █  █ █  █ █▄▄█ █  █ █  █ █  ████',
+   '█ ████ ████ █▀▀▀ █  █ ████ █  █▄▄▄',
+-  '            █',
+ ];
+ const WORDMARK_WIDTH = Math.max(...WORDMARK.map((row) => visibleWidth(row)));
+ const WORDMARK_HEIGHT = WORDMARK.length;
+diff --git a/packages/screen/src/components/editor/custom-editor.ts b/packages/screen/src/components/editor/custom-editor.ts
+index 109f6e808b..5dfe647587 100644
+--- a/packages/screen/src/components/editor/custom-editor.ts
++++ b/packages/screen/src/components/editor/custom-editor.ts
+@@ -13,8 +13,6 @@ import {
+   visibleWidth,
+   type SelectItem,
+   type TUI,
+-  type TuiMouseEvent,
+-  type TuiMouseEventResult,
+ } from '@loophole/tui-engine';
+ 
+ import { currentTheme } from '../../theme/index';
+@@ -344,13 +342,13 @@ export class CustomEditor extends Editor {
+     }
+     // While another component holds the keyboard or the terminal window is
+     // inactive, the editor looks inactive: no block cursor (pi-tui draws it
+-    // focused or not), and the whole composer fades.
++    // focused or not), and the whole box fades.
+     const inactive = !this.focused || !this.terminalFocused;
+     // `this.borderColor` is pi-tui's per-render paint function. The host may
+     // overwrite it (e.g. plan-mode / slash-context highlight via
+-    // `editor.borderColor = chalk.hex(primary)`), so the header goes through
+-    // the same hook to stay in sync.
+-    const framed = wrapWithInputHeader(
++    // `editor.borderColor = chalk.hex(primary)`), so we route corners and
++    // side bars through the same hook to stay in sync.
++    const framed = wrapWithSideBorders(
+       inactive
+         ? lines.map((line) =>
+             line
+@@ -361,24 +359,13 @@ export class CustomEditor extends Editor {
+         : lines,
+       (s: string) => this.borderColor(s),
+       {
+-        visibleLineCount: (this as unknown as { renderedVisibleLineCount: number }).renderedVisibleLineCount,
+-        title: isBash ? 'shell' : 'input',
++        connectedAbove: this.connectedAbove && !this.borderHighlighted,
++        label: isBash ? ` ${currentTheme.boldFg('shellMode', '! shell mode')} ` : undefined,
+       },
+     );
+     return inactive ? framed.map((line) => currentTheme.fade(line)) : framed;
+   }
+ 
+-  override handleMouse(event: TuiMouseEvent): TuiMouseEventResult | undefined {
+-    // The composer drops the editor's bottom border, so the autocomplete list
+-    // sits one row higher than pi-tui's mouse math expects. Shift clicks that
+-    // land below the content down by one row before delegating.
+-    const internals = this as unknown as { renderedVisibleLineCount: number };
+-    if (event.y > internals.renderedVisibleLineCount) {
+-      return super.handleMouse({ ...event, y: event.y + 1 });
+-    }
+-    return super.handleMouse(event);
+-  }
+-
+   private computeArgumentHint(): string | undefined {
+     // Argument hints describe slash commands, which do not exist in bash mode.
+     if (this.inputMode === 'bash') return undefined;
+@@ -822,8 +809,9 @@ function truncateHint(hint: string, maxLen: number): string {
+ 
+ /**
+  * Overlay a terminal-style `> ` prompt symbol on the first content line.
+- * The composer has no side borders, so the symbol simply sits in the leading
+- * padding: two spaces, the `>` token and one space before the text.
++ * Column 0 is reserved for the left vertical border (overlaid later by
++ * wrapWithSideBorders); column 1 is a single-space gap, so the `>` token
++ * lives at column 2 with column 3 separating it from content.
+  * Relies on the editor being configured with `paddingX >= 4` so the line
+  * starts with at least four literal spaces. Emits no SGR so the terminal's
+  * default foreground colour renders the symbol. Returns `undefined` if the
+@@ -843,34 +831,55 @@ export function injectPromptSymbol(
+ }
+ 
+ /**
+- * Post-process pi-tui's editor output into the compact composer used by the
+- * home screen: a single labelled header rule (`── input ─────…`) with no side
+- * borders and no bottom border, so the composer reads as a prompt rather than
+- * a box.
++ * Post-process pi-tui's editor output to draw a full box around it.
+  *
+- * pi-tui emits a top border, the visible content lines and a bottom border,
+- * followed by any autocomplete rows. The top border becomes the header, the
+- * content keeps its padding untouched and the bottom border is dropped.
++ * pi-tui only renders horizontal top/bottom borders; we wrap them with
++ * `╭╮╰╯` corners and add vertical `│` bars on each row's outer columns.
++ * Horizontal-border rows (those whose first visible char is `─`, including
++ * scroll indicators like `── ↑ N more ──`) are stripped of their existing
++ * SGR and repainted as a single box-drawn span. Content rows keep their
++ * inner SGR intact; only column 0 and the last column are overlaid, and
++ * only if they're literal spaces — that protects the cursor-overflow
++ * case where the rightmost column is an SGR-tagged inverse cursor.
+  *
+- * A `↑/↓ N more` scroll indicator is not a plain dash run, so it is kept as
+- * the header instead of the title (the arrow is more useful than the label).
++ * When `options.label` is set, it is overlaid on the left of the top border
++ * (e.g. the `! shell mode` badge), replacing the leading dashes. It is only
++ * applied to a plain dash run, never to a `↑/↓ N more` scroll indicator.
+  */
+-export function wrapWithInputHeader(
++export function wrapWithSideBorders(
+   lines: string[],
+   paint: (s: string) => string,
+-  options: { readonly visibleLineCount: number; readonly title: string },
++  options: { readonly connectedAbove?: boolean; readonly label?: string } = {},
+ ): string[] {
+-  const contentCount = Math.max(1, options.visibleLineCount);
+-  const content = lines.slice(1, 1 + contentCount);
+-  const autocomplete = lines.slice(1 + contentCount + 1);
+-  return [renderInputHeader(lines[0] ?? '', options.title, paint), ...content, ...autocomplete];
+-}
+-
+-function renderInputHeader(line: string, title: string, paint: (s: string) => string): string {
+-  const plain = stripSgr(line);
+-  const width = visibleWidth(plain);
+-  if (!/^─+$/.test(plain)) return paint(plain);
+-  const label = ` ${title} `;
+-  if (width < visibleWidth(label) + 2) return paint('─'.repeat(width));
+-  return paint('──') + currentTheme.fg('textMuted', label) + paint('─'.repeat(width - 2 - visibleWidth(label)));
++  let seenTop = false;
++  return lines.map((line) => {
++    const plain = stripSgr(line);
++    if (plain.length > 0 && plain[0] === '─') {
++      const isTop = !seenTop;
++      const leftCorner = seenTop ? '╰' : options.connectedAbove === true ? '├' : '╭';
++      const rightCorner = seenTop ? '╯' : options.connectedAbove === true ? '┤' : '╮';
++      seenTop = true;
++      if (plain.length === 1) return paint(leftCorner);
++      const middle = plain.slice(1, -1);
++      if (isTop && options.label !== undefined && /^─+$/.test(middle)) {
++        const labelWidth = visibleWidth(options.label);
++        if (labelWidth <= middle.length) {
++          return (
++            paint(leftCorner) +
++            options.label +
++            paint('─'.repeat(middle.length - labelWidth)) +
++            paint(rightCorner)
++          );
++        }
++      }
++      return paint(leftCorner + middle + rightCorner);
++    }
++    if (line.length === 0) return line;
++    const firstCh = line[0];
++    const lastCh = line.at(-1);
++    const head = firstCh === ' ' ? paint('│') : (firstCh ?? '');
++    const tail = line.length > 1 && lastCh === ' ' ? paint('│') : (lastCh ?? '');
++    if (line.length === 1) return head;
++    return head + line.slice(1, -1) + tail;
++  });
+ }
+diff --git a/packages/screen/src/components/messages/assistant-message.ts b/packages/screen/src/components/messages/assistant-message.ts
+index f41a29bbd5..66bea57fe3 100644
+--- a/packages/screen/src/components/messages/assistant-message.ts
++++ b/packages/screen/src/components/messages/assistant-message.ts
+@@ -20,6 +20,12 @@ type AssistantMarkdownOptions = {
+   transient?: boolean;
+ };
+ 
++function firstContentLine(lines: string[]): number {
++  let first = 0;
++  while (first < lines.length && lines[first]!.trim() === '') first++;
++  return first;
++}
++
+ export class AssistantMessageComponent implements Component {
+   private contentContainer: Container;
+   private markdown: Markdown | undefined;
+@@ -116,18 +122,20 @@ export class AssistantMessageComponent implements Component {
+     const prefix = this.showBullet ? STATUS_BULLET : MESSAGE_INDENT;
+     const prefixWidth = visibleWidth(prefix);
+     const contentWidth = Math.max(1, Math.max(0, event.width) - prefixWidth);
+-    const y = event.y - 1;
+-    if (y < 0) return undefined;
+-
+-    const contentHeight = this.contentContainer.render(contentWidth).length;
+-    if (y >= contentHeight) return undefined;
++    const contentLines = this.contentContainer.render(contentWidth);
++    const first = firstContentLine(contentLines);
++    let last = contentLines.length - 1;
++    while (last >= first && contentLines[last]!.trim() === '') last--;
++    const visibleRows = last - first + 1;
++    const y = event.y;
++    if (y < 0 || y >= visibleRows) return undefined;
+ 
+     return this.contentContainer.handleMouse({
+       ...event,
+       x: event.x - prefixWidth,
+-      y,
++      y: y + first,
+       width: contentWidth,
+-      height: contentHeight,
++      height: contentLines.length,
+     });
+   }
+ 
+@@ -149,12 +157,21 @@ export class AssistantMessageComponent implements Component {
+     const contentWidth = Math.max(1, safeWidth - visibleWidth(prefix));
+     const contentLines = this.contentContainer.render(contentWidth);
+ 
+-    const lines: string[] = [''];
+-    for (let i = 0; i < contentLines.length; i++) {
++    // The transcript already inserts a spacer before the message. Markdown adds
++    // its own blank rows around paragraphs/code, and a trailing newline in the
++    // model output adds another; trim the edges so the result is one gap at
++    // most instead of two or three.
++    const first = firstContentLine(contentLines);
++    let last = contentLines.length - 1;
++    while (last >= first && contentLines[last]!.trim() === '') last--;
++
++    const lines: string[] = [];
++    for (let i = first; i <= last; i++) {
+       const p =
+-        i === 0 && this.showBullet ? currentTheme.fg('text', STATUS_BULLET) : MESSAGE_INDENT;
++        i === first && this.showBullet ? currentTheme.fg('text', STATUS_BULLET) : MESSAGE_INDENT;
+       lines.push(p + contentLines[i]);
+     }
++    if (lines.length === 0) return [];
+     const rendered = markOsc133Zone(lines.map((line) => truncateToWidth(line, safeWidth, '…')));
+     if (isRenderCacheEnabled()) {
+       this.renderCache = { width: safeWidth, lines: rendered };
+diff --git a/packages/screen/src/components/messages/thinking.ts b/packages/screen/src/components/messages/thinking.ts
+index 545f2b3473..831af6dcf2 100644
+--- a/packages/screen/src/components/messages/thinking.ts
++++ b/packages/screen/src/components/messages/thinking.ts
+@@ -110,7 +110,12 @@ export class ThinkingComponent implements Component {
+     }
+ 
+     const contentWidth = Math.max(1, width - MESSAGE_INDENT.length);
+-    const contentLines = this.text.length > 0 ? this.textComponent.render(contentWidth) : [''];
++    const rawLines = this.text.length > 0 ? this.textComponent.render(contentWidth) : [''];
++    let first = 0;
++    while (first < rawLines.length && rawLines[first]!.trim() === '') first++;
++    let last = rawLines.length - 1;
++    while (last >= first && rawLines[last]!.trim() === '') last--;
++    const contentLines = first <= last ? rawLines.slice(first, last + 1) : [];
+     // Live folding hides every row beyond the tail. Finalized folding swaps
+     // hidden rows for a one-line hint, so it must save at least one row.
+     this.previewHidesLines =
+@@ -129,12 +134,11 @@ export class ThinkingComponent implements Component {
+         `${BRAILLE_SPINNER_FRAMES[this.spinnerFrame] ?? BRAILLE_SPINNER_FRAMES[0]} `,
+       );
+       rendered = [
+-        '',
+         spinner + currentTheme.fg('textDim', 'thinking…'),
+         ...visibleLines.map((line) => MESSAGE_INDENT + line),
+       ];
+     } else {
+-      const lines: string[] = [''];
++      const lines: string[] = [];
+       for (let i = 0; i < contentLines.length; i++) {
+         const p = i === 0 && this.showMarker ? currentTheme.fg('textDim', STATUS_BULLET) : MESSAGE_INDENT;
+         lines.push(p + contentLines[i]);
+@@ -143,8 +147,7 @@ export class ThinkingComponent implements Component {
+       if (this.expanded || !this.previewHidesLines) {
+         rendered = lines;
+       } else {
+-        // Leading blank + first PREVIEW_LINES content lines + hint line.
+-        const truncated = lines.slice(0, 1 + THINKING_PREVIEW_LINES);
++        const truncated = lines.slice(0, THINKING_PREVIEW_LINES);
+         const remaining = contentLines.length - THINKING_PREVIEW_LINES;
+         const hint = `… (${String(remaining)} more lines, ctrl+o to expand)`;
+         const indentWidth = Math.min(MESSAGE_INDENT.length, Math.max(0, width));
+diff --git a/packages/screen/src/screen.ts b/packages/screen/src/screen.ts
+index a85073e9cd..736cda2b04 100644
+--- a/packages/screen/src/screen.ts
++++ b/packages/screen/src/screen.ts
+@@ -29,6 +29,7 @@ import {
+ } from '@loophole/tui-engine';
+ 
+ import { ActivityComponent } from './components/chrome/activity';
++import { AnnouncementComponent, type AnnouncementState } from './components/chrome/announcement';
+ import { FooterComponent } from './components/chrome/footer';
+ import { GutterContainer } from './components/chrome/gutter-container';
+ import { PanelComponent } from './components/chrome/panel';
+@@ -120,6 +121,7 @@ export class Screen {
+   private readonly footer: FooterComponent;
+   private readonly editor: CustomEditor;
+   private readonly welcome: WelcomeComponent;
++  private readonly announcement: AnnouncementComponent;
+   private readonly tools = new Map<string, ToolCallComponent>();
+   private options: ScreenOptions;
+   private commands: SlashCommand[] | undefined;
+@@ -138,9 +140,11 @@ export class Screen {
+   private version: string | undefined;
+   private ready = false;
+   private offline = false;
++  private autoMode: boolean;
+ 
+   constructor(options: ScreenOptions) {
+     this.options = options;
++    this.autoMode = options.auto;
+     const terminal = new ProcessTerminal();
+     // No log directory: debug logging stays off and crash dumps go to the OS temp dir.
+     this.ui = new TuiMainScreen(terminal, false, undefined);
+@@ -148,6 +152,7 @@ export class Screen {
+     this.activity = new ActivityComponent(() => this.ui.requestRender());
+     this.footer = new FooterComponent(this.footerState());
+     this.welcome = new WelcomeComponent(this.welcomeState());
++    this.announcement = new AnnouncementComponent();
+     this.editor = new CustomEditor(this.ui);
+     this.setCommands(options.commands);
+     this.wireEditor();
+@@ -160,6 +165,7 @@ export class Screen {
+ 
+     this.promptSlot.addChild(this.editor);
+     this.ui.addChild(gutter(this.welcome));
++    this.ui.addChild(gutter(this.announcement));
+     this.ui.addChild(gutter(this.transcript));
+     this.ui.addChild(gutter(this.activity));
+     this.ui.addChild(this.promptSlot);
+@@ -227,6 +233,12 @@ export class Screen {
+     this.refreshWelcome();
+   }
+ 
++  /** Publish the one-shot release announcement under the welcome panel. */
++  setAnnouncement(state: AnnouncementState): void {
++    this.announcement.update(state);
++    this.ui.requestRender();
++  }
++
+   /** The screen finished connecting and can take a prompt. */
+   setReady(ready: boolean): void {
+     this.ready = ready;
+@@ -240,6 +252,12 @@ export class Screen {
+     this.refreshFooter();
+   }
+ 
++  /** Toggle the auto-approve badge shown in the footer (set from /settings). */
++  setAuto(auto: boolean): void {
++    this.autoMode = auto;
++    this.refreshFooter();
++  }
++
+   /** Show "reconnecting…" in the footer while the server connection is down. */
+   setOffline(offline: boolean): void {
+     this.offline = offline;
+@@ -709,7 +727,7 @@ export class Screen {
+       tokensIn: this.tokensIn,
+       tokensOut: this.tokensOut,
+       busy: this.busy,
+-      auto: this.options.auto,
++      auto: this.autoMode,
+       agent: this.agentLabel,
+       model: this.modelLabel,
+       contextTokens: this.contextTokens,
