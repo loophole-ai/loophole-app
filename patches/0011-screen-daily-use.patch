@@ -1,0 +1,1209 @@
+diff --git a/NOTICE.md b/NOTICE.md
+index 86d7e0a..64f4387 100644
+--- a/NOTICE.md
++++ b/NOTICE.md
+@@ -48,3 +48,26 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
++
++---
++
++Third-party component: pi-tui (terminal engine fork)
++
++packages/tui-engine (@loophole/tui-engine) is a fork of the same pi-tui
++sources (https://github.com/earendil-works/pi, packages/tui, Copyright (c)
++2025 Mario Zechner, MIT License). Its license text is in
++packages/tui-engine/LICENSE and the fork is described in
++packages/tui-engine/UPSTREAM.md.
++
++---
++
++Third-party component: Kimi Code
++
++packages/screen (@loophole/screen) contains code derived from the terminal UI
++of Kimi Code (https://github.com/MoonshotAI/kimi-code, apps/kimi-code/src/tui),
++which is licensed under the MIT License, Copyright (c) 2026 Moonshot AI. The
++original license text is reproduced in packages/screen/LICENSE-kimi-code.md and
++its copyright and permission notice must be retained. "Kimi" and "Moonshot AI"
++are trademarks of their respective owners; this project is not affiliated with
++or endorsed by them.
++
+diff --git a/packages/cli/src/commands/handlers/default.ts b/packages/cli/src/commands/handlers/default.ts
+index 6a6a8bb..6cfffec 100644
+--- a/packages/cli/src/commands/handlers/default.ts
++++ b/packages/cli/src/commands/handlers/default.ts
+@@ -11,6 +11,7 @@ import { UpdatePreflight } from "../../services/update-preflight"
+ import { Npm } from "@opencode/util/npm"
+ import { OPENCODE_ARTIFACT, OPENCODE_CHANNEL, OPENCODE_HIGHLIGHTS, OPENCODE_VERSION } from "../../version"
+ import { Env } from "../../env"
++import { uiMode } from "../../run/ui-mode"
+ import { Service } from "@opencode/client/effect/service"
+ import { OpenCode } from "@opencode/client/promise"
+ import { findSession } from "../../session-target"
+@@ -52,13 +53,14 @@ export default Runtime.handler(Commands, (input) =>
+       ),
+     )
+     const drive = process.env.OPENCODE_DRIVE !== undefined
+-    // The pi-tui screen is the default whenever a real terminal is attached. Piped stdin/stdout and
++    // The Loophole screen is the default whenever a real terminal is attached. Piped stdin/stdout and
+     // LOOPHOLE_TUI=mini keep the old plain interface, which also handles stdin-fed prompts and replay.
++    // LOOPHOLE_TUI=basic opens the basic pi-tui chat instead (see run/ui-mode.ts).
+     const usePi =
+       !drive &&
+       process.stdin.isTTY === true &&
+       process.stdout.isTTY === true &&
+-      process.env.LOOPHOLE_TUI !== "mini"
++      uiMode() !== "mini"
+     // The plain interface cannot auto-accept permissions yet; the pi-tui screen and the full TUI
+     // (Drive mode) still honor the flags.
+     if (!drive && !usePi && (input.auto || input.yolo || input.dangerouslySkipPermissions)) {
+diff --git a/packages/cli/src/commands/handlers/run.ts b/packages/cli/src/commands/handlers/run.ts
+index 032a23a..99ca0eb 100644
+--- a/packages/cli/src/commands/handlers/run.ts
++++ b/packages/cli/src/commands/handlers/run.ts
+@@ -2,6 +2,7 @@ import { Effect, Option } from "effect"
+ import { Commands } from "../commands"
+ import { Runtime } from "../../framework/runtime"
+ import { ServerConnection } from "../../services/server-connection"
++import { uiMode } from "../../run/ui-mode"
+ 
+ export default Runtime.handler(Commands.commands.run, (input) =>
+   Effect.gen(function* () {
+@@ -13,9 +14,15 @@ export default Runtime.handler(Commands.commands.run, (input) =>
+     )
+     if (!server) return
+ 
+-    // Use the pi-tui screen for plain terminal runs. Attached files still go through the
+-    // non-interactive path, because the interactive UI cannot attach them yet.
+-    const useInteractive = input.format === "default" && process.stdin.isTTY && input.file.length === 0
++    // Use the Loophole screen for plain terminal runs. Attached files still go through the
++    // non-interactive path, because the interactive UI cannot attach them yet, and so does
++    // LOOPHOLE_TUI=mini (see run/ui-mode.ts).
++    const useInteractive =
++      input.format === "default" &&
++      process.stdin.isTTY === true &&
++      process.stdout.isTTY === true &&
++      input.file.length === 0 &&
++      uiMode() !== "mini"
+ 
+     if (useInteractive) {
+       // Loaded lazily so non-interactive runs never evaluate the pi-tui engine.
+diff --git a/packages/cli/src/run/interactive.ts b/packages/cli/src/run/interactive.ts
+index 5b09793..a6cf314 100644
+--- a/packages/cli/src/run/interactive.ts
++++ b/packages/cli/src/run/interactive.ts
+@@ -1,7 +1,7 @@
+ /**
+- * Interactive mode using pi-tui.
++ * Interactive mode using the Loophole screen (or the basic pi-tui chat with LOOPHOLE_TUI=basic).
+  *
+- * Replaces the OpenTUI screen for `loophole run` when stdout is a terminal. Connects exactly like
++ * Used by `loophole` and by `loophole run` when stdout is a terminal. Connects exactly like
+  * runNonInteractive (endpoint from input.server, same client headers) and honors
+  * --continue/--session/--fork/--model/--agent through resolveSessionTarget.
+  */
+@@ -12,6 +12,7 @@ import { noTimeoutFetch } from "@opencode/util/no-timeout-fetch"
+ import { Env } from "../env"
+ import { resolveSessionTarget } from "../session-target"
+ import { createTuiAdapter } from "../tui-adapter"
++import { uiMode } from "./ui-mode"
+ import { parseRunModel, reportRunError, type RunCommandInput } from "./run"
+ 
+ export async function runInteractive(input: RunCommandInput) {
+@@ -46,8 +47,8 @@ export async function runInteractive(input: RunCommandInput) {
+   if (explicit && target.model) await client.session.switchModel({ sessionID: target.session.id, model: target.model })
+ 
+   const message = input.message.join(" ").trim()
+-  // The Loophole screen is opt-in for now (LOOPHOLE_TUI=screen); the basic pi chat stays the default.
+-  if (process.env.LOOPHOLE_TUI === "screen") {
++  // The Loophole screen is the default; LOOPHOLE_TUI=basic opens the basic pi chat instead.
++  if (uiMode() !== "basic") {
+     const { ScreenController } = await import("../screen/controller")
+     const controller = new ScreenController({
+       client,
+diff --git a/packages/cli/src/run/ui-mode.ts b/packages/cli/src/run/ui-mode.ts
+new file mode 100644
+index 0000000..ac88b12
+--- /dev/null
++++ b/packages/cli/src/run/ui-mode.ts
+@@ -0,0 +1,15 @@
++/**
++ * Which terminal interface `loophole` and `loophole run` open, chosen with the LOOPHOLE_TUI environment variable:
++ *
++ *   (unset) / screen   the Loophole screen (default)
++ *   basic              the basic pi-tui chat from patch 0008
++ *   mini               the plain interface that upstream ships; `loophole run` then prints and exits
++ *
++ * Piped input/output always uses the plain paths regardless of this setting.
++ */
++export type UiMode = "screen" | "basic" | "mini"
++
++export function uiMode(env: Record<string, string | undefined> = process.env): UiMode {
++  const value = env.LOOPHOLE_TUI?.trim().toLowerCase()
++  return value === "basic" || value === "mini" ? value : "screen"
++}
+diff --git a/packages/cli/src/screen/controller.ts b/packages/cli/src/screen/controller.ts
+index cbe4b87..c44bdaf 100644
+--- a/packages/cli/src/screen/controller.ts
++++ b/packages/cli/src/screen/controller.ts
+@@ -6,8 +6,18 @@
+  */
+ 
+ import type { Endpoint } from "@opencode/client/effect/service"
+-import type { CommandInfo, EventSubscribeOutput, OpenCodeClient, SessionInfo } from "@opencode/client/promise"
+-import { Screen, type StreamHandle } from "@loophole/screen"
++import type {
++  CommandInfo,
++  EventSubscribeOutput,
++  FormField,
++  FormInfo,
++  ModelInfo,
++  ModelRef,
++  OpenCodeClient,
++  SessionInfo,
++  SessionMessageInfo,
++} from "@opencode/client/promise"
++import { Screen, type FormAnswerValue, type FormQuestion, type StreamHandle } from "@loophole/screen"
+ import { getNativeClipboard, type SlashCommand } from "@loophole/tui-engine"
+ 
+ export interface ScreenControllerOptions {
+@@ -27,6 +37,9 @@ const BUILTIN_COMMANDS: readonly SlashCommand[] = [
+   { name: "new", description: "Start a new session" },
+   { name: "sessions", description: "Switch to another session" },
+   { name: "rename", description: "Rename the current session" },
++  { name: "model", description: "Choose the model (and thinking effort)" },
++  { name: "agent", description: "Choose the agent" },
++  { name: "thinking", description: "Choose the thinking effort of the current model" },
+   { name: "compact", description: "Summarize the session context to free tokens" },
+   { name: "redo", description: "Clear the revert point (redo)" },
+   { name: "clear", description: "Clear the transcript view" },
+@@ -38,7 +51,55 @@ const BUILTIN_COMMANDS: readonly SlashCommand[] = [
+ 
+ const EXIT_WORDS = ["exit", "quit", ":q"]
+ 
+-function toolOutput(content: ReadonlyArray<{ type: string; text?: string; name?: string; uri?: string }> | undefined): string {
++/** How many of the newest messages are shown again when a session is opened. */
++const HISTORY_LIMIT = 80
++const RECONNECT_MAX_DELAY = 10_000
++
++type PendingPermission = { id: string; sessionID: string; action: string; resources: ReadonlyArray<string> }
++
++function number(value: unknown): number | undefined {
++  return typeof value === "number" && Number.isFinite(value) ? value : undefined
++}
++
++/** Translate one server form field into a question the screen can ask. Hidden/external fields are filtered by the caller. */
++function toQuestion(field: Exclude<FormField, { type: "external" }>): FormQuestion {
++  const base = { key: field.key, title: field.title, description: field.description, required: field.required }
++  switch (field.type) {
++    case "string":
++      return field.options && field.options.length > 0
++        ? { ...base, kind: "single", options: field.options, custom: field.custom, defaultValue: field.default }
++        : { ...base, kind: "text", placeholder: field.placeholder, defaultValue: field.default }
++    case "number":
++    case "integer":
++      return {
++        ...base,
++        kind: field.type,
++        minimum: number(field.minimum),
++        maximum: number(field.maximum),
++        defaultValue: number(field.default),
++      }
++    case "boolean":
++      return { ...base, kind: "boolean", defaultValue: field.default }
++    case "multiselect":
++      return {
++        ...base,
++        kind: "multi",
++        options: field.options,
++        custom: field.custom,
++        minItems: field.minItems,
++        maxItems: field.maxItems,
++        defaultValue: field.default,
++      }
++  }
++}
++
++function whenMatches(condition: { key: string; op: "eq" | "neq"; value: unknown }, answers: Record<string, FormAnswerValue>): boolean {
++  const actual = answers[condition.key]
++  const same = actual !== undefined && String(actual) === String(condition.value)
++  return condition.op === "eq" ? same : !same
++}
++
++function toolOutput(content: ReadonlyArray<{ type: string; text?: string; name?: string | null; uri?: string }> | undefined): string {
+   if (!content) return ""
+   return content
+     .map((item) => (item.type === "text" ? (item.text ?? "") : `[file ${item.name ?? item.uri ?? ""}]`))
+@@ -62,7 +123,16 @@ export class ScreenController {
+   private tokensIn = 0
+   private tokensOut = 0
+   private stopped = false
+-  private permissionQueue: Promise<void> = Promise.resolve()
++  /** Permission prompts and forms are answered one at a time so two dialogs never fight over the editor slot. */
++  private promptQueue: Promise<void> = Promise.resolve()
++  private readonly handledPrompts = new Set<string>()
++  /** Resolves when the transcript matches the server. Events wait for it so they never race a history load. */
++  private ready: Promise<void> = Promise.resolve()
++  private connectedOnce = false
++  private offline = false
++  private currentModel: ModelRef | undefined
++  private currentAgent: string | undefined
++  private models: ModelInfo[] | undefined
+ 
+   constructor(private readonly options: ScreenControllerOptions) {
+     this.api = options.client
+@@ -81,8 +151,14 @@ export class ScreenController {
+ 
+   async start(): Promise<void> {
+     this.screen.start()
++    if (this.sessionID) this.ready = this.loadSession()
+     void this.pumpEvents()
+-    if (!this.sessionID) await this.createSession()
++    if (!this.sessionID) {
++      await this.createSession()
++    } else {
++      await this.ready
++    }
++    void this.loadModels()
+     await this.refreshServerCommands()
+     if (this.options.initialMessage?.trim()) await this.send(this.options.initialMessage.trim())
+   }
+@@ -105,6 +181,7 @@ export class ScreenController {
+     try {
+       const session = await this.api.session.create({ location: { directory: this.directory } })
+       this.sessionID = session.id
++      await this.applyInfo(session)
+     } catch (error) {
+       this.screen.addStatus(`Failed to create a session: ${String(error)}`, "error")
+     }
+@@ -178,11 +255,19 @@ export class ScreenController {
+           return
+         case "new": {
+           const session = await this.api.session.create({ location: { directory: this.directory } })
+-          this.switchTo(session.id, session.title ?? "")
++          await this.switchTo(session.id, session.title ?? "", session)
+           return void (await this.refreshServerCommands())
+         }
+         case "sessions":
+           return await this.pickSession()
++        case "model":
++          return await this.pickModel(args)
++        case "agent":
++          return await this.pickAgent(args)
++        case "thinking":
++        case "effort":
++        case "variant":
++          return await this.pickVariant(args)
+         case "rename":
+           if (!sessionID) return this.screen.addStatus("There is no active session.", "warning")
+           if (!args) return this.screen.addStatus("Usage: /rename <title>", "warning")
+@@ -219,7 +304,7 @@ export class ScreenController {
+     const rows = [...BUILTIN_COMMANDS, ...this.serverCommands.filter((c) => !BUILTIN_COMMANDS.some((b) => b.name === c.name))]
+       .map((command) => `  /${command.name.padEnd(12)} ${command.description ?? ""}`)
+       .join("\n")
+-    this.screen.addStatus(`Commands\n${rows}\n\nctrl+o expands tool output · esc interrupts · ctrl+c twice exits`)
++    this.screen.addStatus(`Commands\n${rows}\n\nctrl+o expands tool output · esc interrupts · ctrl+c twice exits\n/model, /agent and /thinking change what the next message uses`)
+   }
+ 
+   private async pickSession(): Promise<void> {
+@@ -235,7 +320,7 @@ export class ScreenController {
+       })),
+     )
+     const picked = sessions.find((session) => session.id === id)
+-    if (picked) this.switchTo(picked.id, picked.title ?? "")
++    if (picked) await this.switchTo(picked.id, picked.title ?? "", picked)
+   }
+ 
+   private async copyLast(): Promise<void> {
+@@ -246,7 +331,7 @@ export class ScreenController {
+     this.screen.addStatus("Copied the last assistant message.")
+   }
+ 
+-  private switchTo(id: string, title: string): void {
++  private async switchTo(id: string, title: string, info?: SessionInfo): Promise<void> {
+     this.sessionID = id
+     this.tokensIn = 0
+     this.tokensOut = 0
+@@ -256,24 +341,321 @@ export class ScreenController {
+     this.rawInputs.clear()
+     this.screen.clearTranscript()
+     this.screen.setBusy(false)
+-    this.screen.addStatus(title ? `Session: ${title}` : "Started a new session.")
++    this.screen.setUsage(0, 0)
++    this.ready = this.loadSession(info)
++    await this.ready
++    if (this.transcriptEmpty) this.screen.addStatus(title ? `Session: ${title}` : "Started a new session.")
+   }
+ 
+-  // --- server events -------------------------------------------------------------------------------
++  // --- loading a session: history, model/agent, pending prompts ------------------------------------------
+ 
+-  private async pumpEvents(): Promise<void> {
++  private transcriptEmpty = true
++
++  private async loadSession(known?: SessionInfo): Promise<void> {
++    const sessionID = this.sessionID
++    if (!sessionID) return
+     try {
+-      for await (const event of this.api.event.subscribe({ signal: this.events.signal })) {
+-        try {
+-          await this.onEvent(event)
+-        } catch (error) {
+-          this.screen.addStatus(`Event handling failed: ${String(error)}`, "error")
++      const info = known ?? (await this.api.session.get({ sessionID }))
++      await this.applyInfo(info)
++      await this.replayHistory(sessionID)
++      await this.restorePending()
++    } catch (error) {
++      this.screen.addStatus(`Could not load the session: ${String(error)}`, "error")
++    }
++  }
++
++  /** Show the session's agent and model in the footer, falling back to the server default model. */
++  private async applyInfo(info: SessionInfo): Promise<void> {
++    this.currentAgent = info.agent
++    this.currentModel = info.model
++    if (!this.currentModel) {
++      const fallback = await this.api.model.default({ location: { directory: this.directory } }).catch(() => undefined)
++      if (fallback?.data) this.currentModel = { providerID: fallback.data.providerID, id: fallback.data.modelID }
++    }
++    this.refreshIdentity()
++  }
++
++  private refreshIdentity(): void {
++    this.screen.setAgent(this.currentAgent)
++    this.screen.setModel(this.currentModel ? this.modelLabel(this.currentModel) : undefined)
++  }
++
++  private modelLabel(model: ModelRef): string {
++    const known = this.models?.find((item) => item.providerID === model.providerID && item.modelID === model.id)
++    const base = known ? known.name : `${model.providerID}/${model.id}`
++    return model.variant ? `${base} (${model.variant})` : base
++  }
++
++  /** Draw the newest messages of the session again, the way they looked when they were live. */
++  private async replayHistory(sessionID: string): Promise<void> {
++    const response = await this.api.message.list({ sessionID, limit: HISTORY_LIMIT, order: "desc" })
++    if (sessionID !== this.sessionID) return
++    const messages: SessionMessageInfo[] = [...response.data].reverse()
++
++    this.texts.clear()
++    this.reasonings.clear()
++    this.rawInputs.clear()
++    this.screen.clearTranscript()
++    this.transcriptEmpty = messages.length === 0
++
++    let tokensIn = 0
++    let tokensOut = 0
++    let running = false
++    for (const [index, message] of messages.entries()) {
++      switch (message.type) {
++        case "user":
++          this.screen.addUser(message.text)
++          break
++        case "assistant": {
++          tokensIn += message.tokens?.input ?? 0
++          tokensOut += message.tokens?.output ?? 0
++          // The newest message may still be streaming; the live events draw it instead.
++          const streaming = index === messages.length - 1 && message.time.completed === undefined && message.finish === undefined
++          if (streaming) {
++            running = true
++            break
++          }
++          for (const part of message.content) {
++            if (part.type === "text") {
++              if (part.text.trim()) {
++                this.screen.addAssistant(part.text)
++                this.lastAssistant = part.text
++              }
++            } else if (part.type === "reasoning") {
++              if (part.text.trim()) this.screen.addReasoning(part.text)
++            } else {
++              this.replayTool(part)
++            }
++          }
++          if (message.error) this.screen.addStatus(`Error: ${message.error.message}`, "error")
++          break
+         }
++        case "compaction":
++          this.screen.addStatus("Conversation compacted.")
++          break
++        default:
++          break
+       }
+-      if (!this.stopped) this.screen.addStatus("The event stream ended. Restart Loophole to reconnect.", "error")
++    }
++    this.tokensIn = tokensIn
++    this.tokensOut = tokensOut
++    this.screen.setUsage(tokensIn, tokensOut)
++    this.screen.setBusy(running)
++    if (response.cursor.next) {
++      this.screen.addStatus(`Showing the last ${String(HISTORY_LIMIT)} messages of this session.`)
++    }
++  }
++
++  private replayTool(part: Extract<SessionMessageInfo, { type: "assistant" }>["content"][number] & { type: "tool" }): void {
++    const card = this.screen.tool(part.id, part.name)
++    const state = part.state
++    if (state.status === "streaming") return
++    card.setInput(state.input)
++    if (state.status === "running") return card.setRunning()
++    if (state.status === "completed") {
++      return card.setResult({ output: toolOutput(state.content), isError: false, metadata: state.metadata })
++    }
++    const detail = toolOutput(state.content)
++    card.setResult({
++      output: detail ? `${state.error.message}\n${detail}` : state.error.message,
++      isError: true,
++      metadata: state.metadata,
++    })
++  }
++
++  /** Prompts that were raised while this screen was not listening (start-up, reconnect). */
++  private async restorePending(): Promise<void> {
++    const location = { directory: this.directory }
++    const [forms, permissions] = await Promise.all([
++      this.api.form.list({ location }).catch(() => undefined),
++      this.api.permission.request.list({ location }).catch(() => undefined),
++    ])
++    for (const request of permissions?.data ?? []) {
++      if (await this.ownsSession(request.sessionID)) this.queuePermission(request)
++    }
++    for (const form of forms?.data ?? []) {
++      if (await this.ownsSession(form.sessionID)) this.queueForm(form)
++    }
++  }
++
++  // --- model, agent, thinking effort ---------------------------------------------------------------------
++
++  private async loadModels(force = false): Promise<ModelInfo[]> {
++    if (this.models && !force) return this.models
++    try {
++      const response = await this.api.model.list({ location: { directory: this.directory }, types: ["chat"] })
++      this.models = response.data.filter((model) => model.enabled && model.status !== "deprecated")
++      this.refreshIdentity()
+     } catch (error) {
+-      if (!this.stopped) this.screen.addStatus(`The event stream disconnected: ${String(error)}`, "error")
++      this.models = this.models ?? []
++      if (force) this.screen.addStatus(`Could not list models: ${String(error)}`, "error")
+     }
++    return this.models
++  }
++
++  private async applyModel(model: ModelRef): Promise<void> {
++    const sessionID = this.sessionID
++    if (!sessionID) return this.screen.addStatus("There is no active session.", "warning")
++    await this.api.session.switchModel({ sessionID, model })
++    this.currentModel = model
++    this.refreshIdentity()
++    this.screen.addStatus(`Model: ${this.modelLabel(model)}`)
++  }
++
++  private async pickModel(args: string): Promise<void> {
++    const models = await this.loadModels(true)
++    if (models.length === 0) return this.screen.addStatus("No models are available. Connect a provider first.", "warning")
++
++    // `/model provider/model` selects directly.
++    if (args) {
++      const [reference, variant] = args.split(/\s+/)
++      const match = models.find((model) => `${model.providerID}/${model.modelID}` === reference)
++      if (!match) return this.screen.addStatus(`Unknown model "${reference}". Use /model to browse.`, "warning")
++      if (variant && !match.variants.some((item) => item.id === variant)) {
++        return this.screen.addStatus(`"${match.name}" has no thinking effort called "${variant}".`, "warning")
++      }
++      return await this.applyModel({ providerID: match.providerID, id: match.modelID, variant })
++    }
++
++    const providers = new Map<string, number>()
++    for (const model of models) providers.set(model.providerID, (providers.get(model.providerID) ?? 0) + 1)
++    const current = this.currentModel
++    const providerID = await this.screen.pickCurrent(
++      "Choose a provider",
++      [...providers.entries()]
++        .sort(([a], [b]) => (a === current?.providerID ? -1 : b === current?.providerID ? 1 : a.localeCompare(b)))
++        .map(([id, count]) => ({ value: id, label: id, description: `${String(count)} model${count === 1 ? "" : "s"}` })),
++      current?.providerID,
++    )
++    if (!providerID) return
++
++    const options = models.filter((model) => model.providerID === providerID).sort((a, b) => b.time.released - a.time.released)
++    const modelID = await this.screen.pickCurrent(
++      `Models from ${providerID}`,
++      options.map((model) => ({
++        value: model.modelID,
++        label: model.name,
++        description: [
++          `${String(Math.round(model.limit.context / 1000))}k context`,
++          model.variants.length > 0 ? "thinking effort" : undefined,
++        ]
++          .filter(Boolean)
++          .join(" · "),
++      })),
++      current?.providerID === providerID ? current.id : undefined,
++    )
++    const chosen = options.find((model) => model.modelID === modelID)
++    if (!chosen) return
++
++    let variant: string | undefined
++    if (chosen.variants.length > 0) {
++      const sameModel = current?.providerID === chosen.providerID && current.id === chosen.modelID
++      const picked = await this.chooseVariant(chosen, sameModel ? current?.variant : undefined)
++      if (picked === undefined) return
++      variant = picked || undefined
++    }
++    await this.applyModel({ providerID: chosen.providerID, id: chosen.modelID, variant })
++  }
++
++  /** Resolves with the variant id, "" for the model's default, or undefined when cancelled. */
++  private chooseVariant(model: ModelInfo, current: string | undefined): Promise<string | undefined> {
++    return this.screen.pickCurrent(
++      `Thinking effort for ${model.name}`,
++      [{ value: "", label: "Default" }, ...model.variants.map((variant) => ({ value: variant.id, label: variant.id }))],
++      current ?? "",
++    )
++  }
++
++  private async pickVariant(args: string): Promise<void> {
++    const current = this.currentModel
++    if (!current) return this.screen.addStatus("There is no model selected yet. Use /model.", "warning")
++    const models = await this.loadModels()
++    const info = models.find((model) => model.providerID === current.providerID && model.modelID === current.id)
++    if (!info || info.variants.length === 0) {
++      return this.screen.addStatus(`${this.modelLabel({ ...current, variant: undefined })} has no thinking effort options.`, "warning")
++    }
++    let variant: string | undefined
++    if (args) {
++      const wanted = args.trim()
++      if (wanted !== "default" && !info.variants.some((item) => item.id === wanted)) {
++        return this.screen.addStatus(
++          `Unknown effort "${wanted}". Options: default, ${info.variants.map((item) => item.id).join(", ")}.`,
++          "warning",
++        )
++      }
++      variant = wanted === "default" ? undefined : wanted
++    } else {
++      const picked = await this.chooseVariant(info, current.variant)
++      if (picked === undefined) return
++      variant = picked || undefined
++    }
++    await this.applyModel({ providerID: current.providerID, id: current.id, variant })
++  }
++
++  private async pickAgent(args: string): Promise<void> {
++    const sessionID = this.sessionID
++    if (!sessionID) return this.screen.addStatus("There is no active session.", "warning")
++    const response = await this.api.agent.list({ location: { directory: this.directory } })
++    const agents = response.data.filter((agent) => agent.mode !== "subagent" && !agent.hidden)
++    if (agents.length === 0) return this.screen.addStatus("No agents are available.", "warning")
++    let id = args.trim()
++    if (id) {
++      if (!agents.some((agent) => agent.id === id)) {
++        return this.screen.addStatus(`Unknown agent "${id}". Options: ${agents.map((agent) => agent.id).join(", ")}.`, "warning")
++      }
++    } else {
++      const picked = await this.screen.pickCurrent(
++        "Choose an agent",
++        agents.map((agent) => ({ value: agent.id, label: agent.name, description: agent.description })),
++        this.currentAgent,
++      )
++      if (!picked) return
++      id = picked
++    }
++    await this.api.session.switchAgent({ sessionID, agent: id })
++    this.currentAgent = id
++    this.refreshIdentity()
++    this.screen.addStatus(`Agent: ${id}`)
++  }
++
++  // --- server events -------------------------------------------------------------------------------
++
++  /**
++   * Follow the server's event stream for as long as the screen is open. When the connection drops it
++   * retries with a growing delay; every new connection starts with `server.connected`, which is the
++   * cue to re-sync the transcript (see onEvent).
++   */
++  private async pumpEvents(): Promise<void> {
++    let failures = 0
++    while (!this.stopped) {
++      try {
++        for await (const event of this.api.event.subscribe({ signal: this.events.signal })) {
++          failures = 0
++          try {
++            await this.onEvent(event)
++          } catch (error) {
++            this.screen.addStatus(`Event handling failed: ${String(error)}`, "error")
++          }
++        }
++      } catch {
++        // Fall through to the reconnect path below.
++      }
++      if (this.stopped) return
++      if (!this.offline) {
++        this.offline = true
++        this.screen.setOffline(true)
++        this.screen.addStatus("Lost the connection to the server. Reconnecting…", "warning")
++      }
++      failures += 1
++      await this.sleep(Math.min(1000 * 2 ** (failures - 1), RECONNECT_MAX_DELAY))
++    }
++  }
++
++  private sleep(ms: number): Promise<void> {
++    return new Promise((resolve) => {
++      const timer = setTimeout(resolve, ms)
++      this.events.signal.addEventListener("abort", () => (clearTimeout(timer), resolve()), { once: true })
++    })
+   }
+ 
+   private ownsSession(sessionID: string): Promise<boolean> {
+@@ -294,12 +676,27 @@ export class ScreenController {
+   }
+ 
+   private async onEvent(event: EventSubscribeOutput): Promise<void> {
++    if (event.type === "server.connected") {
++      // Every connection announces itself. The first one matches what start() already loaded; later ones
++      // mean the connection dropped, so events may have been missed: redraw from the server's state.
++      const reconnected = this.connectedOnce
++      this.connectedOnce = true
++      if (this.offline) {
++        this.offline = false
++        this.screen.setOffline(false)
++      }
++      if (reconnected) {
++        this.ready = this.resync()
++      }
++      return
++    }
++    await this.ready
+     if (event.type === "permission.asked") {
+       if (await this.ownsSession(event.data.sessionID)) this.queuePermission(event.data)
+       return
+     }
+     if (event.type === "form.created") {
+-      if (await this.ownsSession(event.data.form.sessionID)) await this.cancelForm(event.data.form)
++      if (await this.ownsSession(event.data.form.sessionID)) this.queueForm(event.data.form)
+       return
+     }
+     if (!("sessionID" in event.data) || event.data.sessionID !== this.sessionID) return
+@@ -325,8 +722,12 @@ export class ScreenController {
+         this.texts.set(this.key(event.data), { handle: this.screen.beginText(), text: "" })
+         return
+       case "session.text.delta": {
+-        const part = this.texts.get(this.key(event.data))
+-        if (!part) return
++        const key = this.key(event.data)
++        let part = this.texts.get(key)
++        if (!part) {
++          part = { handle: this.screen.beginText(), text: "" }
++          this.texts.set(key, part)
++        }
+         part.text += event.data.delta
+         this.lastAssistant = part.text
+         part.handle.update(part.text)
+@@ -334,7 +735,8 @@ export class ScreenController {
+       }
+       case "session.text.ended": {
+         const key = this.key(event.data)
+-        this.texts.get(key)?.handle.end(event.data.text)
++        const open = this.texts.get(key) ?? { handle: this.screen.beginText(), text: "" }
++        open.handle.end(event.data.text)
+         this.texts.delete(key)
+         this.lastAssistant = event.data.text
+         return
+@@ -396,6 +798,12 @@ export class ScreenController {
+           metadata: event.data.metadata,
+         })
+       }
++      case "session.agent.selected":
++        this.currentAgent = event.data.agent
++        return this.refreshIdentity()
++      case "session.model.selected":
++        this.currentModel = event.data.model
++        return this.refreshIdentity()
+       case "session.step.ended":
+         this.tokensIn += event.data.tokens.input
+         this.tokensOut += event.data.tokens.output
+@@ -405,17 +813,13 @@ export class ScreenController {
+ 
+   // --- permissions and questions -----------------------------------------------------------------------
+ 
+-  /** Requests are answered one at a time so two prompts never fight over the editor slot. */
+-  private queuePermission(request: { id: string; sessionID: string; action: string; resources: ReadonlyArray<string> }): void {
+-    this.permissionQueue = this.permissionQueue.then(() => this.answerPermission(request)).catch(() => {})
++  private queuePermission(request: PendingPermission): void {
++    if (this.handledPrompts.has(request.id)) return
++    this.handledPrompts.add(request.id)
++    this.promptQueue = this.promptQueue.then(() => this.answerPermission(request)).catch(() => {})
+   }
+ 
+-  private async answerPermission(request: {
+-    id: string
+-    sessionID: string
+-    action: string
+-    resources: ReadonlyArray<string>
+-  }): Promise<void> {
++  private async answerPermission(request: PendingPermission): Promise<void> {
+     const choice = this.auto ? "once" : await this.screen.askPermission(request)
+     await this.api.permission
+       .reply({
+@@ -427,18 +831,45 @@ export class ScreenController {
+       .catch(() => {})
+   }
+ 
+-  // Questions are not answerable yet: cancel so the model carries on instead of waiting forever.
+-  private async cancelForm(form: { id: string; sessionID: string; metadata?: { kind?: unknown } }): Promise<void> {
+-    const question = form.metadata?.kind === "question"
+-    this.screen.addStatus("The assistant asked a question; this screen cannot show questions yet, so it was cancelled.", "warning")
++  private queueForm(form: FormInfo): void {
++    if (this.handledPrompts.has(form.id)) return
++    this.handledPrompts.add(form.id)
++    this.promptQueue = this.promptQueue.then(() => this.answerForm(form)).catch(() => {})
++  }
++
++  /** Ask every question of a form, one dialog at a time, then send the answers (or cancel on Esc). */
++  private async answerForm(form: FormInfo): Promise<void> {
++    const askable = form.fields.filter((field) => field.type !== "external" && !field.hidden)
++    const answers: Record<string, FormAnswerValue> = {}
++    let position = 0
++    for (const field of form.fields) {
++      if (field.type === "external") {
++        this.screen.addStatus(`${field.title ?? "This form"} needs a browser: ${field.url}`, "warning")
++        continue
++      }
++      if (field.hidden) continue
++      if (field.when && !field.when.every((condition) => whenMatches(condition, answers))) continue
++      position += 1
++      const progress = askable.length > 1 ? `${String(position)}/${String(askable.length)}` : undefined
++      const value = await this.screen.askQuestion(toQuestion(field), progress)
++      if (value === undefined) {
++        this.screen.addStatus("Question dismissed.", "warning")
++        await this.api.session.form.cancel({ sessionID: form.sessionID, formID: form.id }).catch(() => {})
++        return
++      }
++      if (value === "" || (Array.isArray(value) && value.length === 0 && !field.required)) continue
++      answers[field.key] = value
++    }
+     await this.api.session.form
+-      .cancel({
+-        sessionID: form.sessionID,
+-        formID: form.id,
+-        ...(question
+-          ? { message: "The interactive UI cannot ask the user questions yet. Continue without an answer; make reasonable assumptions and state them." }
+-          : {}),
+-      })
+-      .catch(() => {})
++      .reply({ sessionID: form.sessionID, formID: form.id, answer: answers })
++      .catch((error) => this.screen.addStatus(`Could not send the answers: ${String(error)}`, "error"))
++  }
++
++  // --- re-sync after a reconnect -------------------------------------------------------------------------
++
++  private async resync(): Promise<void> {
++    if (!this.sessionID) return
++    await this.loadSession()
++    this.screen.addStatus("Reconnected.")
+   }
+ }
+diff --git a/packages/screen/LICENSE-kimi-code.md b/packages/screen/LICENSE-kimi-code.md
+new file mode 100644
+index 0000000..6102a1b
+--- /dev/null
++++ b/packages/screen/LICENSE-kimi-code.md
+@@ -0,0 +1,21 @@
++MIT License
++
++Copyright (c) 2026 Moonshot AI
++
++Permission is hereby granted, free of charge, to any person obtaining a copy
++of this software and associated documentation files (the "Software"), to deal
++in the Software without restriction, including without limitation the rights
++to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++copies of the Software, and to permit persons to whom the Software is
++furnished to do so, subject to the following conditions:
++
++The above copyright notice and this permission notice shall be included in all
++copies or substantial portions of the Software.
++
++THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++SOFTWARE.
+diff --git a/packages/screen/src/components/chrome/footer.ts b/packages/screen/src/components/chrome/footer.ts
+index 894c9a4..b0a50b5 100644
+--- a/packages/screen/src/components/chrome/footer.ts
++++ b/packages/screen/src/components/chrome/footer.ts
+@@ -8,6 +8,12 @@ export interface FooterState {
+   readonly tokensOut: number;
+   readonly busy: boolean;
+   readonly auto: boolean;
++  /** Active agent, shown before the model. */
++  readonly agent?: string;
++  /** Active model label, including the thinking effort when one is selected. */
++  readonly model?: string;
++  /** The server connection dropped and the screen is trying to reconnect. */
++  readonly offline?: boolean;
+ }
+ 
+ function compactPath(directory: string): string {
+@@ -36,17 +42,27 @@ export class FooterComponent implements Component {
+   invalidate(): void {}
+ 
+   render(width: number): string[] {
+-    const { directory, tokensIn, tokensOut, busy, auto } = this.state;
++    const { directory, tokensIn, tokensOut, busy, auto, agent, model, offline } = this.state;
+     const left = currentTheme.fg('textDim', compactPath(directory));
++    const separator = currentTheme.fg('textMuted', '  ·  ');
++
++    // Highest priority first: when the row is too narrow the lowest-priority parts are dropped.
+     const parts: string[] = [];
++    if (offline) parts.push(currentTheme.fg('error', 'reconnecting…'));
+     if (auto) parts.push(currentTheme.fg('warning', 'auto-approve'));
++    const identity = [agent, model].filter((value): value is string => Boolean(value)).join(' · ');
++    if (identity) parts.push(currentTheme.fg('textDim', identity));
+     if (tokensIn + tokensOut > 0) {
+       parts.push(currentTheme.fg('textMuted', `${compactCount(tokensIn)} in · ${compactCount(tokensOut)} out`));
+     }
+     parts.push(currentTheme.fg('textMuted', busy ? 'esc interrupt' : 'ctrl+o expand · ctrl+c exit'));
+-    const right = parts.join(currentTheme.fg('textMuted', '  ·  '));
+-    const gap = width - visibleWidth(left) - visibleWidth(right);
+-    if (gap < 2) return [truncateToWidth(left, Math.max(0, width), '…')];
+-    return [left + ' '.repeat(gap) + right];
++
++    while (parts.length > 0) {
++      const right = parts.join(separator);
++      const gap = width - visibleWidth(left) - visibleWidth(right);
++      if (gap >= 2) return [left + ' '.repeat(gap) + right];
++      parts.pop();
++    }
++    return [truncateToWidth(left, Math.max(0, width), '…')];
+   }
+ }
+diff --git a/packages/screen/src/index.ts b/packages/screen/src/index.ts
+index 292727d..53762d5 100644
+--- a/packages/screen/src/index.ts
++++ b/packages/screen/src/index.ts
+@@ -1,5 +1,12 @@
+ export { Screen } from './screen';
+-export type { PermissionChoice, PermissionRequest, ScreenOptions, StreamHandle } from './screen';
++export type {
++  FormAnswerValue,
++  FormQuestion,
++  PermissionChoice,
++  PermissionRequest,
++  ScreenOptions,
++  StreamHandle,
++} from './screen';
+ export { ToolCallComponent } from './components/messages/tool-call';
+ export { currentTheme } from './theme';
+ export type { ColorToken } from './theme';
+diff --git a/packages/screen/src/screen.ts b/packages/screen/src/screen.ts
+index b0cc42e..0ef1a67 100644
+--- a/packages/screen/src/screen.ts
++++ b/packages/screen/src/screen.ts
+@@ -17,6 +17,7 @@
+ import {
+   CombinedAutocompleteProvider,
+   Container,
++  Input,
+   ProcessTerminal,
+   SelectList,
+   Spacer,
+@@ -55,6 +56,26 @@ export interface ScreenOptions {
+   readonly onExit: () => void;
+ }
+ 
++export type FormAnswerValue = string | number | boolean | string[];
++
++/** One question in a form the assistant (or a plugin) asks the user. */
++export interface FormQuestion {
++  readonly key: string;
++  readonly title?: string;
++  readonly description?: string;
++  readonly kind: 'text' | 'number' | 'integer' | 'boolean' | 'single' | 'multi';
++  readonly options?: readonly { readonly value: string; readonly label: string; readonly description?: string }[];
++  /** Offer "Type your own answer" next to the options. */
++  readonly custom?: boolean;
++  readonly required?: boolean;
++  readonly minItems?: number;
++  readonly maxItems?: number;
++  readonly minimum?: number;
++  readonly maximum?: number;
++  readonly placeholder?: string;
++  readonly defaultValue?: FormAnswerValue;
++}
++
+ export interface StreamHandle {
+   update(text: string): void;
+   end(text: string): void;
+@@ -80,6 +101,9 @@ export class Screen {
+   private tokensOut = 0;
+   private lastCtrlC = 0;
+   private prompting = false;
++  private agentLabel: string | undefined;
++  private modelLabel: string | undefined;
++  private offline = false;
+ 
+   constructor(options: ScreenOptions) {
+     this.options = options;
+@@ -138,6 +162,29 @@ export class Screen {
+     this.refreshFooter();
+   }
+ 
++  /** Replace the usage counters (used when a session is loaded or re-synced). */
++  setUsage(input: number, output: number): void {
++    this.tokensIn = input;
++    this.tokensOut = output;
++    this.refreshFooter();
++  }
++
++  setAgent(agent: string | undefined): void {
++    this.agentLabel = agent;
++    this.refreshFooter();
++  }
++
++  setModel(label: string | undefined): void {
++    this.modelLabel = label;
++    this.refreshFooter();
++  }
++
++  /** Show "reconnecting…" in the footer while the server connection is down. */
++  setOffline(offline: boolean): void {
++    this.offline = offline;
++    this.refreshFooter();
++  }
++
+   setCommands(commands: readonly SlashCommand[]): void {
+     this.editor.setAutocompleteProvider(
+       new CombinedAutocompleteProvider([...commands], this.options.directory, null),
+@@ -151,6 +198,22 @@ export class Screen {
+     this.ui.requestRender();
+   }
+ 
++  /** A finished assistant message (used when an earlier session is shown again). */
++  addAssistant(text: string): void {
++    const view = new AssistantMessageComponent();
++    view.updateContent(text);
++    this.transcript.addChild(new Spacer(1));
++    this.transcript.addChild(view);
++    this.ui.requestRender();
++  }
++
++  /** A finished reasoning block (used when an earlier session is shown again). */
++  addReasoning(text: string): void {
++    this.transcript.addChild(new Spacer(1));
++    this.transcript.addChild(new ThinkingComponent(text, true, 'finalized', this.ui));
++    this.ui.requestRender();
++  }
++
+   /** A dim one-line notice (errors use `error`, warnings `warning`). */
+   addStatus(text: string, color?: ColorToken): void {
+     this.transcript.addChild(new Spacer(1));
+@@ -245,7 +308,12 @@ export class Screen {
+     return this.prompt([currentTheme.boldFg('primary', title)], items, undefined);
+   }
+ 
+-  private prompt(heading: string[], items: SelectItem[], cancelValue: string | undefined): Promise<string | undefined> {
++  private prompt(
++    heading: string[],
++    items: SelectItem[],
++    cancelValue: string | undefined,
++    initialIndex = 0,
++  ): Promise<string | undefined> {
+     return new Promise((resolve) => {
+       const list = new SelectList(items, 10, {
+         selectedPrefix: (text) => currentTheme.fg('primary', text),
+@@ -254,6 +322,7 @@ export class Screen {
+         scrollInfo: (text) => currentTheme.fg('textMuted', text),
+         noMatch: (text) => currentTheme.fg('textMuted', text),
+       });
++      if (initialIndex > 0 && initialIndex < items.length) list.setSelectedIndex(initialIndex);
+       const panel = new Container();
+       panel.addChild(new Spacer(1));
+       panel.addChild(new Text(heading.join('\n'), 1, 0));
+@@ -279,6 +348,172 @@ export class Screen {
+     });
+   }
+ 
++  /** Like `pick`, with the cursor starting on the item whose value is `current`. */
++  pickCurrent(title: string, items: SelectItem[], current: string | undefined): Promise<string | undefined> {
++    const index = Math.max(0, items.findIndex((item) => item.value === current));
++    return this.prompt([currentTheme.boldFg('primary', title)], items, undefined, index);
++  }
++
++  /**
++   * Ask one question of a form. Resolves with the answer, or undefined when the user cancelled
++   * (Esc), which the caller treats as dismissing the whole form.
++   */
++  async askQuestion(question: FormQuestion, progress?: string): Promise<FormAnswerValue | undefined> {
++    const heading = [
++      currentTheme.boldFg('primary', question.title ?? 'Question') +
++        (progress ? currentTheme.fg('textMuted', `  (${progress})`) : ''),
++      ...(question.description ? [currentTheme.fg('text', question.description)] : []),
++    ];
++    const other = '\u0000other';
++
++    switch (question.kind) {
++      case 'boolean': {
++        const items: SelectItem[] = [
++          { value: 'true', label: 'Yes' },
++          { value: 'false', label: 'No' },
++        ];
++        const start = question.defaultValue === false ? 1 : 0;
++        const value = await this.prompt(heading, items, undefined, start);
++        return value === undefined ? undefined : value === 'true';
++      }
++      case 'single': {
++        const options = question.options ?? [];
++        if (options.length === 0) return this.askText({ ...question, kind: 'text' }, heading);
++        const items: SelectItem[] = options.map((option) => ({
++          value: option.value,
++          label: option.label,
++          description: option.description,
++        }));
++        if (question.custom) items.push({ value: other, label: 'Type your own answer…' });
++        const start =
++          typeof question.defaultValue === 'string' ? Math.max(0, items.findIndex((item) => item.value === question.defaultValue)) : 0;
++        const value = await this.prompt(heading, items, undefined, start);
++        if (value === undefined) return undefined;
++        if (value === other) return this.askText({ ...question, kind: 'text', required: true }, heading);
++        return value;
++      }
++      case 'multi': {
++        const options = question.options ?? [];
++        const chosen = new Set<string>(Array.isArray(question.defaultValue) ? question.defaultValue : []);
++        const custom: string[] = [];
++        const done = '\u0000done';
++        let cursor = 0;
++        let notice = '';
++        for (;;) {
++          const items: SelectItem[] = [
++            ...options.map((option) => ({
++              value: option.value,
++              label: `${chosen.has(option.value) ? '[x]' : '[ ]'} ${option.label}`,
++              description: option.description,
++            })),
++            ...custom.map((text) => ({ value: text, label: `[x] ${text}` })),
++          ];
++          if (question.custom) items.push({ value: other, label: 'Type your own answer…' });
++          items.push({ value: done, label: `Done (${String(chosen.size)} selected)` });
++          const hint = currentTheme.fg('textMuted', 'Enter toggles an option. Choose Done to submit, Esc to dismiss.');
++          const lines = [...heading, hint, ...(notice ? [currentTheme.fg('warning', notice)] : [])];
++          const value = await this.prompt(lines, items, undefined, cursor);
++          if (value === undefined) return undefined;
++          cursor = Math.max(0, items.findIndex((item) => item.value === value));
++          notice = '';
++          if (value === done) {
++            if (question.minItems !== undefined && chosen.size < question.minItems) {
++              notice = `Select at least ${String(question.minItems)}.`;
++              continue;
++            }
++            if (question.required && chosen.size === 0) {
++              notice = 'Select at least one option.';
++              continue;
++            }
++            return [...chosen];
++          }
++          if (value === other) {
++            const text = await this.askText({ ...question, kind: 'text', required: true }, heading);
++            if (typeof text === 'string' && text.trim() && !chosen.has(text.trim())) {
++              custom.push(text.trim());
++              chosen.add(text.trim());
++            }
++            continue;
++          }
++          if (chosen.has(value)) {
++            chosen.delete(value);
++            const index = custom.indexOf(value);
++            if (index >= 0) custom.splice(index, 1);
++          } else if (question.maxItems !== undefined && chosen.size >= question.maxItems) {
++            notice = `At most ${String(question.maxItems)} can be selected.`;
++          } else {
++            chosen.add(value);
++          }
++        }
++      }
++      default:
++        return this.askText(question, heading);
++    }
++  }
++
++  private async askText(question: FormQuestion, heading: string[]): Promise<string | number | undefined> {
++    const numeric = question.kind === 'number' || question.kind === 'integer';
++    const fallback = question.defaultValue !== undefined && !Array.isArray(question.defaultValue) ? String(question.defaultValue) : '';
++    const raw = await this.promptText(heading, question.placeholder ?? fallback, (value) => {
++      const text = value.trim();
++      if (text === '') return question.required && fallback === '' ? 'An answer is required.' : undefined;
++      if (!numeric) return undefined;
++      const parsed = Number(text);
++      if (!Number.isFinite(parsed)) return 'Enter a number.';
++      if (question.kind === 'integer' && !Number.isInteger(parsed)) return 'Enter a whole number.';
++      if (question.minimum !== undefined && parsed < question.minimum) return `Must be at least ${String(question.minimum)}.`;
++      if (question.maximum !== undefined && parsed > question.maximum) return `Must be at most ${String(question.maximum)}.`;
++      return undefined;
++    });
++    if (raw === undefined) return undefined;
++    const text = raw.trim() === '' ? fallback : raw.trim();
++    return numeric && text !== '' ? Number(text) : text;
++  }
++
++  /** A single-line text prompt in the editor's place. Esc cancels; `validate` returns an error message. */
++  private promptText(
++    heading: string[],
++    placeholder: string,
++    validate: (value: string) => string | undefined,
++  ): Promise<string | undefined> {
++    return new Promise((resolve) => {
++      const input = new Input({ prompt: '> ', placeholder, placeholderStyle: (text) => currentTheme.fg('textMuted', text) });
++      const error = new Text('', 1, 0);
++      const panel = new Container();
++      panel.addChild(new Spacer(1));
++      panel.addChild(new Text(heading.join('\n'), 1, 0));
++      panel.addChild(new Spacer(1));
++      panel.addChild(input);
++      panel.addChild(error);
++      panel.addChild(new Text(currentTheme.fg('textMuted', 'Enter to submit, Esc to dismiss.'), 1, 0));
++
++      const finish = (value: string | undefined) => {
++        this.prompting = false;
++        this.promptSlot.clear();
++        this.promptSlot.addChild(this.editor);
++        this.ui.setFocus(this.editor);
++        this.ui.requestRender();
++        resolve(value);
++      };
++      input.onSubmit = (value) => {
++        const problem = validate(value);
++        if (problem) {
++          error.setText(currentTheme.fg('error', problem));
++          this.ui.requestRender();
++          return;
++        }
++        finish(value);
++      };
++      input.onEscape = () => finish(undefined);
++
++      this.prompting = true;
++      this.promptSlot.clear();
++      this.promptSlot.addChild(panel);
++      this.ui.setFocus(input);
++      this.ui.requestRender();
++    });
++  }
++
+   // --- internals ------------------------------------------------------------------------------------------
+ 
+   private footerState() {
+@@ -288,6 +523,9 @@ export class Screen {
+       tokensOut: this.tokensOut,
+       busy: this.busy,
+       auto: this.options.auto,
++      agent: this.agentLabel,
++      model: this.modelLabel,
++      offline: this.offline,
+     };
+   }
+ 
