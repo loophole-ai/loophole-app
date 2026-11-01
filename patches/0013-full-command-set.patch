@@ -1,0 +1,769 @@
+diff --git a/packages/cli/src/screen/controller.ts b/packages/cli/src/screen/controller.ts
+index c44bdaf..f1d8eb0 100644
+--- a/packages/cli/src/screen/controller.ts
++++ b/packages/cli/src/screen/controller.ts
+@@ -5,6 +5,11 @@
+  * into screen calls: streamed text and reasoning, tool cards, permission prompts, usage.
+  */
+ 
++import { spawnSync } from "node:child_process"
++import { readFileSync, writeFileSync } from "node:fs"
++import { homedir, tmpdir } from "node:os"
++import { join, resolve } from "node:path"
++
+ import type { Endpoint } from "@opencode/client/effect/service"
+ import type {
+   CommandInfo,
+@@ -32,29 +37,81 @@ export interface ScreenControllerOptions {
+   readonly initialMessage?: string
+ }
+ 
++/**
++ * The same commands the OpenCode TUI exposes, so the Loophole screen is not a reduced subset.
++ * Aliases are resolved in runCommand and are called out in the descriptions instead of being
++ * listed a second time.
++ */
+ const BUILTIN_COMMANDS: readonly SlashCommand[] = [
+   { name: "help", description: "List available commands" },
++  { name: "sessions", description: "Switch to another session (aliases: resume, continue)" },
+   { name: "new", description: "Start a new session" },
+-  { name: "sessions", description: "Switch to another session" },
++  { name: "clear", description: "Clear the transcript view" },
++  { name: "open", description: "Open a session from any project (aliases: projects, project)" },
+   { name: "rename", description: "Rename the current session" },
+-  { name: "model", description: "Choose the model (and thinking effort)" },
+-  { name: "agent", description: "Choose the agent" },
+-  { name: "thinking", description: "Choose the thinking effort of the current model" },
++  { name: "timeline", description: "Show the recent user messages of this session" },
++  { name: "fork", description: "Fork this session" },
+   { name: "compact", description: "Summarize the session context to free tokens" },
++  { name: "undo", description: "Undo the last user message" },
+   { name: "redo", description: "Clear the revert point (redo)" },
+-  { name: "clear", description: "Clear the transcript view" },
+-  { name: "reload", description: "Reload configuration" },
+-  { name: "status", description: "Show session status and token usage" },
+   { name: "copy", description: "Copy the last assistant message" },
++  { name: "export", description: "Export the session transcript (add `copy` to copy it)" },
++  { name: "models", description: "Choose the model and thinking effort (alias: model)" },
++  { name: "agents", description: "Choose the agent (alias: agent)" },
++  { name: "variants", description: "Choose the thinking effort (aliases: thinking, effort, variant)" },
++  { name: "usage", description: "Show the current usage limits" },
++  { name: "mcps", description: "List MCP servers and connect or disconnect one" },
++  { name: "connect", description: "Connect a provider or integration" },
++  { name: "skills", description: "Insert a skill mention into the prompt" },
++  { name: "worktrees", description: "Move this session to a worktree" },
++  { name: "cd", description: "Change the session's working directory" },
++  { name: "editor", description: "Compose the next message in $EDITOR" },
++  { name: "btw", description: "Ask a side question without adding it to the conversation" },
++  { name: "diff", description: "Show the files this session changed" },
++  { name: "stats", description: "Show session statistics" },
++  { name: "plugins", description: "List loaded plugins" },
++  { name: "settings", description: "Show the configuration files in use" },
++  { name: "themes", description: "Switch the screen theme" },
++  { name: "status", description: "Show session status and token usage" },
++  { name: "debug", description: "Show connection and session details" },
++  { name: "highlights", description: "Show this build's version and a short summary" },
++  { name: "pair", description: "Pair another device with this server (alias: web)" },
++  { name: "restart", description: "Show how to restart the local service" },
++  { name: "update", description: "Show how to update Loophole" },
++  { name: "reload", description: "Reload configuration" },
++  { name: "terminal", description: "Show how to run a shell command" },
+   { name: "exit", description: "Exit Loophole (aliases: quit, q)" },
+ ]
+ 
++/** Slash command aliases kept for compatibility with the old screen and with OpenCode. */
++const COMMAND_ALIASES: Readonly<Record<string, string>> = {
++  model: "models",
++  agent: "agents",
++  thinking: "variants",
++  effort: "variants",
++  variant: "variants",
++  resume: "sessions",
++  continue: "sessions",
++  projects: "open",
++  project: "open",
++  web: "pair",
++  quit: "exit",
++  q: "exit",
++}
++
+ const EXIT_WORDS = ["exit", "quit", ":q"]
+ 
+ /** How many of the newest messages are shown again when a session is opened. */
+ const HISTORY_LIMIT = 80
+ const RECONNECT_MAX_DELAY = 10_000
+ 
++/** /btw answers from what the session already knows and is not added to the conversation. */
++const ASIDE_INSTRUCTIONS = [
++  "The user is asking a quick side question about the conversation so far.",
++  "Answer directly and concisely in markdown from what you already know.",
++  "Do not call any tools and do not take any actions.",
++].join(" ")
++
+ type PendingPermission = { id: string; sessionID: string; action: string; resources: ReadonlyArray<string> }
+ 
+ function number(value: unknown): number | undefined {
+@@ -109,7 +166,8 @@ function toolOutput(content: ReadonlyArray<{ type: string; text?: string; name?:
+ 
+ export class ScreenController {
+   private readonly api: OpenCodeClient
+-  private readonly directory: string
++  /** Mutable so /cd and /worktrees can move the session to another directory. */
++  private directory: string
+   private readonly auto: boolean
+   private readonly screen: Screen
+   private sessionID: string | undefined
+@@ -240,9 +298,10 @@ export class ScreenController {
+ 
+   private async runCommand(name: string, args: string): Promise<void> {
+     const sessionID = this.sessionID
++    const command = COMMAND_ALIASES[name] ?? name
+     try {
+-      switch (name) {
+-        case "q":
++      switch (command) {
++        case "exit":
+           return void (await this.exit())
+         case "help":
+           return this.showHelp()
+@@ -260,35 +319,89 @@ export class ScreenController {
+         }
+         case "sessions":
+           return await this.pickSession()
+-        case "model":
++        case "open":
++          return await this.pickSession(true)
++        case "models":
+           return await this.pickModel(args)
+-        case "agent":
++        case "agents":
+           return await this.pickAgent(args)
+-        case "thinking":
+-        case "effort":
+-        case "variant":
++        case "variants":
+           return await this.pickVariant(args)
+-        case "rename":
++        case "rename": {
+           if (!sessionID) return this.screen.addStatus("There is no active session.", "warning")
+-          if (!args) return this.screen.addStatus("Usage: /rename <title>", "warning")
+-          await this.api.session.update({ sessionID, title: args })
+-          return this.screen.addStatus(`Session renamed to "${args}".`)
++          const title = args || (await this.screen.askText("Rename session", "New title"))
++          if (!title?.trim()) return
++          await this.api.session.update({ sessionID, title: title.trim() })
++          return this.screen.addStatus(`Session renamed to "${title.trim()}".`)
++        }
+         case "compact":
+           if (!sessionID) return this.screen.addStatus("There is no session to compact.", "warning")
+           await this.api.session.compact({ sessionID })
+           return this.screen.addStatus("Compaction requested.")
++        case "undo":
++          return await this.undo()
+         case "redo":
+           if (!sessionID) return this.screen.addStatus("There is no session.", "warning")
+           await this.api.session.revert.clear({ sessionID })
+           return this.screen.addStatus("Revert point cleared.")
+         case "copy":
+           return await this.copyLast()
++        case "export":
++          return await this.exportTranscript(args)
++        case "fork":
++          return await this.forkSession()
++        case "timeline":
++          return await this.showTimeline()
++        case "usage":
++          return await this.showUsage()
++        case "mcps":
++          return await this.pickMcp()
++        case "connect":
++          return await this.connectIntegration()
++        case "skills":
++          return await this.pickSkill()
++        case "worktrees":
++          return await this.pickWorktree()
++        case "cd":
++          return await this.changeDirectory(args)
++        case "editor":
++          return await this.openEditor()
++        case "btw":
++          return await this.askAside(args)
++        case "diff":
++          return await this.showDiff()
++        case "stats":
++          return await this.showStats()
++        case "plugins":
++          return await this.showPlugins()
++        case "settings":
++          return await this.showSettings()
++        case "themes":
++          return await this.pickTheme()
++        case "debug":
++          return await this.showDebug()
++        case "highlights":
++          return await this.showHighlights()
++        case "pair":
++          return await this.pairDevice()
++        case "restart":
++          return this.screen.addStatus(
++            "The local service stops when this process exits. Close the screen and start Loophole again to restart it.",
++          )
++        case "update":
++          return this.screen.addStatus(
++            "This build does not update itself. Install a newer Loophole Desktop or CLI build to update.",
++          )
+         case "reload":
+           await this.api.location.reload()
+           await this.refreshServerCommands()
+           return this.screen.addStatus("Configuration reloaded.")
++        case "terminal":
++          return this.screen.addStatus(
++            "This screen uses your terminal's own scrollback. Type ! followed by a command to run a shell command.",
++          )
+         default: {
+-          if (!this.serverCommands.some((command) => command.name === name)) {
++          if (!this.serverCommands.some((item) => item.name === name)) {
+             return this.screen.addStatus(`Unknown command /${name}. Try /help.`, "warning")
+           }
+           if (!sessionID) return this.screen.addStatus(`There is no active session, cannot run /${name}.`, "warning")
+@@ -302,25 +415,40 @@ export class ScreenController {
+ 
+   private showHelp(): void {
+     const rows = [...BUILTIN_COMMANDS, ...this.serverCommands.filter((c) => !BUILTIN_COMMANDS.some((b) => b.name === c.name))]
+-      .map((command) => `  /${command.name.padEnd(12)} ${command.description ?? ""}`)
++      .map((command) => `  /${command.name.padEnd(14)} ${command.description ?? ""}`)
+       .join("\n")
+-    this.screen.addStatus(`Commands\n${rows}\n\nctrl+o expands tool output · esc interrupts · ctrl+c twice exits\n/model, /agent and /thinking change what the next message uses`)
++    this.screen.addStatus(
++      `Commands\n${rows}\n\nctrl+o expands tool output · esc interrupts · ctrl+c twice exits\n/models, /agents and /variants change what the next message uses`,
++    )
+   }
+ 
+-  private async pickSession(): Promise<void> {
+-    const response = await this.api.session.list({ directory: this.directory, order: "desc", limit: 30 })
++  private async pickSession(all = false): Promise<void> {
++    const response = all
++      ? await this.api.session.list({ order: "desc", limit: 30 })
++      : await this.api.session.list({ directory: this.directory, order: "desc", limit: 30 })
+     const sessions: SessionInfo[] = response.data
+     if (sessions.length === 0) return this.screen.addStatus("There are no sessions yet.")
+     const id = await this.screen.pick(
+-      "Switch session",
++      all ? "Open a session" : "Switch session",
+       sessions.map((session) => ({
+         value: session.id,
+         label: session.title || session.id,
+-        description: session.tokens ? `${String(Math.round(session.tokens.input / 1000))}k in` : undefined,
++        description:
++          session.location.directory === this.directory
++            ? session.tokens
++              ? `${String(Math.round(session.tokens.input / 1000))}k in`
++              : undefined
++            : session.location.directory,
+       })),
+     )
+     const picked = sessions.find((session) => session.id === id)
+-    if (picked) await this.switchTo(picked.id, picked.title ?? "", picked)
++    if (!picked) return
++    if (picked.location.directory !== this.directory) {
++      this.directory = picked.location.directory
++      this.screen.setDirectory(this.directory)
++      await this.refreshServerCommands()
++    }
++    await this.switchTo(picked.id, picked.title ?? "", picked)
+   }
+ 
+   private async copyLast(): Promise<void> {
+@@ -331,6 +459,383 @@ export class ScreenController {
+     this.screen.addStatus("Copied the last assistant message.")
+   }
+ 
++  private async exportTranscript(args: string): Promise<void> {
++    const sessionID = this.sessionID
++    if (!sessionID) return this.screen.addStatus("There is no session to export.", "warning")
++    const data = await this.api.session.export({ sessionID })
++    const lines: string[] = [`# ${data.info.title ?? sessionID}`, ""]
++    for (const message of data.messages) {
++      if (message.type === "user") {
++        lines.push("## User", "", message.text.trim(), "")
++      } else if (message.type === "assistant") {
++        const text = message.content
++          .map((part) => (part.type === "text" ? part.text : ""))
++          .join("\n")
++          .trim()
++        if (text) lines.push("## Assistant", "", text, "")
++      }
++    }
++    const markdown = lines.join("\n")
++    if (args.trim().toLowerCase() === "copy") {
++      const clipboard = getNativeClipboard()
++      if (!clipboard?.setText) return this.screen.addStatus("The clipboard is not available on this platform.", "warning")
++      await clipboard.setText(markdown)
++      return this.screen.addStatus(`Copied the transcript (${String(data.messages.length)} messages).`)
++    }
++    const file = join(tmpdir(), `loophole-session-${sessionID}.md`)
++    writeFileSync(file, markdown, "utf8")
++    this.screen.addStatus(`Exported ${String(data.messages.length)} messages to ${file}`)
++  }
++
++  private async forkSession(): Promise<void> {
++    const sessionID = this.sessionID
++    if (!sessionID) return this.screen.addStatus("There is no session to fork.", "warning")
++    const session = await this.api.session.fork({ sessionID })
++    await this.switchTo(session.id, session.title ?? "", session)
++    await this.refreshServerCommands()
++    this.screen.addStatus("Forked the session.")
++  }
++
++  private async showTimeline(): Promise<void> {
++    const sessionID = this.sessionID
++    if (!sessionID) return this.screen.addStatus("There is no session.", "warning")
++    const response = await this.api.message.list({ sessionID, limit: 100, order: "desc" })
++    const users = response.data
++      .filter((message): message is Extract<SessionMessageInfo, { type: "user" }> => message.type === "user" && message.text.trim().length > 0)
++      .reverse()
++    if (users.length === 0) return this.screen.addStatus("There are no user messages yet.")
++    const rows = users.slice(-15).map((message, index) => {
++      const first = message.text.trim().split(/\r?\n/)[0] ?? ""
++      return `  ${String(index + 1).padStart(2)}. ${first.length > 90 ? `${first.slice(0, 87)}…` : first}`
++    })
++    this.screen.addStatus(`Timeline (newest last)\n${rows.join("\n")}`)
++  }
++
++  private async showUsage(): Promise<void> {
++    const response = await this.api.usage.limits({ location: { directory: this.directory } })
++    const info = response.data
++    if (!info) return this.screen.addStatus("No usage limits are available for this workspace.")
++    const lines = [`Workspace: ${info.workspace.name ?? info.workspace.id}`]
++    if (info.go) {
++      lines.push(
++        `Go: rolling ${String(info.go.rolling.percent)}% · weekly ${String(info.go.weekly.percent)}% · monthly ${String(info.go.monthly.percent)}%`,
++      )
++    }
++    for (const budget of info.budgets) {
++      lines.push(`${budget.id}: $${budget.spent.toFixed(2)} of $${budget.limit.toFixed(2)}`)
++    }
++    lines.push(info.workspace.usageURL)
++    this.screen.addStatus(`Usage\n${lines.join("\n")}`)
++  }
++
++  private async pickMcp(): Promise<void> {
++    const response = await this.api.mcp.list({ location: { directory: this.directory } })
++    const servers = response.data
++    if (servers.length === 0) return this.screen.addStatus("No MCP servers are configured.")
++    const name = await this.screen.pick(
++      "MCP servers",
++      servers.map((server) => ({
++        value: server.name,
++        label: server.title ?? server.name,
++        description: this.mcpStatus(server.status),
++      })),
++    )
++    const server = servers.find((item) => item.name === name)
++    if (!server) return
++    if (server.status.status === "connected") {
++      await this.api.mcp.disconnect({ server: server.name, location: { directory: this.directory } })
++      return this.screen.addStatus(`Disconnected ${server.name}.`)
++    }
++    await this.api.mcp.connect({ server: server.name, location: { directory: this.directory } })
++    this.screen.addStatus(`Connecting ${server.name}…`)
++  }
++
++  private mcpStatus(status: { status: string; error?: string }): string {
++    if (status.status === "failed" || status.status === "needs_auth") return `${status.status}: ${status.error ?? ""}`
++    return status.status
++  }
++
++  private async connectIntegration(): Promise<void> {
++    const response = await this.api.integration.list({ location: { directory: this.directory } })
++    const integrations = response.data
++    if (integrations.length === 0) return this.screen.addStatus("No integrations are available.", "warning")
++    const id = await this.screen.pick(
++      "Connect an integration",
++      integrations.map((integration) => ({
++        value: integration.id,
++        label: integration.name,
++        description:
++          integration.connections.length > 0
++            ? "connected"
++            : integration.methods.map((method) => method.type).join(", ") || "no connect method",
++      })),
++    )
++    const integration = integrations.find((item) => item.id === id)
++    if (!integration) return
++    if (integration.connections.length > 0) return this.screen.addStatus(`${integration.name} is already connected.`)
++    const oauth = integration.methods.find((item) => item.type === "oauth")
++    const keyMethod = integration.methods.find((item) => item.type === "key")
++    if (!oauth && !keyMethod) {
++      return this.screen.addStatus(`${integration.name} cannot be connected from this screen.`)
++    }
++    if (!oauth && keyMethod) {
++      const key = await this.screen.askText(`API key for ${integration.name}`, "Paste the key")
++      if (!key?.trim()) return
++      await this.api.integration.connect.key({
++        integrationID: integration.id,
++        key: key.trim(),
++        location: { directory: this.directory },
++      })
++      return this.screen.addStatus(`${integration.name} connected.`)
++    }
++    if (!oauth) return
++    const attempt = await this.api.integration.oauth.connect({
++      integrationID: integration.id,
++      methodID: oauth.id,
++      location: { directory: this.directory },
++    })
++    const data = attempt.data
++    this.screen.addStatus(`${integration.name}\n${data.instructions}\n${data.url}\n\nWaiting for sign-in…`)
++    const result = await this.pollOAuth(integration.id, data.attemptID, data.time.expires)
++    if (result === "complete") this.screen.addStatus(`${integration.name} connected.`)
++  }
++
++  private async pollOAuth(
++    integrationID: string,
++    attemptID: string,
++    expires: number,
++  ): Promise<"complete" | "failed" | "expired" | "timeout"> {
++    while (Date.now() < expires) {
++      await this.sleep(2000)
++      const response = await this.api.integration.oauth
++        .status({ integrationID, attemptID, location: { directory: this.directory } })
++        .catch(() => undefined)
++      const status = response?.data
++      if (!status) continue
++      if (status.status === "complete") return "complete"
++      if (status.status === "failed") {
++        this.screen.addStatus(`Connection failed: ${status.message}`, "error")
++        return "failed"
++      }
++      if (status.status === "expired") {
++        this.screen.addStatus("The sign-in attempt expired.", "warning")
++        return "expired"
++      }
++    }
++    this.screen.addStatus("The sign-in attempt timed out.", "warning")
++    return "timeout"
++  }
++
++  private async pickSkill(): Promise<void> {
++    const response = await this.api.skill.list({ location: { directory: this.directory } })
++    const skills = response.data
++    if (skills.length === 0) return this.screen.addStatus("No skills are available.")
++    const id = await this.screen.pick(
++      "Skills",
++      skills.map((skill) => ({ value: skill.id, label: skill.name, description: skill.description })),
++    )
++    const skill = skills.find((item) => item.id === id)
++    if (!skill) return
++    this.screen.insertPrompt(`@${skill.name} `)
++    this.screen.addStatus(`Inserted @${skill.name} into the prompt.`)
++  }
++
++  private async pickWorktree(): Promise<void> {
++    const location = await this.api.location.get({ location: { directory: this.directory } })
++    const worktrees = await this.api.worktree.list({ projectID: location.project.id })
++    if (worktrees.length === 0) return this.screen.addStatus("This project has no worktrees.")
++    const directory = await this.screen.pickCurrent(
++      "Move this session to a worktree",
++      worktrees.map((worktree) => ({
++        value: worktree.directory,
++        label: worktree.directory,
++        description: worktree.strategy,
++      })),
++      this.directory,
++    )
++    if (!directory || directory === this.directory) return
++    await this.moveTo(directory)
++  }
++
++  private async changeDirectory(args: string): Promise<void> {
++    const input = args.trim() || (await this.screen.askText("Change working directory", this.directory))
++    if (!input?.trim()) return
++    const value = input.trim()
++    const expanded = value === "~" ? homedir() : value.startsWith("~/") ? join(homedir(), value.slice(2)) : value
++    await this.moveTo(resolve(this.directory, expanded))
++  }
++
++  /** Move the active session (and every later request) to another directory. */
++  private async moveTo(directory: string): Promise<void> {
++    const sessionID = this.sessionID
++    if (sessionID) await this.api.session.move({ sessionID, directory })
++    this.directory = directory
++    this.screen.setDirectory(directory)
++    await this.refreshServerCommands()
++    if (sessionID) await this.loadSession()
++    this.screen.addStatus(`Working directory: ${directory}`)
++  }
++
++  private async openEditor(): Promise<void> {
++    const configured = process.env.VISUAL?.trim() || process.env.EDITOR?.trim() || (process.platform === "win32" ? "notepad" : "vi")
++    const [editor, ...editorArgs] = configured.split(/\s+/)
++    if (!editor) return this.screen.addStatus("No editor is configured. Set $EDITOR.", "warning")
++    const file = join(tmpdir(), `loophole-prompt-${String(process.pid)}.md`)
++    writeFileSync(file, this.screen.getPrompt(), "utf8")
++    this.screen.stop()
++    try {
++      const result = spawnSync(editor, [...editorArgs, file], { stdio: "inherit" })
++      if (result.error) {
++        this.screen.addStatus(`Could not open ${editor}: ${result.error.message}`, "error")
++        return
++      }
++      const text = readFileSync(file, "utf8").trim()
++      if (text) this.screen.setPrompt(text)
++    } finally {
++      this.screen.start()
++    }
++  }
++
++  private async askAside(args: string): Promise<void> {
++    const sessionID = this.sessionID
++    if (!sessionID) return this.screen.addStatus("There is no session.", "warning")
++    const question = args.trim() || (await this.screen.askText("Ask a side question", "Ask anything"))
++    if (!question?.trim()) return
++    this.screen.addStatus(`/btw ${question.trim()}`)
++    const result = await this.api.session.generate({
++      sessionID,
++      prompt: `${ASIDE_INSTRUCTIONS}\n\n${question.trim()}`,
++    })
++    this.screen.addAssistant(result.text.trim())
++  }
++
++  private async showDiff(): Promise<void> {
++    const sessionID = this.sessionID
++    if (!sessionID) return this.screen.addStatus("There is no session.", "warning")
++    const diffs = await this.api.session.diff({ sessionID })
++    if (diffs.length === 0) return this.screen.addStatus("This session has not changed any files.")
++    const rows = diffs
++      .slice(0, 40)
++      .map((diff) => `  ${diff.status.padEnd(8)} ${diff.file} (+${String(diff.additions)} -${String(diff.deletions)})`)
++    const more = diffs.length > 40 ? `\n  … ${String(diffs.length - 40)} more` : ""
++    this.screen.addStatus(`Files changed\n${rows.join("\n")}${more}`)
++  }
++
++  private async showStats(): Promise<void> {
++    const stats = await this.api.session.stats({ tools: "summary" })
++    const lines = [
++      `${String(stats.sessions)} sessions · ${String(stats.prompts)} prompts · ${String(stats.steps)} steps`,
++      `${String(stats.tokens.input)} tokens in · ${String(stats.tokens.output)} out · $${stats.cost.toFixed(2)}`,
++      `${String(stats.activeDays)} active days · ${String(stats.streak)} day streak`,
++    ]
++    if (stats.tools.mode !== "none") {
++      lines.push(
++        `${String(stats.tools.totals.calls)} tool calls · ${String(stats.tools.totals.succeeded)} succeeded · ${String(stats.tools.totals.failed)} failed`,
++      )
++    }
++    this.screen.addStatus(`Stats\n${lines.join("\n")}`)
++  }
++
++  private async showPlugins(): Promise<void> {
++    const response = await this.api.plugin.list({ location: { directory: this.directory } })
++    if (response.data.length === 0) return this.screen.addStatus("No plugins are loaded.")
++    const rows = response.data.map((plugin) => {
++      const name = plugin.id ?? this.pluginSource(plugin.source)
++      const state = plugin.state.status === "active" ? "active" : `failed: ${plugin.state.error}`
++      return `  ${name} — ${state}`
++    })
++    this.screen.addStatus(`Plugins\n${rows.join("\n")}`)
++  }
++
++  private pluginSource(source: { type: string; target?: string; path?: string }): string {
++    if (source.type === "package") return source.target ?? "package"
++    if (source.type === "local") return source.path ?? "local"
++    return source.type
++  }
++
++  private async showSettings(): Promise<void> {
++    const entries = await this.api.config.get({ location: { directory: this.directory } })
++    const lines: string[] = []
++    for (const entry of entries) {
++      if (entry.type === "directory") {
++        lines.push(`directory: ${entry.path}`)
++        continue
++      }
++      lines.push(`config: ${entry.path ?? "(inline)"}`)
++      const model = entry.info.model
++      if (model) {
++        lines.push(
++          `  model: ${
++            typeof model === "string"
++              ? model
++              : `${model.providerID}/${model.model}${model.variant ? ` (${model.variant})` : ""}`
++          }`,
++        )
++      }
++      if (entry.info.default_agent) lines.push(`  default_agent: ${entry.info.default_agent}`)
++      if (entry.info.share) lines.push(`  share: ${entry.info.share}`)
++      if (entry.info.update) lines.push(`  update: ${entry.info.update}`)
++    }
++    this.screen.addStatus(lines.length > 0 ? `Settings\n${lines.join("\n")}` : "No configuration files are loaded.")
++  }
++
++  private async pickTheme(): Promise<void> {
++    const picked = await this.screen.pickCurrent(
++      "Theme",
++      [
++        { value: "dark", label: "Dark" },
++        { value: "light", label: "Light" },
++        { value: "auto", label: "Auto (detect from the terminal)" },
++      ],
++      this.screen.getTheme(),
++    )
++    if (!picked) return
++    await this.screen.setTheme(picked)
++    this.screen.addStatus(`Theme: ${picked}`)
++  }
++
++  private async showDebug(): Promise<void> {
++    const info = await this.api.server.info().catch(() => undefined)
++    const lines = [
++      `server: ${info ? `${info.version} (pid ${String(info.pid)})` : "unavailable"}`,
++      `urls: ${info?.urls.join(", ") ?? "unknown"}`,
++      `directory: ${this.directory}`,
++      `session: ${this.sessionID ?? "(none)"}`,
++      `agent: ${this.currentAgent ?? "(default)"}`,
++      `model: ${this.currentModel ? this.modelLabel(this.currentModel) : "(default)"}`,
++      `tokens: ${String(this.tokensIn)} in · ${String(this.tokensOut)} out`,
++    ]
++    this.screen.addStatus(`Debug\n${lines.join("\n")}`)
++  }
++
++  private async showHighlights(): Promise<void> {
++    const info = await this.api.server.info().catch(() => undefined)
++    this.screen.addStatus(
++      `Loophole ${info?.version ?? ""}\nThe Kimi-style screen with the OpenCode engine: sessions, agents, tools, MCP, skills, plugins and the full command set.`,
++    )
++  }
++
++  private async pairDevice(): Promise<void> {
++    const pair = await this.api.server.pair()
++    const minutes = Math.max(1, Math.round(pair.expires_in / 60))
++    this.screen.addStatus(
++      `Pairing code: ${pair.code}\nExpires in ${String(minutes)} minute${minutes === 1 ? "" : "s"}. Open Loophole on the other device and enter this code to connect.`,
++    )
++  }
++
++  private async undo(): Promise<void> {
++    const sessionID = this.sessionID
++    if (!sessionID) return this.screen.addStatus("There is no session.", "warning")
++    const response = await this.api.message.list({ sessionID, limit: 50, order: "desc" })
++    const lastUser = response.data.find((message) => message.type === "user" && message.text.trim().length > 0)
++    if (!lastUser || lastUser.type !== "user") return this.screen.addStatus("Nothing to undo.", "warning")
++    await this.api.session.interrupt({ sessionID })
++    await this.api.session.wait({ sessionID }).catch(() => {})
++    await this.api.session.revert.stage({ sessionID, messageID: lastUser.id })
++    this.screen.setPrompt(lastUser.text)
++    this.screen.addStatus("Undid the last message. It is back in the prompt; edit and send it again.")
++  }
++
+   private async switchTo(id: string, title: string, info?: SessionInfo): Promise<void> {
+     this.sessionID = id
+     this.tokensIn = 0
+diff --git a/packages/screen/src/screen.ts b/packages/screen/src/screen.ts
+index 0ef1a67..da57b6f 100644
+--- a/packages/screen/src/screen.ts
++++ b/packages/screen/src/screen.ts
+@@ -40,7 +40,7 @@ import { ThinkingComponent } from './components/messages/thinking';
+ import { ToolCallComponent } from './components/messages/tool-call';
+ import { UserMessageComponent } from './components/messages/user-message';
+ import { CHROME_GUTTER } from './constant/rendering';
+-import { currentTheme, type ColorToken } from './theme/index';
++import { currentTheme, getColorPalette, type ColorToken, type ThemeName } from './theme/index';
+ 
+ export type PermissionChoice = 'once' | 'always' | 'reject';
+ 
+@@ -94,7 +94,8 @@ export class Screen {
+   private readonly footer: FooterComponent;
+   private readonly editor: CustomEditor;
+   private readonly tools = new Map<string, ToolCallComponent>();
+-  private readonly options: ScreenOptions;
++  private options: ScreenOptions;
++  private themeName: ThemeName = 'dark';
+   private expanded = false;
+   private busy = false;
+   private tokensIn = 0;
+@@ -191,6 +192,44 @@ export class Screen {
+     );
+   }
+ 
++  /** Update the directory shown in the footer after /cd or /worktrees moves the session. */
++  setDirectory(directory: string): void {
++    this.options = { ...this.options, directory };
++    this.refreshFooter();
++  }
++
++  /** Resolve and apply a theme by name. 'auto' asks the terminal for its background. */
++  async setTheme(theme: ThemeName): Promise<void> {
++    this.themeName = theme;
++    currentTheme.setPalette(await getColorPalette(theme));
++    this.ui.requestRender();
++  }
++
++  getTheme(): ThemeName {
++    return this.themeName;
++  }
++
++  /** The current composer text. Used by /editor and /undo. */
++  getPrompt(): string {
++    return this.editor.getText();
++  }
++
++  setPrompt(text: string): void {
++    this.editor.setText(text);
++    this.ui.requestRender();
++  }
++
++  /** Append text at the end of the composer. Used by /skills. */
++  insertPrompt(text: string): void {
++    this.editor.setText(this.editor.getText() + text);
++    this.ui.requestRender();
++  }
++
++  /** A single-line text prompt in the editor's place. Esc resolves with undefined. */
++  askText(title: string, placeholder = ''): Promise<string | undefined> {
++    return this.promptText([currentTheme.boldFg('primary', title)], placeholder, () => undefined);
++  }
++
+   // --- transcript ---------------------------------------------------------------------------------
+ 
+   addUser(text: string): void {
+@@ -378,7 +417,7 @@ export class Screen {
+       }
+       case 'single': {
+         const options = question.options ?? [];
+-        if (options.length === 0) return this.askText({ ...question, kind: 'text' }, heading);
++        if (options.length === 0) return this.askFormText({ ...question, kind: 'text' }, heading);
+         const items: SelectItem[] = options.map((option) => ({
+           value: option.value,
+           label: option.label,
+@@ -389,7 +428,7 @@ export class Screen {
+           typeof question.defaultValue === 'string' ? Math.max(0, items.findIndex((item) => item.value === question.defaultValue)) : 0;
+         const value = await this.prompt(heading, items, undefined, start);
+         if (value === undefined) return undefined;
+-        if (value === other) return this.askText({ ...question, kind: 'text', required: true }, heading);
++        if (value === other) return this.askFormText({ ...question, kind: 'text', required: true }, heading);
+         return value;
+       }
+       case 'multi': {
+@@ -428,7 +467,7 @@ export class Screen {
+             return [...chosen];
+           }
+           if (value === other) {
+-            const text = await this.askText({ ...question, kind: 'text', required: true }, heading);
++            const text = await this.askFormText({ ...question, kind: 'text', required: true }, heading);
+             if (typeof text === 'string' && text.trim() && !chosen.has(text.trim())) {
+               custom.push(text.trim());
+               chosen.add(text.trim());
+@@ -447,11 +486,11 @@ export class Screen {
+         }
+       }
+       default:
+-        return this.askText(question, heading);
++        return this.askFormText(question, heading);
+     }
+   }
+ 
+-  private async askText(question: FormQuestion, heading: string[]): Promise<string | number | undefined> {
++  private async askFormText(question: FormQuestion, heading: string[]): Promise<string | number | undefined> {
+     const numeric = question.kind === 'number' || question.kind === 'integer';
+     const fallback = question.defaultValue !== undefined && !Array.isArray(question.defaultValue) ? String(question.defaultValue) : '';
+     const raw = await this.promptText(heading, question.placeholder ?? fallback, (value) => {

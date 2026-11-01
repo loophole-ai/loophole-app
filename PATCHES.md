@@ -16,8 +16,13 @@ patches/
   0005-telemetry-posthog.patch opt-out aggregate telemetry (LOOPHOLE_TELEMETRY_DISABLE=1)
   0006-main-screen.patch       larger animated wordmark, composer docked to the bottom
   0007-about-page.patch        clean Loophole About page (no upstream credits/trivia)
+  0008-pi-tui.patch            pi-TUI snapshot used by the Kimi-style screen
+  0009-pi-default-command.patch make pi-TUI the default interactive CLI
+  0010-loophole-screen.patch   Kimi-style terminal screen (@loophole/screen)
+  0011-screen-daily-use.patch  daily-use polish for the new screen
+  0012-screen-cleanup.patch    screen cleanup
+  0013-full-command-set.patch  expose every OpenCode slash command in the new screen
   user/                        optional extra patches, applied after the numbered stack
-  archive/0004-pi-tui.patch    recovered pi-TUI snapshot - NEVER applied (see below)
   series                       legacy list, ignored by the scripts (sorted order wins)
   @ai-sdk%2F...@x.patch         copies of upstream bun patchedDependencies - NEVER applied
 assets/                  binary overlay (icons, logos), mirrored by repo path
@@ -103,13 +108,16 @@ reset to the pin, apply all earlier patches as a throwaway commit, apply the tar
 `dev/update_patches.sh` is the batch version: apply the stack cumulatively, regenerating each
 patch against the state produced by the previous one, then reset.
 
-## Archived work
+## pi-TUI and the Kimi-style screen
 
-The recovered pi-TUI snapshot is kept as a branch (`recover/opencode`, `61ebc3dc3e`) but is
-**not** part of the applied stack. It does not compile: its `interactive.ts` imports
-`createTuiAdapter`, which the snapshot's `tui-adapter/index.ts` no longer exports. The
-exported patch is parked at `patches/archive/0004-pi-tui.patch` and is never applied. Restore
-it only together with a fix for that import.
+`0008-pi-tui.patch` is the recovered pi-TUI snapshot and **is** part of the applied stack. The
+older note that it "does not compile" applied to the archived copy: its `interactive.ts`
+imported `createTuiAdapter`, which the snapshot's `tui-adapter/index.ts` no longer exports.
+That import is fixed in the applied patch, so the archived copy is obsolete.
+
+`0009-pi-default-command.patch` makes the pi-TUI screen the default interactive interface
+(`LOOPHOLE_TUI=mini` and piped stdin/stdout keep the old plain UI). `0010`-`0013` build the
+Kimi-style screen on top of it.
 
 `0005-telemetry-posthog.patch` came from the `telemetry-posthog` / `tui-logo-art` branches.
 Every other custom commit on the local branches (Discord report link, service-port isolation,
