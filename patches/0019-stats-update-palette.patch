@@ -1,0 +1,622 @@
+diff --git a/packages/cli/src/screen/controller.ts b/packages/cli/src/screen/controller.ts
+index a060a17276..c062c55755 100644
+--- a/packages/cli/src/screen/controller.ts
++++ b/packages/cli/src/screen/controller.ts
+@@ -10,6 +10,7 @@ import { readFileSync, statSync, writeFileSync } from "node:fs"
+ import { homedir, tmpdir } from "node:os"
+ import { basename, isAbsolute, join, resolve } from "node:path"
+ import { pathToFileURL } from "node:url"
++import { stripVTControlCharacters } from "node:util"
+ 
+ import type { Endpoint } from "@opencode/client/effect/service"
+ import type {
+@@ -24,9 +25,13 @@ import type {
+   OpenCodeClient,
+   SessionInfo,
+   SessionMessageInfo,
++  SessionStatsInfo,
+ } from "@opencode/client/promise"
++import { TokenUsage } from "@opencode/schema/token-usage"
++import { activityCalendar } from "@opencode/util/activity-calendar"
+ import {
+   Screen,
++  currentTheme,
+   type FormAnswerValue,
+   type FormQuestion,
+   type PermissionDecision,
+@@ -34,6 +39,7 @@ import {
+ } from "@loophole/screen"
+ import { getNativeClipboard, type SlashCommand } from "@loophole/tui-engine"
+ 
++import { selfCommand } from "../util/process"
+ import { OPENCODE_VERSION } from "../version"
+ import { readScreenPreferences, saveScreenModel } from "./preferences"
+ 
+@@ -101,7 +107,7 @@ const BUILTIN_COMMANDS: readonly SlashCommand[] = [
+   { name: "editor", description: "Compose the next message in $EDITOR" },
+   { name: "btw", description: "Ask a side question without adding it to the conversation" },
+   { name: "diff", description: "Show the files this session changed" },
+-  { name: "stats", description: "Show session statistics" },
++  { name: "stats", description: "Show usage: tokens, cost, activity, models and tools", argumentHint: "[days|all|cost|models|tools]" },
+   { name: "plugins", description: "List loaded plugins" },
+   { name: "settings", description: "Show the configuration files in use" },
+   { name: "themes", description: "Switch the screen theme" },
+@@ -112,7 +118,7 @@ const BUILTIN_COMMANDS: readonly SlashCommand[] = [
+   { name: "pair", description: "Pair another device with this server" },
+   { name: "web", description: "Alias of /pair" },
+   { name: "restart", description: "Show how to restart the local service" },
+-  { name: "update", description: "Show how to update Loophole" },
++  { name: "update", description: "Update Loophole to the latest version", argumentHint: "[version]" },
+   { name: "upgrade", description: "Alias of /update" },
+   { name: "reload", description: "Reload configuration" },
+   { name: "terminal", description: "Show how to run a shell command" },
+@@ -268,6 +274,87 @@ function toolOutput(content: ReadonlyArray<{ type: string; text?: string; name?:
+     .join("\n")
+ }
+ 
++/** Compact counts for /stats: 1.2m, 320k, 42. */
++function formatCount(value: number): string {
++  if (value >= 1_000_000_000) return `${trimStatDecimal(value / 1_000_000_000)}b`
++  if (value >= 1_000_000) return `${trimStatDecimal(value / 1_000_000)}m`
++  if (value >= 1_000) return `${trimStatDecimal(value / 1_000)}k`
++  return String(Math.round(value))
++}
++
++function trimStatDecimal(value: number): string {
++  return value.toFixed(1).replace(/\.0$/, "")
++}
++
++function formatPercent(value: number): string {
++  return `${value.toFixed(value >= 10 ? 1 : 2)}%`
++}
++
++function formatDuration(value: number): string {
++  if (value < 1_000) return `${String(Math.round(value))}ms`
++  return `${trimStatDecimal(value / 1_000)}s`
++}
++
++function truncateStat(value: string, width: number): string {
++  return value.length <= width ? value : `${value.slice(0, width - 1)}…`
++}
++
++/** One `label   value` line inside a /stats section. */
++function statRow(label: string, value: string): string {
++  return `  ${currentTheme.fg("textMuted", label.padEnd(20))}${currentTheme.fg("text", value)}`
++}
++
++function statTableHeader(label: string, second: string, third: string, fourth: string): string {
++  const row = `${truncateStat(label, 34).padEnd(34)}${second.padStart(10)}${third.padStart(12)}${fourth.padStart(12)}`
++  return currentTheme.fg("textMuted", row)
++}
++
++function statTableRow(label: string, second: string, third: string, fourth: string): string {
++  const name = truncateStat(label, 34).padEnd(34)
++  return [
++    currentTheme.fg("text", name),
++    currentTheme.fg("textMuted", second.padStart(10)),
++    currentTheme.fg("textMuted", third.padStart(12)),
++    currentTheme.fg("textMuted", fourth.padStart(12)),
++  ].join("")
++}
++
++/** The GitHub-style activity heatmap shown at the top of /stats. */
++function renderStatActivity(
++  stats: SessionStatsInfo,
++  from: number,
++  to: number,
++  muted: (text: string) => string,
++  strong: (text: string) => string,
++): string[] {
++  const width = Math.max(24, (process.stdout.columns ?? 80) - 10)
++  const calendar = activityCalendar({ activity: stats.activity, from, to, maxWeeks: width })
++  const months = calendar.months
++    .map((month, index) =>
++      (index === calendar.months.length - 1 || month.label.length <= month.span ? month.label : "").padEnd(month.span),
++    )
++    .join("")
++    .trimEnd()
++  const weekdays = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
++  const glyphs = ["·", "░", "▒", "▓", "█"]
++  const paint = (level: number) => {
++    if (level < 0) return " "
++    if (level === 0) return muted(glyphs[0])
++    if (level <= 2) return muted(glyphs[level])
++    return strong(glyphs[level])
++  }
++  const lines = [
++    `${strong("activity")}${calendar.clipped ? muted(` · last ${String(calendar.weeks.length)} weeks`) : ""}`,
++    `   ${muted(months)}`,
++  ]
++  weekdays.forEach((label, day) => {
++    lines.push(`${muted(label)} ${calendar.weeks.map((week) => paint(week[day].level)).join("")}`)
++    if (day < weekdays.length - 1) lines.push("")
++  })
++  lines.push("", `   ${muted("less")} ${[0, 1, 2, 3, 4].map(paint).join("")} ${muted("more")}`)
++  return lines
++}
++
+ export class ScreenController {
+   private readonly api: OpenCodeClient
+   /** Mutable so /cd and /worktrees can move the session to another directory. */
+@@ -595,7 +682,7 @@ export class ScreenController {
+         case "diff":
+           return await this.showDiff()
+         case "stats":
+-          return await this.showStats()
++          return await this.showStats(args)
+         case "plugins":
+           return await this.showPlugins()
+         case "settings":
+@@ -613,9 +700,7 @@ export class ScreenController {
+             "The local service stops when this process exits. Close the screen and start Loophole again to restart it.",
+           )
+         case "update":
+-          return this.screen.addStatus(
+-            "This build does not update itself. Install a newer Loophole Desktop or CLI build to update.",
+-          )
++          return await this.updateCli(args)
+         case "reload":
+           await this.api.location.reload()
+           await this.refreshServerCommands()
+@@ -642,7 +727,7 @@ export class ScreenController {
+       .map((command) => `  /${command.name.padEnd(14)} ${command.description ?? ""}`)
+       .join("\n")
+     this.screen.addStatus(
+-      `Commands\n${rows}\n\nctrl+o expands tool output · esc interrupts · ctrl+c twice exits\n/models, /agents and /variants change what the next message uses`,
++      `Commands\n${rows}\n\nctrl+shift+p opens the command palette · ctrl+o expands tool output · esc interrupts · ctrl+c twice exits\n/models, /agents and /variants change what the next message uses`,
+     )
+   }
+ 
+@@ -1144,19 +1229,171 @@ export class ScreenController {
+     return [...files].sort()
+   }
+ 
+-  private async showStats(): Promise<void> {
+-    const stats = await this.api.session.stats({ tools: "summary" })
+-    const lines = [
+-      `${String(stats.sessions)} sessions · ${String(stats.prompts)} prompts · ${String(stats.steps)} steps`,
+-      `${String(stats.tokens.input)} tokens in · ${String(stats.tokens.output)} out · $${stats.cost.toFixed(2)}`,
+-      `${String(stats.activeDays)} active days · ${String(stats.streak)} day streak`,
+-    ]
+-    if (stats.tools.mode !== "none") {
++  /**
++   * `/stats` — usage, cost, activity, models and tool reliability, modelled on
++   * `loophole stats --full`. Optional args: `all`, a number of days, or any of
++   * `cost`, `models`, `tools` to show only those sections.
++   */
++  private async showStats(args: string): Promise<void> {
++    const words = args.trim().toLowerCase().split(/\s+/).filter((word) => word.length > 0)
++    const only = new Set(words.filter((word) => word === "cost" || word === "models" || word === "tools"))
++    const all = words.includes("all")
++    const days = words.map((word) => Number(word)).find((value) => Number.isFinite(value) && value >= 0)
++
++    const now = new Date()
++    const to = now.getTime() + 1
++    let from: number | undefined
++    let label: string
++    if (all) {
++      label = "all time"
++    } else if (days !== undefined) {
++      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
++      start.setDate(start.getDate() - Math.max(0, days - 1))
++      from = start.getTime()
++      label = days <= 1 ? "today" : `last ${String(days)} days`
++    } else {
++      from = new Date(now.getFullYear(), 0, 1).getTime()
++      label = `${String(now.getFullYear())} so far`
++    }
++
++    const stats = await this.api.session.stats({
++      ...(from !== undefined ? { from } : {}),
++      to,
++      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
++      tools: "detail",
++    })
++
++    const muted = (text: string) => currentTheme.fg("textMuted", text)
++    const strong = (text: string) => currentTheme.fg("primary", text)
++    const totalTokens = TokenUsage.total(stats.tokens)
++    const totals = stats.tools.mode === "none" ? undefined : stats.tools.totals
++    const finished = (totals?.succeeded ?? 0) + (totals?.failed ?? 0)
++    const success = finished > 0 ? ((totals?.succeeded ?? 0) / finished) * 100 : undefined
++    const empty = stats.sessions === 0 && stats.prompts === 0 && stats.steps === 0
++
++    const lines: string[] = [`${currentTheme.boldFg("primary", "Stats")} ${muted(`· ${label} · all projects`)}`, ""]
++    // Passing a section name (`cost`, `models`, `tools`) narrows the report the
++    // way the CLI's `stats --models` / `--tools` / `--cost` flags do.
++    if (only.size === 0) {
++      if (empty) {
++        lines.push(muted("No activity in this range."))
++      } else {
++        lines.push(...renderStatActivity(stats, from ?? stats.range.from, stats.range.to, muted, strong))
++        lines.push("")
++        const sessions = [`${strong(formatCount(stats.sessions))} ${stats.sessions === 1 ? "session" : "sessions"}`]
++        if (stats.subagents > 0) sessions.push(`${strong(formatCount(stats.subagents))} subagents`)
++        lines.push(sessions.join(muted(" · ")))
++        lines.push(
++          `${strong(formatCount(stats.prompts))} prompts ${muted("·")} ${strong(formatCount(stats.steps))} steps ${muted("·")} ${strong(formatCount(totalTokens))} tokens`,
++        )
++        lines.push(
++          `${success === undefined ? muted("no tool calls") : `${strong(formatPercent(success))} tool success`} ${muted("·")} ${strong(formatCount(stats.activeDays))} active days ${muted("·")} best streak ${strong(String(stats.streak))} ${stats.streak === 1 ? "day" : "days"}`,
++        )
++      }
++    }
++
++    const section = (title: string) => {
++      if (lines[lines.length - 1] !== "") lines.push("")
++      lines.push(currentTheme.boldFg("primary", title))
++    }
++    const show = (name: string) => only.size === 0 || only.has(name)
++    if (show("cost")) {
++      section("COST & TOKENS")
++      const input = stats.tokens.input + stats.tokens.cache.read + stats.tokens.cache.write
++      const cached = input === 0 ? 0 : (stats.tokens.cache.read / input) * 100
+       lines.push(
+-        `${String(stats.tools.totals.calls)} tool calls · ${String(stats.tools.totals.succeeded)} succeeded · ${String(stats.tools.totals.failed)} failed`,
++        statRow("cost", `$${stats.cost.toFixed(2)}`),
++        statRow("input", formatCount(stats.tokens.input)),
++        statRow("output", formatCount(stats.tokens.output)),
++        statRow("reasoning", formatCount(stats.tokens.reasoning)),
++        statRow("cache read", formatCount(stats.tokens.cache.read)),
++        statRow("cache write", formatCount(stats.tokens.cache.write)),
++        statRow("cached input", formatPercent(cached)),
++      )
++    }
++    if (show("models")) {
++      section("MODELS")
++      if (stats.models.length === 0) {
++        lines.push(muted("  no model usage"))
++      } else {
++        const shown = stats.models.slice(0, 10)
++        lines.push(statTableHeader("model", "tokens", "steps", "cost"))
++        for (const item of shown) {
++          lines.push(
++            statTableRow(
++              `${item.model.providerID}/${item.model.id}${item.model.variant ? `#${item.model.variant}` : ""}`,
++              formatCount(TokenUsage.total(item.tokens)),
++              formatCount(item.steps),
++              `$${item.cost.toFixed(2)}`,
++            ),
++          )
++        }
++        const more = stats.models.length - shown.length
++        if (more > 0) lines.push(muted(`  +${String(more)} more models`))
++      }
++    }
++    if (show("tools")) {
++      section("TOOL RELIABILITY")
++      if (stats.tools.mode !== "detail" || stats.tools.usage.length === 0) {
++        lines.push(muted("  no tool calls"))
++      } else {
++        const shown = stats.tools.usage.slice(0, 10)
++        lines.push(statTableHeader("tool", "calls", "error", "p50"))
++        for (const tool of shown) {
++          const terminal = tool.succeeded + tool.failed
++          lines.push(
++            statTableRow(
++              tool.name,
++              formatCount(tool.calls),
++              terminal === 0 ? "-" : formatPercent((tool.failed / terminal) * 100),
++              tool.durationP50 === undefined ? "-" : formatDuration(tool.durationP50),
++            ),
++          )
++        }
++        const more = stats.tools.usage.length - shown.length
++        if (more > 0) lines.push(muted(`  +${String(more)} more tools`))
++        lines.push(
++          "",
++          muted(`${formatCount(finished)} finished calls · ${formatCount(totals?.unfinished ?? 0)} unfinished`),
++        )
++      }
++    }
++    lines.push("", muted("loophole.ai"))
++    this.screen.addReport(lines.join("\n"))
++  }
++
++  /** `/update` — run this CLI's own `upgrade` command and show what it did. */
++  private async updateCli(args: string): Promise<void> {
++    const target = args.trim().split(/\s+/)[0] ?? ""
++    this.screen.addStatus(target ? `Updating Loophole to ${target}…` : "Checking for a Loophole update…")
++    let command: string[]
++    try {
++      command = selfCommand()
++    } catch (error) {
++      return this.screen.addStatus(`Could not locate the Loophole executable: ${String(error)}`, "error")
++    }
++    const [executable, ...prefix] = command
++    const result = spawnSync(executable, [...prefix, "upgrade", ...(target ? [target] : [])], {
++      encoding: "utf8",
++      timeout: 180_000,
++      env: { ...process.env, NO_COLOR: "1", FORCE_COLOR: "0" },
++    })
++    if (result.error) return this.screen.addStatus(`Update failed: ${result.error.message}`, "error")
++    const output = stripVTControlCharacters(`${result.stdout ?? ""}\n${result.stderr ?? ""}`)
++      .replaceAll("\r", "\n")
++      .split("\n")
++      .map((line) => line.trimEnd())
++      .filter((line) => line.length > 0)
++    if (result.status !== 0) {
++      return this.screen.addStatus(
++        `Update failed (exit code ${String(result.status ?? "unknown")}).\n${output.join("\n") || "The updater printed no details."}`,
++        "error",
+       )
+     }
+-    this.screen.addStatus(`Stats\n${lines.join("\n")}`)
++    const shown = output.slice(-40)
++    const hidden = output.length - shown.length
++    const body = shown.join("\n") + (hidden > 0 ? `\n… ${String(hidden)} more lines` : "")
++    this.screen.addStatus(body.length > 0 ? `Update\n${body}` : "Loophole is up to date.")
+   }
+ 
+   private async showPlugins(): Promise<void> {
+diff --git a/packages/screen/src/screen.ts b/packages/screen/src/screen.ts
+index d05ba6f0c0..78bbb348dd 100644
+--- a/packages/screen/src/screen.ts
++++ b/packages/screen/src/screen.ts
+@@ -17,11 +17,13 @@
+ import {
+   Container,
+   Input,
++  Key,
+   ProcessTerminal,
+   SelectList,
+   Spacer,
+   Text,
+   TuiMainScreen,
++  matchesKey,
+   type Component,
+   type SelectItem,
+   type SlashCommand,
+@@ -45,6 +47,7 @@ import { ToolCallComponent } from './components/messages/tool-call';
+ import { UserMessageComponent } from './components/messages/user-message';
+ import { CHROME_GUTTER } from './constant/rendering';
+ import { currentTheme, getColorPalette, type ColorToken, type ThemeName } from './theme/index';
++import { isPrintableChar, printableChar } from './utils/printable-key';
+ 
+ export type PermissionChoice = 'once' | 'always' | 'reject';
+ 
+@@ -111,6 +114,8 @@ interface PromptOptions {
+   readonly numbered?: boolean;
+   /** Hint line under the list. */
+   readonly footer?: string;
++  /** Add a text field above the list: typing narrows the rows by name or description. */
++  readonly filterable?: boolean;
+ }
+ 
+ export class Screen {
+@@ -348,6 +353,21 @@ export class Screen {
+     this.ui.requestRender();
+   }
+ 
++  /**
++   * A pre-styled multi-line block (used by /stats). Unlike `addStatus` the text is rendered
++   * exactly as given, so per-section colours and tables keep their alignment.
++   */
++  addReport(text: string): void {
++    const body = text
++      .replaceAll('\r', '')
++      .split('\n')
++      .map((line) => (line.length > 0 ? `  ${line}` : line))
++      .join('\n');
++    this.transcript.addChild(new Spacer(1));
++    this.transcript.addChild(new Text(body, 0, 0));
++    this.ui.requestRender();
++  }
++
+   /** Rich per-file diff panels (used by `/diff`). */
+   addDiff(files: readonly DiffFileSummary[]): void {
+     this.transcript.addChild(new Spacer(1));
+@@ -477,14 +497,46 @@ export class Screen {
+   ): Promise<string | undefined> {
+     return new Promise((resolve) => {
+       const selection = options.selection ?? options.accent ?? 'primary';
+-      const list = new SelectList(items, 10, {
+-        selectedPrefix: (text) => currentTheme.fg(selection, text),
+-        selectedText: (text) => currentTheme.fg(selection, text),
+-        description: (text) => currentTheme.fg('textMuted', text),
+-        scrollInfo: (text) => currentTheme.fg('textMuted', text),
+-        noMatch: (text) => currentTheme.fg('textMuted', text),
+-      });
+-      if (initialIndex > 0 && initialIndex < items.length) list.setSelectedIndex(initialIndex);
++      const listTheme = {
++        selectedPrefix: (text: string) => currentTheme.fg(selection, text),
++        selectedText: (text: string) => currentTheme.fg(selection, text),
++        description: (text: string) => currentTheme.fg('textMuted', text),
++        scrollInfo: (text: string) => currentTheme.fg('textMuted', text),
++        noMatch: (text: string) => currentTheme.fg('textMuted', text),
++      };
++
++      const finish = (value: string | undefined) => {
++        this.prompting = false;
++        this.promptSlot.clear();
++        this.promptSlot.addChild(this.editor);
++        this.ui.setFocus(this.editor);
++        this.ui.requestRender();
++        resolve(value);
++      };
++
++      const makeList = (listItems: SelectItem[], startIndex = 0): SelectList => {
++        const list = new SelectList(listItems, options.filterable ? 12 : 10, listTheme);
++        if (startIndex > 0 && startIndex < listItems.length) list.setSelectedIndex(startIndex);
++        list.onSelect = (item) => finish(item.value);
++        list.onCancel = () => finish(cancelValue);
++        if (options.numbered) {
++          const handle = list.handleInput.bind(list);
++          list.handleInput = (data: string) => {
++            const match = /^([1-9])$/.exec(data);
++            if (match) {
++              const index = Number(match[1]) - 1;
++              const item = items[index];
++              if (item) {
++                list.setSelectedIndex(index);
++                finish(item.value);
++                return;
++              }
++            }
++            handle(data);
++          };
++        }
++        return list;
++      };
+ 
+       const panel = new PanelComponent({
+         title: options.title,
+@@ -495,49 +547,101 @@ export class Screen {
+         panel.addChild(new Text(heading.join('\n'), 0, 0));
+         panel.addChild(new Spacer(1));
+       }
+-      panel.addChild(list);
+-      if (options.footer) {
+-        panel.addChild(new Spacer(1));
+-        panel.addChild(new Text(currentTheme.fg('textMuted', options.footer), 0, 0));
+-      }
+ 
+-      const finish = (value: string | undefined) => {
+-        this.prompting = false;
+-        this.promptSlot.clear();
+-        this.promptSlot.addChild(this.editor);
+-        this.ui.setFocus(this.editor);
+-        this.ui.requestRender();
+-        resolve(value);
+-      };
+-      list.onSelect = (item) => finish(item.value);
+-      list.onCancel = () => finish(cancelValue);
+-
+-      if (options.numbered) {
+-        const handle = list.handleInput.bind(list);
+-        list.handleInput = (data: string) => {
+-          const match = /^([1-9])$/.exec(data);
+-          if (match) {
+-            const index = Number(match[1]) - 1;
+-            const item = items[index];
+-            if (item) {
+-              list.setSelectedIndex(index);
+-              finish(item.value);
++      let focus: Component;
++      if (options.filterable) {
++        const listSlot = new Container();
++        const filterLine = new Text(this.filterLine(''), 0, 0);
++        let query = '';
++        let list = makeList(items);
++        listSlot.addChild(list);
++
++        const rebuild = () => {
++          list = makeList(filterPaletteItems(items, query));
++          listSlot.clear();
++          listSlot.addChild(list);
++          filterLine.setText(this.filterLine(query));
++          this.ui.requestRender();
++        };
++
++        // The focused component owns the filter text; arrows/enter/escape are
++        // forwarded to whichever SelectList currently holds the filtered rows.
++        const host: Component = {
++          handleInput: (data: string) => {
++            if (matchesKey(data, Key.backspace)) {
++              if (query.length === 0) return;
++              query = query.slice(0, -1);
++              rebuild();
+               return;
+             }
+-          }
+-          handle(data);
++            const char = printableChar(data);
++            if (isPrintableChar(char)) {
++              query += char;
++              rebuild();
++              return;
++            }
++            list.handleInput(data);
++          },
++          invalidate: () => {},
++          render: () => [],
+         };
++
++        panel.addChild(filterLine);
++        panel.addChild(new Spacer(1));
++        panel.addChild(listSlot);
++        focus = host;
++      } else {
++        const list = makeList(items, initialIndex);
++        panel.addChild(list);
++        focus = list;
++      }
++
++      if (options.footer) {
++        panel.addChild(new Spacer(1));
++        panel.addChild(new Text(currentTheme.fg('textMuted', options.footer), 0, 0));
+       }
+ 
+       this.prompting = true;
+       this.promptSlot.clear();
+       this.promptSlot.addChild(new Spacer(1));
+       this.promptSlot.addChild(panel);
+-      this.ui.setFocus(list);
++      this.ui.setFocus(focus);
+       this.ui.requestRender();
+     });
+   }
+ 
++  /** The palette's filter line: a dim label, a prompt glyph, and the typed query. */
++  private filterLine(query: string): string {
++    const value =
++      query.length > 0
++        ? currentTheme.fg('text', query)
++        : currentTheme.fg('textMuted', 'type to narrow the list…');
++    return `${currentTheme.fg('textMuted', 'filter')} ${currentTheme.fg('primary', '>')} ${value}`;
++  }
++
++  /** Ctrl+Shift+P: open every command in a filterable palette and run the picked one. */
++  openCommandPalette(): void {
++    if (this.prompting) return;
++    const commands = this.commands ?? [];
++    if (commands.length === 0) {
++      this.addStatus('No commands are available yet.');
++      return;
++    }
++    const items = commands.map((command) => ({
++      value: command.name,
++      label: `/${command.name}`,
++      description: command.description,
++    }));
++    void this.prompt([], items, undefined, 0, {
++      title: 'commands',
++      accent: 'border',
++      filterable: true,
++      footer: 'type to filter · ↑/↓ select · enter run · esc close',
++    }).then((value) => {
++      if (value) this.options.onSubmit(`/${value}`);
++    });
++  }
++
+   /** Like `pick`, with the cursor starting on the item whose value is `current`. */
+   pickCurrent(title: string, items: SelectItem[], current: string | undefined): Promise<string | undefined> {
+     const index = Math.max(0, items.findIndex((item) => item.value === current));
+@@ -790,9 +894,27 @@ export class Screen {
+       if (this.editor.getText().length === 0 && !this.prompting) this.options.onExit();
+     };
+     this.editor.onToggleToolExpand = () => this.toggleExpand();
++    this.editor.onPreInput = (data) => {
++      // Ctrl+Shift+P is the documented shortcut. Terminals without the Kitty
++      // keyboard protocol cannot distinguish it from Ctrl+P, so accept both.
++      if (matchesKey(data, Key.ctrlShift('p')) || matchesKey(data, Key.ctrl('p'))) {
++        this.openCommandPalette();
++        return true;
++      }
++      return false;
++    };
+   }
+ }
+ 
++/** Rows whose name, value, or description contain the palette query. */
++function filterPaletteItems(items: readonly SelectItem[], query: string): SelectItem[] {
++  const needle = query.trim().toLowerCase();
++  if (needle.length === 0) return [...items];
++  return items.filter((item) =>
++    `${item.label} ${item.value} ${item.description ?? ''}`.toLowerCase().includes(needle),
++  );
++}
++
+ /** The diff carried by permission metadata: `{ diff }` or `{ files: [{ patch }] }`. */
+ function permissionPatch(metadata: Record<string, unknown> | undefined): string {
+   if (!metadata) return '';

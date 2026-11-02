@@ -27,6 +27,7 @@ patches/
   0016-rich-diff-and-approval.patch  diff panels, approval dialog with feedback, bordered prompts
   0017-home-polish.patch       boxed composer, provider login, flat model picker, settings hub
   0018-screen-polish.patch     narrow wordmark, provider-first models, model persistence, live rename
+  0019-stats-update-palette.patch  /stats usage report, /update, Ctrl+Shift+P command palette
   user/                        optional extra patches, applied after the numbered stack
   series                       legacy list, ignored by the scripts (sorted order wins)
   @ai-sdk%2F...@x.patch         copies of upstream bun patchedDependencies - NEVER applied
@@ -162,6 +163,15 @@ last model is remembered in `~/.local/state/loophole/screen.json` across launche
 working-tree diff, `/compact` streams the compaction summary the way OpenCode does, and `/help`,
 `/version`, `/changelog`, `/feedback`, `/title`, `/mcp`, `/theme`, `/reset` and `/upgrade` join the
 palette with their aliases as visible rows.
+
+`0019-stats-update-palette.patch` adds the last three daily-driver commands. `/stats` mirrors
+`loophole stats --full`: an activity heatmap, session/prompt/step counts, tool success, active
+days and best streak, then cost and token breakdowns, per-model usage and per-tool reliability.
+It accepts `all`, a number of days, or `cost` / `models` / `tools` to show a single section.
+`/update` runs this build's own `upgrade` command in a child process (optional version argument)
+and prints the updater output in the transcript; it never updates on launch. `Ctrl+Shift+P`
+(and plain `Ctrl+P` on terminals that cannot distinguish the two) opens a filterable command
+palette containing every built-in command, every alias, and the server's custom commands.
 
 `0005-telemetry-posthog.patch` came from the `telemetry-posthog` / `tui-logo-art` branches.
 Every other custom commit on the local branches (Discord report link, service-port isolation,
