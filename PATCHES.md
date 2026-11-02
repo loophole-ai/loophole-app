@@ -181,7 +181,8 @@ hints all use that name; stale `loophole`/`loophole2` binaries are removed on in
 line now reads `Preparing server...` (and `Preparing server (version mismatch)...` when replacing
 an older service) instead of mentioning the background server. `/models` now filters as you type,
 and the same filter applies to `/sessions`, `/open`, and `/skills`, so a 350-model OpenRouter list
-is searchable instead of scroll-only.
+is searchable instead of scroll-only. The `/stats` activity calendar drops the blank line between
+weekday rows and uses a five-step glyph gradient, so the whole year reads as one compact heatmap.
 
 `0005-telemetry-posthog.patch` came from the `telemetry-posthog` / `tui-logo-art` branches.
 Every other custom commit on the local branches (Discord report link, service-port isolation,

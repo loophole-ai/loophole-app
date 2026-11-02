@@ -1541,10 +1541,33 @@ index ac88b12968..b442e50a0a 100644
   * Piped input/output always uses the plain paths regardless of this setting.
   */
 diff --git a/packages/cli/src/screen/controller.ts b/packages/cli/src/screen/controller.ts
-index c062c55755..c83b0fa79c 100644
+index c062c55755..a129bc142b 100644
 --- a/packages/cli/src/screen/controller.ts
 +++ b/packages/cli/src/screen/controller.ts
-@@ -737,7 +737,7 @@ export class ScreenController {
+@@ -340,16 +340,19 @@ function renderStatActivity(
+   const paint = (level: number) => {
+     if (level < 0) return " "
+     if (level === 0) return muted(glyphs[0])
+-    if (level <= 2) return muted(glyphs[level])
+-    return strong(glyphs[level])
++    if (level === 1) return muted(glyphs[1])
++    if (level === 2) return currentTheme.fg("text", glyphs[2])
++    if (level === 3) return strong(glyphs[3])
++    return currentTheme.boldFg("primary", glyphs[4])
+   }
+   const lines = [
+     `${strong("activity")}${calendar.clipped ? muted(` · last ${String(calendar.weeks.length)} weeks`) : ""}`,
+     `   ${muted(months)}`,
+   ]
++  // Keep the seven weekday rows adjacent (GitHub-style). Blank lines between
++  // them made the calendar tall and impossible to scan as a week.
+   weekdays.forEach((label, day) => {
+     lines.push(`${muted(label)} ${calendar.weeks.map((week) => paint(week[day].level)).join("")}`)
+-    if (day < weekdays.length - 1) lines.push("")
+   })
+   lines.push("", `   ${muted("less")} ${[0, 1, 2, 3, 4].map(paint).join("")} ${muted("more")}`)
+   return lines
+@@ -737,7 +740,7 @@ export class ScreenController {
        : await this.api.session.list({ directory: this.directory, order: "desc", limit: 30 })
      const sessions: SessionInfo[] = response.data
      if (sessions.length === 0) return this.screen.addStatus("There are no sessions yet.")
@@ -1553,7 +1576,7 @@ index c062c55755..c83b0fa79c 100644
        all ? "Open a session" : "Switch session",
        sessions.map((session) => ({
          value: session.id,
-@@ -749,6 +749,8 @@ export class ScreenController {
+@@ -749,6 +752,8 @@ export class ScreenController {
                : undefined
              : session.location.directory,
        })),
@@ -1562,7 +1585,7 @@ index c062c55755..c83b0fa79c 100644
      )
      const picked = sessions.find((session) => session.id === id)
      if (!picked) return
-@@ -1082,9 +1084,11 @@ export class ScreenController {
+@@ -1082,9 +1087,11 @@ export class ScreenController {
      const response = await this.api.skill.list({ location: { directory: this.directory } })
      const skills = response.data
      if (skills.length === 0) return this.screen.addStatus("No skills are available.")
@@ -1575,7 +1598,7 @@ index c062c55755..c83b0fa79c 100644
      )
      const skill = skills.find((item) => item.id === id)
      if (!skill) return
-@@ -1231,7 +1235,7 @@ export class ScreenController {
+@@ -1231,7 +1238,7 @@ export class ScreenController {
  
    /**
     * `/stats` — usage, cost, activity, models and tool reliability, modelled on
@@ -1584,7 +1607,7 @@ index c062c55755..c83b0fa79c 100644
     * `cost`, `models`, `tools` to show only those sections.
     */
    private async showStats(args: string): Promise<void> {
-@@ -1898,27 +1902,30 @@ export class ScreenController {
+@@ -1898,27 +1905,30 @@ export class ScreenController {
      if (options.length === 0) return
      const selectedID =
        current !== undefined && current.providerID === providerID ? current.id : undefined
