@@ -28,6 +28,7 @@ patches/
   0017-home-polish.patch       boxed composer, provider login, flat model picker, settings hub
   0018-screen-polish.patch     narrow wordmark, provider-first models, model persistence, live rename
   0019-stats-update-palette.patch  /stats usage report, /update, Ctrl+Shift+P command palette
+  0020-cli-name-and-search.patch  loophole-cli/lhc install name, Preparing server line, search in pickers
   user/                        optional extra patches, applied after the numbered stack
   series                       legacy list, ignored by the scripts (sorted order wins)
   @ai-sdk%2F...@x.patch         copies of upstream bun patchedDependencies - NEVER applied
@@ -172,6 +173,15 @@ It accepts `all`, a number of days, or `cost` / `models` / `tools` to show a sin
 and prints the updater output in the transcript; it never updates on launch. `Ctrl+Shift+P`
 (and plain `Ctrl+P` on terminals that cannot distinguish the two) opens a filterable command
 palette containing every built-in command, every alias, and the server's custom commands.
+
+`0020-cli-name-and-search.patch` settles the install identity and the long-list pickers. The CLI
+binary is now `loophole-cli` (with `lhc` as a short alias), installed into `~/.loophole/bin`, and
+the desktop CLI installer, updater detection, ACP auth hint, help text, and user-facing command
+hints all use that name; stale `loophole`/`loophole2` binaries are removed on install. The startup
+line now reads `Preparing server...` (and `Preparing server (version mismatch)...` when replacing
+an older service) instead of mentioning the background server. `/models` now filters as you type,
+and the same filter applies to `/sessions`, `/open`, and `/skills`, so a 350-model OpenRouter list
+is searchable instead of scroll-only.
 
 `0005-telemetry-posthog.patch` came from the `telemetry-posthog` / `tui-logo-art` branches.
 Every other custom commit on the local branches (Discord report link, service-port isolation,

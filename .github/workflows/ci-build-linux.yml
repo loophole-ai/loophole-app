@@ -79,11 +79,11 @@ jobs:
       - name: Upload CLI binary to gofile
         run: |
           cd opencode
-          BIN=packages/cli/dist/cli-linux-x64-baseline/bin/loophole
+          BIN=packages/cli/dist/cli-linux-x64-baseline/bin/loophole-cli
           ls -la "$BIN"
           SERVER=$(curl -s https://api.gofile.io/servers | jq -r '.data.servers[0].name')
           echo "gofile server: $SERVER"
-          RESP=$(curl -s -F "file=@$BIN;filename=loophole-linux-x64" "https://$SERVER.gofile.io/contents/uploadfile")
+          RESP=$(curl -s -F "file=@$BIN;filename=loophole-cli-linux-x64" "https://$SERVER.gofile.io/contents/uploadfile")
           echo "$RESP" | jq .
           LINK=$(echo "$RESP" | jq -r '.data.downloadPage // empty')
           if [ -z "$LINK" ]; then echo "## gofile upload failed" >> "$GITHUB_STEP_SUMMARY"; exit 1; fi
@@ -97,5 +97,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: loophole-cli-linux-x64
-          path: opencode/packages/cli/dist/cli-linux-x64-baseline/bin/loophole
+          path: opencode/packages/cli/dist/cli-linux-x64-baseline/bin/loophole-cli
           if-no-files-found: error

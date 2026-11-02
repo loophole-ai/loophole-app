@@ -1,0 +1,1956 @@
+diff --git a/install b/install
+index 84f97f5467..3feda20ec6 100755
+--- a/install
++++ b/install
+@@ -1,7 +1,7 @@
+ #!/usr/bin/env bash
+ set -euo pipefail
+-APP=opencode
+-SOURCE_APP=opencode
++APP=loophole-cli
++SOURCE_APP=loophole-cli
+ 
+ MUTED='\033[0;2m'
+ RED='\033[0;31m'
+@@ -10,20 +10,18 @@ NC='\033[0m' # No Color
+ 
+ usage() {
+     cat <<EOF
+-OpenCode Installer
++Loophole CLI Installer
+ 
+ Usage: install.sh [options]
+ 
+ Options:
+     -h, --help              Display this help message
+-    -v, --version <version> Install a specific version (e.g., 0.0.0-beta-17236)
++    -v, --version <version> Install a specific version
+     -b, --binary <path>     Install from a local binary instead of downloading
+         --no-modify-path    Don't modify shell config files (.zshrc, .bashrc, etc.)
+ 
+ Examples:
+-    curl -fsSL https://opencode.ai/v2/install | bash
+-    curl -fsSL https://opencode.ai/v2/install | bash -s -- --version 0.0.0-beta-17236
+-    ./install --binary /path/to/opencode
++    ./install --binary /path/to/loophole-cli
+ EOF
+ }
+ 
+@@ -66,7 +64,16 @@ while [[ $# -gt 0 ]]; do
+     esac
+ done
+ 
+-INSTALL_DIR=$HOME/.opencode/bin
++# Loophole CLI binaries are shipped with Loophole Desktop and installed with
++# `--binary`. There is no standalone download endpoint yet, so refuse to fall
++# back to the upstream OpenCode package.
++if [ -z "$binary_path" ]; then
++    echo -e "${RED}Error: Loophole CLI must be installed from Loophole Desktop or with --binary <path>.${NC}"
++    echo -e "${MUTED}Open Loophole Desktop, go to Settings, and choose Install CLI.${NC}"
++    exit 1
++fi
++
++INSTALL_DIR=$HOME/.loophole/bin
+ mkdir -p "$INSTALL_DIR"
+ 
+ # If --binary is provided, skip all download/detection logic
+@@ -342,27 +349,30 @@ install_from_binary() {
+     chmod 755 "$INSTALL_DIR/$installed_binary"
+ }
+ 
+-install_legacy_shim() {
++install_shortcut() {
+     local shim_os="${os:-}"
+     if [[ -z "$shim_os" ]]; then
+         case "$(uname -s)" in
+             MINGW*|MSYS*|CYGWIN*) shim_os="windows" ;;
+         esac
+     fi
+-    rm -f "$INSTALL_DIR/opencode2" "$INSTALL_DIR/opencode2.exe" "$INSTALL_DIR/opencode2.cmd"
++    # `lhc` is the short alias for the CLI; keep it next to the real binary.
++    rm -f "$INSTALL_DIR/lhc" "$INSTALL_DIR/lhc.exe" "$INSTALL_DIR/lhc.cmd"
++    # Remove binaries and shims from older installs that used the bare `loophole` name.
++    rm -f "$INSTALL_DIR/loophole" "$INSTALL_DIR/loophole.exe" "$INSTALL_DIR/loophole2" "$INSTALL_DIR/loophole2.exe" "$INSTALL_DIR/loophole2.cmd"
+     if [[ "$shim_os" == "windows" ]]; then
+-        cat > "$INSTALL_DIR/opencode2.cmd" <<'EOF'
++        cat > "$INSTALL_DIR/lhc.cmd" <<'EOF'
+ @echo off
+-"%~dp0opencode.exe" %*
++"%~dp0loophole-cli.exe" %*
+ exit /b %errorlevel%
+ EOF
+         return
+     fi
+-    cat > "$INSTALL_DIR/opencode2" <<'EOF'
++    cat > "$INSTALL_DIR/lhc" <<'EOF'
+ #!/bin/sh
+-exec "$(dirname "$0")/opencode" "$@"
++exec "$(dirname "$0")/loophole-cli" "$@"
+ EOF
+-    chmod 755 "$INSTALL_DIR/opencode2"
++    chmod 755 "$INSTALL_DIR/lhc"
+ }
+ 
+ if [ -n "$binary_path" ]; then
+@@ -371,7 +381,7 @@ else
+     check_version
+     download_and_install
+ fi
+-install_legacy_shim
++install_shortcut
+ 
+ 
+ path_added=false
+@@ -382,10 +392,10 @@ add_to_path() {
+     if grep -Fxq "$command" "$config_file"; then
+         print_message info "Command already exists in $config_file, skipping write."
+     elif [[ -w $config_file ]]; then
+-        echo -e "\n# opencode" >> "$config_file"
++        echo -e "\n# loophole-cli" >> "$config_file"
+         echo "$command" >> "$config_file"
+         path_added=true
+-        print_message info "${MUTED}Successfully added ${NC}opencode ${MUTED}to \$PATH in ${NC}$config_file"
++        print_message info "${MUTED}Successfully added ${NC}loophole-cli ${MUTED}to \$PATH in ${NC}$config_file"
+     else
+         print_message warning "Manually add the directory to $config_file (or similar):"
+         print_message info "  $command"
+@@ -426,7 +436,7 @@ if [[ "$no_modify_path" != "true" ]]; then
+         fi
+     done
+ 
+-    # A new Mac has no ~/.zshrc, so create the shell's main config file rather than leaving opencode off PATH.
++    # A new Mac has no ~/.zshrc, so create the shell's main config file rather than leaving loophole-cli off PATH.
+     if [[ -z $config_file ]]; then
+         case $current_shell in
+             zsh) new_config_file="${ZDOTDIR:-$HOME}/.zshrc" ;;
+@@ -479,14 +489,15 @@ echo -e "${MUTED}█░░█ █░░█ █▀▀▀ █░░█ ${NC}█░
+ echo -e "${MUTED}▀▀▀▀ █▀▀▀ ▀▀▀▀ ▀  ▀ ${NC}▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀"
+ echo -e ""
+ echo -e ""
+-echo -e "${MUTED}OpenCode includes free models, to start:${NC}"
++echo -e "${MUTED}Loophole includes free models, to start:${NC}"
+ echo -e ""
+ if [[ $path_added == "true" ]]; then
+     echo -e "exec \$SHELL   ${MUTED}# Reload PATH (or open a new terminal)${NC}"
+ fi
+ echo -e "cd <project>  ${MUTED}# Open directory${NC}"
+-echo -e "opencode      ${MUTED}# Run command${NC}"
++echo -e "loophole-cli  ${MUTED}# Run command${NC}"
++echo -e "lhc           ${MUTED}# Short alias${NC}"
+ echo -e ""
+-echo -e "${MUTED}For more information visit ${NC}https://opencode.ai/v2/docs"
++echo -e "${MUTED}For more information visit ${NC}https://www.loopholeeditor.in/docs"
+ echo -e ""
+ echo -e ""
+diff --git a/packages/app/src/runtime/i18n/am.ts b/packages/app/src/runtime/i18n/am.ts
+index 55df6159e3..e1120287a9 100644
+--- a/packages/app/src/runtime/i18n/am.ts
++++ b/packages/app/src/runtime/i18n/am.ts
+@@ -591,7 +591,7 @@ export const dict = {
+   "provider.disconnect.toast.failed.description": "{{provider}}ን ማቋረጥ አልተሳካም።",
+   "desktop.menu.installCli": "CLIን ጫን...",
+   "desktop.cli.installed.title": "CLI ተጭኗል",
+-  "desktop.cli.installed.message": "CLI በ{{path}} ላይ ተጭኗል\n\nየ'loophole2' ትዕዛዝን ለመጠቀም ተርሚናልዎን ዳግም ያስጀምሩ።",
++  "desktop.cli.installed.message": "CLI በ{{path}} ላይ ተጭኗል\n\nየ'loophole-cli' ትዕዛዝን ለመጠቀም ተርሚናልዎን ዳግም ያስጀምሩ።",
+   "desktop.cli.failed.title": "መጫን አልተሳካም",
+   "desktop.cli.failed.message": "CLIን መጫን አልተሳካም፦ {{error}}",
+   "command.project.copyID": "የፕሮጀክት IDን ቅዳ",
+diff --git a/packages/app/src/runtime/i18n/ar.ts b/packages/app/src/runtime/i18n/ar.ts
+index a4507d90a0..8b4dde1838 100644
+--- a/packages/app/src/runtime/i18n/ar.ts
++++ b/packages/app/src/runtime/i18n/ar.ts
+@@ -649,7 +649,7 @@ export const dict = {
+   "desktop.menu.installCli": "تثبيت CLI...",
+   "desktop.cli.installed.title": "تم تثبيت CLI",
+   "desktop.cli.installed.message":
+-    "تم تثبيت CLI في \u2068{{path}}\u2069\n\nأعد تشغيل المحطة الطرفية لاستخدام الأمر 'loophole2'.",
++    "تم تثبيت CLI في \u2068{{path}}\u2069\n\nأعد تشغيل المحطة الطرفية لاستخدام الأمر 'loophole-cli'.",
+   "desktop.cli.failed.title": "فشل التثبيت",
+   "desktop.cli.failed.message": "فشل تثبيت CLI: \u2068{{error}}\u2069",
+   "dialog.server.menu.hide": "إخفاء من قائمة المشاريع",
+diff --git a/packages/app/src/runtime/i18n/az.ts b/packages/app/src/runtime/i18n/az.ts
+index 3c98ee5041..d7c988ae08 100644
+--- a/packages/app/src/runtime/i18n/az.ts
++++ b/packages/app/src/runtime/i18n/az.ts
+@@ -610,7 +610,7 @@ export const dict = {
+   "desktop.menu.installCli": "CLI quraşdır...",
+   "desktop.cli.installed.title": "CLI quraşdırıldı",
+   "desktop.cli.installed.message":
+-    "CLI {{path}} ünvanına quraşdırıldı\n\n'loophole2' əmrindən istifadə etmək üçün terminalı yenidən başladın.",
++    "CLI {{path}} ünvanına quraşdırıldı\n\n'loophole-cli' əmrindən istifadə etmək üçün terminalı yenidən başladın.",
+   "desktop.cli.failed.title": "Quraşdırma uğursuz oldu",
+   "desktop.cli.failed.message": "CLI quraşdırmaq mümkün olmadı: {{error}}",
+   "command.project.copyID": "Layihə ID-sini kopyala",
+diff --git a/packages/app/src/runtime/i18n/bg.ts b/packages/app/src/runtime/i18n/bg.ts
+index 0cdf0f9d35..22114a1bad 100644
+--- a/packages/app/src/runtime/i18n/bg.ts
++++ b/packages/app/src/runtime/i18n/bg.ts
+@@ -609,7 +609,7 @@ export const dict = {
+   "desktop.menu.installCli": "Инсталиране на CLI...",
+   "desktop.cli.installed.title": "CLI е инсталиран",
+   "desktop.cli.installed.message":
+-    "CLI е инсталиран в {{path}}\n\nРестартирайте терминала, за да използвате командата 'loophole2'.",
++    "CLI е инсталиран в {{path}}\n\nРестартирайте терминала, за да използвате командата 'loophole-cli'.",
+   "desktop.cli.failed.title": "Неуспешна инсталация",
+   "desktop.cli.failed.message": "CLI не можа да бъде инсталиран: {{error}}",
+   "command.project.copyID": "Копиране на идентификатора на проекта",
+diff --git a/packages/app/src/runtime/i18n/bn.ts b/packages/app/src/runtime/i18n/bn.ts
+index ab6d09325b..8f3ddc87a0 100644
+--- a/packages/app/src/runtime/i18n/bn.ts
++++ b/packages/app/src/runtime/i18n/bn.ts
+@@ -606,7 +606,7 @@ export const dict = {
+   "desktop.menu.installCli": "CLI ইনস্টল করুন...",
+   "desktop.cli.installed.title": "CLI ইনস্টল হয়েছে",
+   "desktop.cli.installed.message":
+-    "CLI {{path}}-এ ইনস্টল হয়েছে\n\n'loophole2' কমান্ড ব্যবহার করতে টার্মিনাল পুনরায় চালু করুন।",
++    "CLI {{path}}-এ ইনস্টল হয়েছে\n\n'loophole-cli' কমান্ড ব্যবহার করতে টার্মিনাল পুনরায় চালু করুন।",
+   "desktop.cli.failed.title": "ইনস্টলেশন ব্যর্থ হয়েছে",
+   "desktop.cli.failed.message": "CLI ইনস্টল করা যায়নি: {{error}}",
+   "command.project.copyID": "প্রকল্পের ID কপি করুন",
+diff --git a/packages/app/src/runtime/i18n/br.ts b/packages/app/src/runtime/i18n/br.ts
+index 21798cfe4b..d5ab932da6 100644
+--- a/packages/app/src/runtime/i18n/br.ts
++++ b/packages/app/src/runtime/i18n/br.ts
+@@ -831,7 +831,7 @@ export const dict = {
+   "settings.workspaces.sessions.many": "{{count}} sessÃµes em {{project}}",
+   "desktop.menu.installCli": "Instalar CLI...",
+   "desktop.cli.installed.title": "CLI instalada",
+-  "desktop.cli.installed.message": "CLI instalada em {{path}}\n\nReinicie o terminal para usar o comando 'loophole2'.",
++  "desktop.cli.installed.message": "CLI instalada em {{path}}\n\nReinicie o terminal para usar o comando 'loophole-cli'.",
+   "desktop.cli.failed.title": "Falha na instalaÃ§Ã£o",
+   "desktop.cli.failed.message": "Falha ao instalar a CLI: {{error}}",
+   "command.project.copyID": "Copiar ID do projeto",
+diff --git a/packages/app/src/runtime/i18n/bs.ts b/packages/app/src/runtime/i18n/bs.ts
+index b84578fccd..a4ceed5265 100644
+--- a/packages/app/src/runtime/i18n/bs.ts
++++ b/packages/app/src/runtime/i18n/bs.ts
+@@ -670,7 +670,7 @@ export const dict = {
+   "desktop.menu.installCli": "Instaliraj CLI...",
+   "desktop.cli.installed.title": "CLI je instaliran",
+   "desktop.cli.installed.message":
+-    "CLI je instaliran u {{path}}\n\nPonovo pokrenite terminal da biste koristili naredbu 'loophole2'.",
++    "CLI je instaliran u {{path}}\n\nPonovo pokrenite terminal da biste koristili naredbu 'loophole-cli'.",
+   "desktop.cli.failed.title": "Instalacija nije uspjela",
+   "desktop.cli.failed.message": "Instalacija CLI-ja nije uspjela: {{error}}",
+   "command.project.copyID": "Kopiraj ID projekta",
+diff --git a/packages/app/src/runtime/i18n/ca.ts b/packages/app/src/runtime/i18n/ca.ts
+index c2dab94f38..1ba5e93633 100644
+--- a/packages/app/src/runtime/i18n/ca.ts
++++ b/packages/app/src/runtime/i18n/ca.ts
+@@ -610,7 +610,7 @@ export const dict = {
+   "desktop.menu.installCli": "Instal·la la CLI...",
+   "desktop.cli.installed.title": "CLI instal·lada",
+   "desktop.cli.installed.message":
+-    "La CLI s'ha instal·lat a {{path}}\n\nReinicieu el terminal per utilitzar l'ordre 'loophole2'.",
++    "La CLI s'ha instal·lat a {{path}}\n\nReinicieu el terminal per utilitzar l'ordre 'loophole-cli'.",
+   "desktop.cli.failed.title": "La instal·lació ha fallat",
+   "desktop.cli.failed.message": "No s'ha pogut instal·lar la CLI: {{error}}",
+   "command.project.copyID": "Copia l'ID del projecte",
+diff --git a/packages/app/src/runtime/i18n/cs.ts b/packages/app/src/runtime/i18n/cs.ts
+index 7b817ff548..16945555ad 100644
+--- a/packages/app/src/runtime/i18n/cs.ts
++++ b/packages/app/src/runtime/i18n/cs.ts
+@@ -610,7 +610,7 @@ export const dict = {
+   "desktop.menu.installCli": "Nainstalovat CLI...",
+   "desktop.cli.installed.title": "CLI nainstalováno",
+   "desktop.cli.installed.message":
+-    "CLI bylo nainstalováno do {{path}}\n\nChcete-li používat příkaz 'loophole2', restartujte terminál.",
++    "CLI bylo nainstalováno do {{path}}\n\nChcete-li používat příkaz 'loophole-cli', restartujte terminál.",
+   "desktop.cli.failed.title": "Instalace se nezdařila",
+   "desktop.cli.failed.message": "CLI se nepodařilo nainstalovat: {{error}}",
+   "command.project.copyID": "Kopírovat ID projektu",
+diff --git a/packages/app/src/runtime/i18n/da.ts b/packages/app/src/runtime/i18n/da.ts
+index 8051dfcf0c..61a3c50f19 100644
+--- a/packages/app/src/runtime/i18n/da.ts
++++ b/packages/app/src/runtime/i18n/da.ts
+@@ -861,7 +861,7 @@ export const dict = {
+   "desktop.menu.installCli": "Installér CLI...",
+   "desktop.cli.installed.title": "CLI installeret",
+   "desktop.cli.installed.message":
+-    "CLI installeret i {{path}}\n\nGenstart terminalen for at bruge kommandoen 'loophole2'.",
++    "CLI installeret i {{path}}\n\nGenstart terminalen for at bruge kommandoen 'loophole-cli'.",
+   "desktop.cli.failed.title": "Installationen mislykkedes",
+   "desktop.cli.failed.message": "CLI kunne ikke installeres: {{error}}",
+   "command.project.copyID": "Kopier projekt-id",
+diff --git a/packages/app/src/runtime/i18n/de.ts b/packages/app/src/runtime/i18n/de.ts
+index be082ce6f7..a145f470ac 100644
+--- a/packages/app/src/runtime/i18n/de.ts
++++ b/packages/app/src/runtime/i18n/de.ts
+@@ -826,7 +826,7 @@ export const dict = {
+   "desktop.menu.installCli": "CLI installieren...",
+   "desktop.cli.installed.title": "CLI installiert",
+   "desktop.cli.installed.message":
+-    "CLI wurde unter {{path}} installiert.\n\nStarten Sie Ihr Terminal neu, um den Befehl 'loophole2' zu verwenden.",
++    "CLI wurde unter {{path}} installiert.\n\nStarten Sie Ihr Terminal neu, um den Befehl 'loophole-cli' zu verwenden.",
+   "desktop.cli.failed.title": "Installation fehlgeschlagen",
+   "desktop.cli.failed.message": "CLI konnte nicht installiert werden: {{error}}",
+   "command.project.copyID": "Projekt-ID kopieren",
+diff --git a/packages/app/src/runtime/i18n/desktop-native.ts b/packages/app/src/runtime/i18n/desktop-native.ts
+index 376f9b1d17..86448cb5f2 100644
+--- a/packages/app/src/runtime/i18n/desktop-native.ts
++++ b/packages/app/src/runtime/i18n/desktop-native.ts
+@@ -278,7 +278,7 @@ export const DESKTOP_NATIVE_ENGLISH = {
+   "desktop.menu.ariaLabel": "Loophole menu",
+ 
+   "desktop.cli.installed.title": "CLI Installed",
+-  "desktop.cli.installed.message": "CLI installed to {{path}}\n\nRestart your terminal to use the 'loophole' command.",
++  "desktop.cli.installed.message": "CLI installed to {{path}}\n\nRestart your terminal to use the 'loophole-cli' command (or its short alias 'lhc').",
+   "desktop.cli.failed.title": "Installation Failed",
+   "desktop.cli.failed.message": "Failed to install CLI: {{error}}",
+ 
+diff --git a/packages/app/src/runtime/i18n/dv.ts b/packages/app/src/runtime/i18n/dv.ts
+index 4a88810ccf..76d6183f82 100644
+--- a/packages/app/src/runtime/i18n/dv.ts
++++ b/packages/app/src/runtime/i18n/dv.ts
+@@ -620,7 +620,7 @@ export const dict = {
+   "desktop.menu.installCli": "CLI އިންސްޓޯލް ކުރާށެވެ...",
+   "desktop.cli.installed.title": "CLI އިންސްޓޯލް ކުރެވިއްޖެ",
+   "desktop.cli.installed.message":
+-    "CLI އިންސްޓޯލް ކުރެވިފައިވަނީ \u2068{{path}}\u2069 އަށެވެ\n\n'loophole2' ކޮމާންޑް ބޭނުންކުރުމަށް ޓާމިނަލް އަލުން ފަށާށެވެ.",
++    "CLI އިންސްޓޯލް ކުރެވިފައިވަނީ \u2068{{path}}\u2069 އަށެވެ\n\n'loophole-cli' ކޮމާންޑް ބޭނުންކުރުމަށް ޓާމިނަލް އަލުން ފަށާށެވެ.",
+   "desktop.cli.failed.title": "އިންސްޓޯލް ކުރުން ނާކާމިޔާބުވެއްޖެ",
+   "desktop.cli.failed.message": "CLI އިންސްޓޯލް ނުކުރެވުނެވެ: \u2068{{error}}\u2069",
+   "command.project.copyID": "ޕްރޮޖެކްޓް ID ކޮޕީކުރުން",
+diff --git a/packages/app/src/runtime/i18n/dz.ts b/packages/app/src/runtime/i18n/dz.ts
+index be5a36ada9..0d01d0cdb6 100644
+--- a/packages/app/src/runtime/i18n/dz.ts
++++ b/packages/app/src/runtime/i18n/dz.ts
+@@ -50,7 +50,7 @@ export const dict = {
+   "desktop.menu.ariaLabel": "Loophole དཀར་ཆག།",
+   "desktop.cli.installed.title": "CLI གཞི་བཙུགས་འབད་ཡོདཔ།",
+   "desktop.cli.installed.message":
+-    "CLI འདི་ {{path}} ལུ་གཞི་བཙུགས་འབད་ཡི།\n\n'loophole2' བརྡ་བཀོད་ལག་ལེན་འཐབ་ནིའི་དོན་ལུ་ ཊར་མི་ནཱལ་ལོག་འགོ་བཙུགས།",
++    "CLI འདི་ {{path}} ལུ་གཞི་བཙུགས་འབད་ཡི།\n\n'loophole-cli' བརྡ་བཀོད་ལག་ལེན་འཐབ་ནིའི་དོན་ལུ་ ཊར་མི་ནཱལ་ལོག་འགོ་བཙུགས།",
+   "desktop.cli.failed.title": "གཞི་བཙུགས་འཐུས་ཤོར་བྱུང་ཡོདཔ།",
+   "desktop.cli.failed.message": "CLI གཞི་བཙུགས་འབད་མ་ཚུགས།: {{error}}",
+   "desktop.recovery.action.relaunch": "བསྐྱར་འགོ་བཙུགས།",
+diff --git a/packages/app/src/runtime/i18n/el.ts b/packages/app/src/runtime/i18n/el.ts
+index 5136de0795..4f3021cea2 100644
+--- a/packages/app/src/runtime/i18n/el.ts
++++ b/packages/app/src/runtime/i18n/el.ts
+@@ -612,7 +612,7 @@ export const dict = {
+   "desktop.menu.installCli": "Εγκατάσταση CLI...",
+   "desktop.cli.installed.title": "Το CLI εγκαταστάθηκε",
+   "desktop.cli.installed.message":
+-    "Το CLI εγκαταστάθηκε στη διαδρομή {{path}}\n\nΕπανεκκινήστε το τερματικό για να χρησιμοποιήσετε την εντολή 'loophole2'.",
++    "Το CLI εγκαταστάθηκε στη διαδρομή {{path}}\n\nΕπανεκκινήστε το τερματικό για να χρησιμοποιήσετε την εντολή 'loophole-cli'.",
+   "desktop.cli.failed.title": "Η εγκατάσταση απέτυχε",
+   "desktop.cli.failed.message": "Αποτυχία εγκατάστασης του CLI: {{error}}",
+   "command.project.copyID": "Αντιγραφή ID έργου",
+diff --git a/packages/app/src/runtime/i18n/es.ts b/packages/app/src/runtime/i18n/es.ts
+index e35309e255..98fb089c7f 100644
+--- a/packages/app/src/runtime/i18n/es.ts
++++ b/packages/app/src/runtime/i18n/es.ts
+@@ -887,7 +887,7 @@ export const dict = {
+   "desktop.menu.installCli": "Instalar CLI...",
+   "desktop.cli.installed.title": "CLI instalada",
+   "desktop.cli.installed.message":
+-    "La CLI se ha instalado en {{path}}.\n\nReinicia el terminal para usar el comando 'loophole2'.",
++    "La CLI se ha instalado en {{path}}.\n\nReinicia el terminal para usar el comando 'loophole-cli'.",
+   "desktop.cli.failed.title": "Error de instalaciÃ³n",
+   "desktop.cli.failed.message": "No se pudo instalar la CLI: {{error}}",
+   "command.project.copyID": "Copiar ID del proyecto",
+diff --git a/packages/app/src/runtime/i18n/et.ts b/packages/app/src/runtime/i18n/et.ts
+index 363103bc21..6dcfd7a88e 100644
+--- a/packages/app/src/runtime/i18n/et.ts
++++ b/packages/app/src/runtime/i18n/et.ts
+@@ -599,7 +599,7 @@ export const dict = {
+   "desktop.menu.installCli": "Paigalda CLI...",
+   "desktop.cli.installed.title": "CLI on paigaldatud",
+   "desktop.cli.installed.message":
+-    "CLI paigaldati asukohta {{path}}\n\nKäsu 'loophole2' kasutamiseks taaskäivita terminal.",
++    "CLI paigaldati asukohta {{path}}\n\nKäsu 'loophole-cli' kasutamiseks taaskäivita terminal.",
+   "desktop.cli.failed.title": "Paigaldamine ebaõnnestus",
+   "desktop.cli.failed.message": "CLI paigaldamine ebaõnnestus: {{error}}",
+   "command.project.copyID": "Kopeeri projekti ID",
+diff --git a/packages/app/src/runtime/i18n/fa.ts b/packages/app/src/runtime/i18n/fa.ts
+index 1d9fc3e465..5c4457ba06 100644
+--- a/packages/app/src/runtime/i18n/fa.ts
++++ b/packages/app/src/runtime/i18n/fa.ts
+@@ -627,7 +627,7 @@ export const dict = {
+   "desktop.menu.installCli": "نصب CLI...",
+   "desktop.cli.installed.title": "CLI نصب شد",
+   "desktop.cli.installed.message":
+-    "CLI در \u2068{{path}}\u2069 نصب شد\n\nبرای استفاده از دستور 'loophole2'، ترمینال را دوباره راه‌اندازی کنید.",
++    "CLI در \u2068{{path}}\u2069 نصب شد\n\nبرای استفاده از دستور 'loophole-cli'، ترمینال را دوباره راه‌اندازی کنید.",
+   "desktop.cli.failed.title": "نصب ناموفق بود",
+   "desktop.cli.failed.message": "نصب CLI ناموفق بود: \u2068{{error}}\u2069",
+   "dialog.server.menu.hide": "پنهان کردن از فهرست پروژه‌ها",
+diff --git a/packages/app/src/runtime/i18n/fi.ts b/packages/app/src/runtime/i18n/fi.ts
+index 388a45fe14..c7cf09ea80 100644
+--- a/packages/app/src/runtime/i18n/fi.ts
++++ b/packages/app/src/runtime/i18n/fi.ts
+@@ -801,7 +801,7 @@ export const dict = {
+   "desktop.menu.installCli": "Asenna CLI...",
+   "desktop.cli.installed.title": "CLI asennettu",
+   "desktop.cli.installed.message":
+-    "CLI asennettiin kohteeseen {{path}}.\n\nKäynnistä terminaali uudelleen, jotta voit käyttää 'loophole2'-komentoa.",
++    "CLI asennettiin kohteeseen {{path}}.\n\nKäynnistä terminaali uudelleen, jotta voit käyttää 'loophole-cli'-komentoa.",
+   "desktop.cli.failed.title": "Asennus epäonnistui",
+   "desktop.cli.failed.message": "CLI:n asennus epäonnistui: {{error}}",
+   "command.project.copyID": "Kopioi projektin tunnus",
+diff --git a/packages/app/src/runtime/i18n/fo.ts b/packages/app/src/runtime/i18n/fo.ts
+index 8d189df9b4..e1c4e60748 100644
+--- a/packages/app/src/runtime/i18n/fo.ts
++++ b/packages/app/src/runtime/i18n/fo.ts
+@@ -603,7 +603,7 @@ export const dict = {
+   "desktop.menu.installCli": "Set CLI upp...",
+   "desktop.cli.installed.title": "CLI er sett upp",
+   "desktop.cli.installed.message":
+-    "CLI varð sett upp í {{path}}\n\nEndurbyrja terminalin fyri at brúka 'loophole2'-stýriboðið.",
++    "CLI varð sett upp í {{path}}\n\nEndurbyrja terminalin fyri at brúka 'loophole-cli'-stýriboðið.",
+   "desktop.cli.failed.title": "Uppsetingin miseydnaðist",
+   "desktop.cli.failed.message": "Tað eydnaðist ikki at seta CLI upp: {{error}}",
+   "command.project.copyID": "Avrita verkætlanar-ID",
+diff --git a/packages/app/src/runtime/i18n/fr.ts b/packages/app/src/runtime/i18n/fr.ts
+index 7819b15159..e9819c4b53 100644
+--- a/packages/app/src/runtime/i18n/fr.ts
++++ b/packages/app/src/runtime/i18n/fr.ts
+@@ -839,7 +839,7 @@ export const dict = {
+   "desktop.menu.installCli": "Installer la CLI...",
+   "desktop.cli.installed.title": "CLI installÃ©e",
+   "desktop.cli.installed.message":
+-    "La CLI a Ã©tÃ© installÃ©e dans {{path}}.\n\nRedÃ©marrez votre terminal pour utiliser la commande 'loophole2'.",
++    "La CLI a Ã©tÃ© installÃ©e dans {{path}}.\n\nRedÃ©marrez votre terminal pour utiliser la commande 'loophole-cli'.",
+   "desktop.cli.failed.title": "Ã‰chec de l'installation",
+   "desktop.cli.failed.message": "Ã‰chec de l'installation de la CLI : {{error}}",
+   "command.project.copyID": "Copier l'ID du projet",
+diff --git a/packages/app/src/runtime/i18n/he.ts b/packages/app/src/runtime/i18n/he.ts
+index 20cf3c93e7..584b6a8dfa 100644
+--- a/packages/app/src/runtime/i18n/he.ts
++++ b/packages/app/src/runtime/i18n/he.ts
+@@ -624,7 +624,7 @@ export const dict = {
+   "desktop.menu.installCli": "התקנת CLI...",
+   "desktop.cli.installed.title": "CLI הותקן",
+   "desktop.cli.installed.message":
+-    "CLI הותקן ב-\u2068{{path}}\u2069\n\nיש להפעיל מחדש את המסוף כדי להשתמש בפקודה 'loophole2'.",
++    "CLI הותקן ב-\u2068{{path}}\u2069\n\nיש להפעיל מחדש את המסוף כדי להשתמש בפקודה 'loophole-cli'.",
+   "desktop.cli.failed.title": "ההתקנה נכשלה",
+   "desktop.cli.failed.message": "התקנת CLI נכשלה: \u2068{{error}}\u2069",
+   "dialog.server.menu.hide": "הסתר מרשימת הפרויקטים",
+diff --git a/packages/app/src/runtime/i18n/hi.ts b/packages/app/src/runtime/i18n/hi.ts
+index 687d047927..2fdd6d48b6 100644
+--- a/packages/app/src/runtime/i18n/hi.ts
++++ b/packages/app/src/runtime/i18n/hi.ts
+@@ -607,7 +607,7 @@ export const dict = {
+   "desktop.menu.installCli": "CLI इंस्टॉल करें...",
+   "desktop.cli.installed.title": "CLI इंस्टॉल हो गया",
+   "desktop.cli.installed.message":
+-    "CLI को {{path}} पर इंस्टॉल किया गया\n\n'loophole2' कमांड का उपयोग करने के लिए अपना टर्मिनल पुनः आरंभ करें।",
++    "CLI को {{path}} पर इंस्टॉल किया गया\n\n'loophole-cli' कमांड का उपयोग करने के लिए अपना टर्मिनल पुनः आरंभ करें।",
+   "desktop.cli.failed.title": "इंस्टॉलेशन विफल",
+   "desktop.cli.failed.message": "CLI इंस्टॉल नहीं हो सका: {{error}}",
+   "command.project.copyID": "प्रोजेक्ट ID कॉपी करें",
+diff --git a/packages/app/src/runtime/i18n/hr.ts b/packages/app/src/runtime/i18n/hr.ts
+index bd00fa7ea5..9d14dfa992 100644
+--- a/packages/app/src/runtime/i18n/hr.ts
++++ b/packages/app/src/runtime/i18n/hr.ts
+@@ -47,7 +47,7 @@ const desktop = [
+   "Prijavi pogrešku",
+   "Izbornik Loophole",
+   "CLI je instaliran",
+-  "CLI je instaliran u {{path}}\n\nPonovno pokrenite terminal kako biste mogli koristiti naredbu 'loophole2'.",
++  "CLI je instaliran u {{path}}\n\nPonovno pokrenite terminal kako biste mogli koristiti naredbu 'loophole-cli'.",
+   "Instalacija nije uspjela",
+   "Instalacija CLI-ja nije uspjela: {{error}}",
+   "Ponovno pokreni aplikaciju",
+diff --git a/packages/app/src/runtime/i18n/hu.ts b/packages/app/src/runtime/i18n/hu.ts
+index 238a17df13..ed403b93a8 100644
+--- a/packages/app/src/runtime/i18n/hu.ts
++++ b/packages/app/src/runtime/i18n/hu.ts
+@@ -47,7 +47,7 @@ const desktop = [
+   "Hiba jelentése",
+   "Loophole menü",
+   "CLI telepítve",
+-  "A CLI telepítve ide: {{path}}\n\nIndítsa újra a terminált az 'loophole2' parancs használatához.",
++  "A CLI telepítve ide: {{path}}\n\nIndítsa újra a terminált az 'loophole-cli' parancs használatához.",
+   "A telepítés nem sikerült",
+   "Nem sikerült telepíteni a CLI-t: {{error}}",
+   "Újraindítás",
+diff --git a/packages/app/src/runtime/i18n/hy.ts b/packages/app/src/runtime/i18n/hy.ts
+index 31fbba2671..f98b578ded 100644
+--- a/packages/app/src/runtime/i18n/hy.ts
++++ b/packages/app/src/runtime/i18n/hy.ts
+@@ -604,7 +604,7 @@ export const dict = {
+   "desktop.menu.installCli": "Տեղադրել CLI-ն...",
+   "desktop.cli.installed.title": "CLI-ն տեղադրված է",
+   "desktop.cli.installed.message":
+-    "CLI-ն տեղադրվել է {{path}} ուղում\n\nՎերագործարկեք տերմինալը՝ 'loophole2' հրամանն օգտագործելու համար։",
++    "CLI-ն տեղադրվել է {{path}} ուղում\n\nՎերագործարկեք տերմինալը՝ 'loophole-cli' հրամանն օգտագործելու համար։",
+   "desktop.cli.failed.title": "Տեղադրումը ձախողվեց",
+   "desktop.cli.failed.message": "Չհաջողվեց տեղադրել CLI-ն՝ {{error}}",
+   "command.project.copyID": "Պատճենել նախագծի ID-ն",
+diff --git a/packages/app/src/runtime/i18n/id.ts b/packages/app/src/runtime/i18n/id.ts
+index 5deae24529..39fd89055e 100644
+--- a/packages/app/src/runtime/i18n/id.ts
++++ b/packages/app/src/runtime/i18n/id.ts
+@@ -676,7 +676,7 @@ export const dict = {
+   "desktop.menu.installCli": "Instal CLI...",
+   "desktop.cli.installed.title": "CLI Terinstal",
+   "desktop.cli.installed.message":
+-    "CLI terinstal di {{path}}\n\nMulai ulang terminal untuk menggunakan perintah 'loophole2'.",
++    "CLI terinstal di {{path}}\n\nMulai ulang terminal untuk menggunakan perintah 'loophole-cli'.",
+   "desktop.cli.failed.title": "Instalasi Gagal",
+   "desktop.cli.failed.message": "Gagal menginstal CLI: {{error}}",
+   "command.project.copyID": "Salin ID Proyek",
+diff --git a/packages/app/src/runtime/i18n/is.ts b/packages/app/src/runtime/i18n/is.ts
+index d2780b68ba..d6cd2576d9 100644
+--- a/packages/app/src/runtime/i18n/is.ts
++++ b/packages/app/src/runtime/i18n/is.ts
+@@ -47,7 +47,7 @@ const desktop = [
+   "Tilkynna villu",
+   "Loophole-valmynd",
+   "CLI uppsett",
+-  "CLI var sett upp í {{path}}\n\nEndurræstu skjáherminn til að nota 'loophole2' skipunina.",
++  "CLI var sett upp í {{path}}\n\nEndurræstu skjáherminn til að nota 'loophole-cli' skipunina.",
+   "Uppsetning mistókst",
+   "Ekki tókst að setja upp CLI: {{error}}",
+   "Endurræsa forrit",
+diff --git a/packages/app/src/runtime/i18n/it.ts b/packages/app/src/runtime/i18n/it.ts
+index a348a4d57f..cbf76b1505 100644
+--- a/packages/app/src/runtime/i18n/it.ts
++++ b/packages/app/src/runtime/i18n/it.ts
+@@ -824,7 +824,7 @@ export const dict = {
+   "desktop.menu.installCli": "Installa CLI...",
+   "desktop.cli.installed.title": "CLI installata",
+   "desktop.cli.installed.message":
+-    "La CLI è stata installata in {{path}}.\n\nRiavvia il terminale per usare il comando 'loophole2'.",
++    "La CLI è stata installata in {{path}}.\n\nRiavvia il terminale per usare il comando 'loophole-cli'.",
+   "desktop.cli.failed.title": "Installazione non riuscita",
+   "desktop.cli.failed.message": "Impossibile installare la CLI: {{error}}",
+   "command.project.copyID": "Copia ID progetto",
+diff --git a/packages/app/src/runtime/i18n/ja.ts b/packages/app/src/runtime/i18n/ja.ts
+index be57dc1625..0d127867b7 100644
+--- a/packages/app/src/runtime/i18n/ja.ts
++++ b/packages/app/src/runtime/i18n/ja.ts
+@@ -618,7 +618,7 @@ export const dict = {
+   "desktop.menu.installCli": "CLI をインストール...",
+   "desktop.cli.installed.title": "CLI をインストールしました",
+   "desktop.cli.installed.message":
+-    "CLI を {{path}} にインストールしました\n\n「loophole2」コマンドを使用するには、ターミナルを再起動してください。",
++    "CLI を {{path}} にインストールしました\n\n「loophole-cli」コマンドを使用するには、ターミナルを再起動してください。",
+   "desktop.cli.failed.title": "インストールに失敗しました",
+   "desktop.cli.failed.message": "CLI をインストールできませんでした: {{error}}",
+   "command.project.copyID": "プロジェクト ID をコピー",
+diff --git a/packages/app/src/runtime/i18n/ka.ts b/packages/app/src/runtime/i18n/ka.ts
+index 7b8387b1f1..4d1b67f9dd 100644
+--- a/packages/app/src/runtime/i18n/ka.ts
++++ b/packages/app/src/runtime/i18n/ka.ts
+@@ -603,7 +603,7 @@ export const dict = {
+   "desktop.menu.installCli": "CLI-ის დაყენება...",
+   "desktop.cli.installed.title": "CLI დაყენებულია",
+   "desktop.cli.installed.message":
+-    "CLI დაყენდა მისამართზე {{path}}\n\n'loophole2' ბრძანების გამოსაყენებლად გადატვირთეთ ტერმინალი.",
++    "CLI დაყენდა მისამართზე {{path}}\n\n'loophole-cli' ბრძანების გამოსაყენებლად გადატვირთეთ ტერმინალი.",
+   "desktop.cli.failed.title": "დაყენება ვერ მოხერხდა",
+   "desktop.cli.failed.message": "CLI-ის დაყენება ვერ მოხერხდა: {{error}}",
+   "command.project.copyID": "პროექტის ID-ის კოპირება",
+diff --git a/packages/app/src/runtime/i18n/km.ts b/packages/app/src/runtime/i18n/km.ts
+index 4be7bb01bd..203fd422df 100644
+--- a/packages/app/src/runtime/i18n/km.ts
++++ b/packages/app/src/runtime/i18n/km.ts
+@@ -604,7 +604,7 @@ export const dict = {
+   "desktop.menu.installCli": "ដំឡើង CLI...",
+   "desktop.cli.installed.title": "បានដំឡើង CLI",
+   "desktop.cli.installed.message":
+-    "បានដំឡើង CLI ទៅ {{path}}\n\nចាប់ផ្ដើមស្ថានីយរបស់អ្នកឡើងវិញ ដើម្បីប្រើពាក្យបញ្ជា 'loophole2'។",
++    "បានដំឡើង CLI ទៅ {{path}}\n\nចាប់ផ្ដើមស្ថានីយរបស់អ្នកឡើងវិញ ដើម្បីប្រើពាក្យបញ្ជា 'loophole-cli'។",
+   "desktop.cli.failed.title": "ការដំឡើងបានបរាជ័យ",
+   "desktop.cli.failed.message": "មិនអាចដំឡើង CLI បានទេ៖ {{error}}",
+   "command.project.copyID": "ចម្លង ID គម្រោង",
+diff --git a/packages/app/src/runtime/i18n/ko.ts b/packages/app/src/runtime/i18n/ko.ts
+index afbf48991c..f81429621a 100644
+--- a/packages/app/src/runtime/i18n/ko.ts
++++ b/packages/app/src/runtime/i18n/ko.ts
+@@ -618,7 +618,7 @@ export const dict = {
+   "desktop.menu.installCli": "CLI 설치...",
+   "desktop.cli.installed.title": "CLI 설치됨",
+   "desktop.cli.installed.message":
+-    "CLI가 {{path}}에 설치되었습니다\n\n'loophole2' 명령을 사용하려면 터미널을 다시 시작하세요.",
++    "CLI가 {{path}}에 설치되었습니다\n\n'loophole-cli' 명령을 사용하려면 터미널을 다시 시작하세요.",
+   "desktop.cli.failed.title": "설치 실패",
+   "desktop.cli.failed.message": "CLI 설치 실패: {{error}}",
+   "command.project.copyID": "프로젝트 ID 복사",
+diff --git a/packages/app/src/runtime/i18n/lo.ts b/packages/app/src/runtime/i18n/lo.ts
+index 617d879570..0578e104d8 100644
+--- a/packages/app/src/runtime/i18n/lo.ts
++++ b/packages/app/src/runtime/i18n/lo.ts
+@@ -604,7 +604,7 @@ export const dict = {
+   "desktop.menu.installCli": "ຕິດຕັ້ງ CLI...",
+   "desktop.cli.installed.title": "ຕິດຕັ້ງ CLI ແລ້ວ",
+   "desktop.cli.installed.message":
+-    "ຕິດຕັ້ງ CLI ໄປທີ່ {{path}} ແລ້ວ\n\nເລີ່ມສະຖານີຂອງທ່ານໃໝ່ເພື່ອໃຊ້ຄຳສັ່ງ 'loophole2'.",
++    "ຕິດຕັ້ງ CLI ໄປທີ່ {{path}} ແລ້ວ\n\nເລີ່ມສະຖານີຂອງທ່ານໃໝ່ເພື່ອໃຊ້ຄຳສັ່ງ 'loophole-cli'.",
+   "desktop.cli.failed.title": "ການຕິດຕັ້ງລົ້ມເຫລວ",
+   "desktop.cli.failed.message": "ຕິດຕັ້ງ CLI ບໍ່ສຳເລັດ: {{error}}",
+   "command.project.copyID": "ສຳເນົາ ID ໂຄງການ",
+diff --git a/packages/app/src/runtime/i18n/lt.ts b/packages/app/src/runtime/i18n/lt.ts
+index 6c2af7a641..1183f95419 100644
+--- a/packages/app/src/runtime/i18n/lt.ts
++++ b/packages/app/src/runtime/i18n/lt.ts
+@@ -47,7 +47,7 @@ const desktop = [
+   "Pranešti apie klaidą",
+   "Loophole meniu",
+   "CLI įdiegtas",
+-  "CLI įdiegtas į {{path}}\n\nPaleiskite terminalą iš naujo, kad galėtumėte naudoti komandą 'loophole2'.",
++  "CLI įdiegtas į {{path}}\n\nPaleiskite terminalą iš naujo, kad galėtumėte naudoti komandą 'loophole-cli'.",
+   "Įdiegti nepavyko",
+   "Nepavyko įdiegti CLI: {{error}}",
+   "Paleisti iš naujo",
+diff --git a/packages/app/src/runtime/i18n/lv.ts b/packages/app/src/runtime/i18n/lv.ts
+index 1be64e10cb..ab10ad822e 100644
+--- a/packages/app/src/runtime/i18n/lv.ts
++++ b/packages/app/src/runtime/i18n/lv.ts
+@@ -608,7 +608,7 @@ export const dict = {
+   "desktop.menu.installCli": "Instalēt CLI...",
+   "desktop.cli.installed.title": "CLI ir instalēta",
+   "desktop.cli.installed.message":
+-    "CLI ir instalēta vietā {{path}}\n\nRestartējiet termināli, lai izmantotu komandu 'loophole2'.",
++    "CLI ir instalēta vietā {{path}}\n\nRestartējiet termināli, lai izmantotu komandu 'loophole-cli'.",
+   "desktop.cli.failed.title": "Instalēšana neizdevās",
+   "desktop.cli.failed.message": "Neizdevās instalēt CLI: {{error}}",
+   "command.project.copyID": "Kopēt projekta ID",
+diff --git a/packages/app/src/runtime/i18n/mk.ts b/packages/app/src/runtime/i18n/mk.ts
+index df69d707e9..b7f81f0b18 100644
+--- a/packages/app/src/runtime/i18n/mk.ts
++++ b/packages/app/src/runtime/i18n/mk.ts
+@@ -605,7 +605,7 @@ export const dict = {
+   "desktop.menu.installCli": "Инсталирај CLI...",
+   "desktop.cli.installed.title": "CLI е инсталиран",
+   "desktop.cli.installed.message":
+-    "CLI е инсталиран во {{path}}\n\nРестартирајте го терминалот за да ја користите наредбата 'loophole2'.",
++    "CLI е инсталиран во {{path}}\n\nРестартирајте го терминалот за да ја користите наредбата 'loophole-cli'.",
+   "desktop.cli.failed.title": "Инсталацијата не успеа",
+   "desktop.cli.failed.message": "CLI не може да се инсталира: {{error}}",
+   "command.project.copyID": "Копирај ID на проектот",
+diff --git a/packages/app/src/runtime/i18n/mn.ts b/packages/app/src/runtime/i18n/mn.ts
+index a453c810c7..8c12e8d6ee 100644
+--- a/packages/app/src/runtime/i18n/mn.ts
++++ b/packages/app/src/runtime/i18n/mn.ts
+@@ -608,7 +608,7 @@ export const dict = {
+   "desktop.menu.installCli": "CLI суулгах...",
+   "desktop.cli.installed.title": "CLI суулгагдлаа",
+   "desktop.cli.installed.message":
+-    "CLI-г {{path}} замд суулгалаа\n\n'loophole2' командыг ашиглахын тулд терминалаа дахин эхлүүлнэ үү.",
++    "CLI-г {{path}} замд суулгалаа\n\n'loophole-cli' командыг ашиглахын тулд терминалаа дахин эхлүүлнэ үү.",
+   "desktop.cli.failed.title": "Суулгалт амжилтгүй боллоо",
+   "desktop.cli.failed.message": "CLI-г суулгаж чадсангүй: {{error}}",
+   "command.project.copyID": "Төслийн ID-г хуулах",
+diff --git a/packages/app/src/runtime/i18n/ms.ts b/packages/app/src/runtime/i18n/ms.ts
+index f9e55ee01b..0b3ab4651b 100644
+--- a/packages/app/src/runtime/i18n/ms.ts
++++ b/packages/app/src/runtime/i18n/ms.ts
+@@ -608,7 +608,7 @@ export const dict = {
+   "desktop.menu.installCli": "Pasang CLI...",
+   "desktop.cli.installed.title": "CLI Dipasang",
+   "desktop.cli.installed.message":
+-    "CLI dipasang ke {{path}}\n\nMulakan semula terminal anda untuk menggunakan perintah 'loophole2'.",
++    "CLI dipasang ke {{path}}\n\nMulakan semula terminal anda untuk menggunakan perintah 'loophole-cli'.",
+   "desktop.cli.failed.title": "Pemasangan Gagal",
+   "desktop.cli.failed.message": "Gagal memasang CLI: {{error}}",
+   "command.project.copyID": "Salin ID Projek",
+diff --git a/packages/app/src/runtime/i18n/my.ts b/packages/app/src/runtime/i18n/my.ts
+index 1030a2bff9..5e84c8bdcf 100644
+--- a/packages/app/src/runtime/i18n/my.ts
++++ b/packages/app/src/runtime/i18n/my.ts
+@@ -615,7 +615,7 @@ export const dict = {
+   "desktop.menu.installCli": "CLI ကို ထည့်သွင်းရန်...",
+   "desktop.cli.installed.title": "CLI ထည့်သွင်းပြီးပါပြီ",
+   "desktop.cli.installed.message":
+-    "CLI ကို {{path}} တွင် ထည့်သွင်းပြီးပါပြီ\n\n'loophole2' အမိန့်ကို အသုံးပြုရန် Terminal ကို ပြန်လည်စတင်ပါ။",
++    "CLI ကို {{path}} တွင် ထည့်သွင်းပြီးပါပြီ\n\n'loophole-cli' အမိန့်ကို အသုံးပြုရန် Terminal ကို ပြန်လည်စတင်ပါ။",
+   "desktop.cli.failed.title": "ထည့်သွင်းမှု မအောင်မြင်ပါ",
+   "desktop.cli.failed.message": "CLI ကို ထည့်သွင်း၍ မရပါ: {{error}}",
+   "command.project.copyID": "ပရောဂျက် ID ကို ကူးယူပါ",
+diff --git a/packages/app/src/runtime/i18n/ne.ts b/packages/app/src/runtime/i18n/ne.ts
+index 2e831afd40..54fb814db1 100644
+--- a/packages/app/src/runtime/i18n/ne.ts
++++ b/packages/app/src/runtime/i18n/ne.ts
+@@ -606,7 +606,7 @@ export const dict = {
+   "desktop.menu.installCli": "CLI स्थापना गर्नुहोस्...",
+   "desktop.cli.installed.title": "CLI स्थापना भयो",
+   "desktop.cli.installed.message":
+-    "CLI {{path}} मा स्थापना भयो\n\n'loophole2' आदेश प्रयोग गर्न आफ्नो टर्मिनल पुनः सुरु गर्नुहोस्।",
++    "CLI {{path}} मा स्थापना भयो\n\n'loophole-cli' आदेश प्रयोग गर्न आफ्नो टर्मिनल पुनः सुरु गर्नुहोस्।",
+   "desktop.cli.failed.title": "स्थापना असफल भयो",
+   "desktop.cli.failed.message": "CLI स्थापना गर्न असफल भयो: {{error}}",
+   "command.project.copyID": "परियोजना ID प्रतिलिपि गर्नुहोस्",
+diff --git a/packages/app/src/runtime/i18n/nl.ts b/packages/app/src/runtime/i18n/nl.ts
+index 2692d835fb..7ceed85c80 100644
+--- a/packages/app/src/runtime/i18n/nl.ts
++++ b/packages/app/src/runtime/i18n/nl.ts
+@@ -812,7 +812,7 @@ export const dict = {
+   "desktop.menu.installCli": "CLI installeren...",
+   "desktop.cli.installed.title": "CLI geÃ¯nstalleerd",
+   "desktop.cli.installed.message":
+-    "CLI is geÃ¯nstalleerd in {{path}}.\n\nStart de terminal opnieuw om de opdracht 'loophole2' te gebruiken.",
++    "CLI is geÃ¯nstalleerd in {{path}}.\n\nStart de terminal opnieuw om de opdracht 'loophole-cli' te gebruiken.",
+   "desktop.cli.failed.title": "Installatie mislukt",
+   "desktop.cli.failed.message": "Kan CLI niet installeren: {{error}}",
+   "command.project.copyID": "Project-ID kopiÃ«ren",
+diff --git a/packages/app/src/runtime/i18n/no.ts b/packages/app/src/runtime/i18n/no.ts
+index 4482159f9d..b785708b2a 100644
+--- a/packages/app/src/runtime/i18n/no.ts
++++ b/packages/app/src/runtime/i18n/no.ts
+@@ -869,7 +869,7 @@ export const dict = {
+   "desktop.menu.installCli": "Installer CLI...",
+   "desktop.cli.installed.title": "CLI installert",
+   "desktop.cli.installed.message":
+-    "CLI-en ble installert i {{path}}.\n\nStart terminalen pÃ¥ nytt for Ã¥ bruke kommandoen 'loophole2'.",
++    "CLI-en ble installert i {{path}}.\n\nStart terminalen pÃ¥ nytt for Ã¥ bruke kommandoen 'loophole-cli'.",
+   "desktop.cli.failed.title": "Installasjonen mislyktes",
+   "desktop.cli.failed.message": "Kunne ikke installere CLI-en: {{error}}",
+   "command.project.copyID": "Kopier prosjekt-ID",
+diff --git a/packages/app/src/runtime/i18n/pa.ts b/packages/app/src/runtime/i18n/pa.ts
+index cfdb1ac85f..822f38c45e 100644
+--- a/packages/app/src/runtime/i18n/pa.ts
++++ b/packages/app/src/runtime/i18n/pa.ts
+@@ -615,7 +615,7 @@ export const dict = {
+   "desktop.menu.installCli": "CLI انسٹال کرو...",
+   "desktop.cli.installed.title": "CLI انسٹال ہو گئی",
+   "desktop.cli.installed.message":
+-    "CLI \u2068{{path}}\u2069 تے انسٹال ہو گئی\n\n'loophole2' کمانڈ ورتن لئی اپنا ٹرمینل دوبارہ شروع کرو۔",
++    "CLI \u2068{{path}}\u2069 تے انسٹال ہو گئی\n\n'loophole-cli' کمانڈ ورتن لئی اپنا ٹرمینل دوبارہ شروع کرو۔",
+   "desktop.cli.failed.title": "انسٹالیشن ناکام ہو گئی",
+   "desktop.cli.failed.message": "CLI انسٹال نئیں ہو سکی: \u2068{{error}}\u2069",
+   "command.project.copyID": "پروجیکٹ ID کاپی کرو",
+diff --git a/packages/app/src/runtime/i18n/pl.ts b/packages/app/src/runtime/i18n/pl.ts
+index 91ae2cc2a1..3d1f1a05fa 100644
+--- a/packages/app/src/runtime/i18n/pl.ts
++++ b/packages/app/src/runtime/i18n/pl.ts
+@@ -623,7 +623,7 @@ export const dict = {
+   "desktop.menu.installCli": "Zainstaluj CLI...",
+   "desktop.cli.installed.title": "CLI zostało zainstalowane",
+   "desktop.cli.installed.message":
+-    "CLI zainstalowano w {{path}}\n\nUruchom terminal ponownie, aby używać polecenia „loophole2”.",
++    "CLI zainstalowano w {{path}}\n\nUruchom terminal ponownie, aby używać polecenia „loophole-cli”.",
+   "desktop.cli.failed.title": "Instalacja nie powiodła się",
+   "desktop.cli.failed.message": "Nie udało się zainstalować CLI: {{error}}",
+   "command.project.copyID": "Kopiuj identyfikator projektu",
+diff --git a/packages/app/src/runtime/i18n/ro.ts b/packages/app/src/runtime/i18n/ro.ts
+index f3620c52c8..e304521636 100644
+--- a/packages/app/src/runtime/i18n/ro.ts
++++ b/packages/app/src/runtime/i18n/ro.ts
+@@ -608,7 +608,7 @@ export const dict = {
+   "desktop.menu.installCli": "Instalează CLI...",
+   "desktop.cli.installed.title": "CLI instalat",
+   "desktop.cli.installed.message":
+-    "CLI a fost instalat în {{path}}\n\nReporniți terminalul pentru a utiliza comanda 'loophole2'.",
++    "CLI a fost instalat în {{path}}\n\nReporniți terminalul pentru a utiliza comanda 'loophole-cli'.",
+   "desktop.cli.failed.title": "Instalarea a eșuat",
+   "desktop.cli.failed.message": "CLI nu a putut fi instalat: {{error}}",
+   "command.project.copyID": "Copiază ID-ul proiectului",
+diff --git a/packages/app/src/runtime/i18n/ru.ts b/packages/app/src/runtime/i18n/ru.ts
+index 9529066e95..1483a4991a 100644
+--- a/packages/app/src/runtime/i18n/ru.ts
++++ b/packages/app/src/runtime/i18n/ru.ts
+@@ -676,7 +676,7 @@ export const dict = {
+   "desktop.menu.installCli": "Установить CLI...",
+   "desktop.cli.installed.title": "CLI установлен",
+   "desktop.cli.installed.message":
+-    "CLI установлен в {{path}}\n\nПерезапустите терминал, чтобы использовать команду «loophole2».",
++    "CLI установлен в {{path}}\n\nПерезапустите терминал, чтобы использовать команду «loophole-cli».",
+   "desktop.cli.failed.title": "Не удалось установить",
+   "desktop.cli.failed.message": "Не удалось установить CLI: {{error}}",
+   "command.project.copyID": "Копировать идентификатор проекта",
+diff --git a/packages/app/src/runtime/i18n/si.ts b/packages/app/src/runtime/i18n/si.ts
+index ca649e83e0..893325eee9 100644
+--- a/packages/app/src/runtime/i18n/si.ts
++++ b/packages/app/src/runtime/i18n/si.ts
+@@ -602,7 +602,7 @@ export const dict = {
+   "desktop.menu.installCli": "CLI ස්ථාපනය කරන්න...",
+   "desktop.cli.installed.title": "CLI ස්ථාපනය කරන ලදී",
+   "desktop.cli.installed.message":
+-    "CLI {{path}} වෙත ස්ථාපනය කරන ලදී\n\n'loophole2' විධානය භාවිත කිරීමට ටර්මිනලය නැවත අරඹන්න.",
++    "CLI {{path}} වෙත ස්ථාපනය කරන ලදී\n\n'loophole-cli' විධානය භාවිත කිරීමට ටර්මිනලය නැවත අරඹන්න.",
+   "desktop.cli.failed.title": "ස්ථාපනය අසාර්ථක විය",
+   "desktop.cli.failed.message": "CLI ස්ථාපනය කිරීමට අසමත් විය: {{error}}",
+   "command.project.copyID": "ව්‍යාපෘති ID පිටපත් කරන්න",
+diff --git a/packages/app/src/runtime/i18n/sk.ts b/packages/app/src/runtime/i18n/sk.ts
+index 5eb608657e..39890a5293 100644
+--- a/packages/app/src/runtime/i18n/sk.ts
++++ b/packages/app/src/runtime/i18n/sk.ts
+@@ -629,7 +629,7 @@ export const dict = {
+   "desktop.menu.installCli": "Nainštalovať CLI...",
+   "desktop.cli.installed.title": "CLI je nainštalované",
+   "desktop.cli.installed.message":
+-    "CLI bolo nainštalované do {{path}}\n\nAk chcete používať príkaz 'loophole2', reštartujte terminál.",
++    "CLI bolo nainštalované do {{path}}\n\nAk chcete používať príkaz 'loophole-cli', reštartujte terminál.",
+   "desktop.cli.failed.title": "Inštalácia zlyhala",
+   "desktop.cli.failed.message": "CLI sa nepodarilo nainštalovať: {{error}}",
+   "command.project.copyID": "Kopírovať ID projektu",
+diff --git a/packages/app/src/runtime/i18n/sl.ts b/packages/app/src/runtime/i18n/sl.ts
+index 3a411b64e7..0b597010d7 100644
+--- a/packages/app/src/runtime/i18n/sl.ts
++++ b/packages/app/src/runtime/i18n/sl.ts
+@@ -629,7 +629,7 @@ export const dict = {
+   "desktop.menu.installCli": "Namesti CLI...",
+   "desktop.cli.installed.title": "CLI je nameščen",
+   "desktop.cli.installed.message":
+-    "CLI je nameščen v {{path}}\n\nZa uporabo ukaza 'loophole2' znova zaženite terminal.",
++    "CLI je nameščen v {{path}}\n\nZa uporabo ukaza 'loophole-cli' znova zaženite terminal.",
+   "desktop.cli.failed.title": "Namestitev ni uspela",
+   "desktop.cli.failed.message": "CLI-ja ni bilo mogoče namestiti: {{error}}",
+   "command.project.copyID": "Kopiraj ID projekta",
+diff --git a/packages/app/src/runtime/i18n/sq.ts b/packages/app/src/runtime/i18n/sq.ts
+index 2d217555a6..6e0394fac5 100644
+--- a/packages/app/src/runtime/i18n/sq.ts
++++ b/packages/app/src/runtime/i18n/sq.ts
+@@ -604,7 +604,7 @@ export const dict = {
+   "desktop.menu.installCli": "Instalo CLI-në...",
+   "desktop.cli.installed.title": "CLI-ja u instalua",
+   "desktop.cli.installed.message":
+-    "CLI-ja u instalua te {{path}}\n\nRinisni terminalin për të përdorur komandën 'loophole2'.",
++    "CLI-ja u instalua te {{path}}\n\nRinisni terminalin për të përdorur komandën 'loophole-cli'.",
+   "desktop.cli.failed.title": "Instalimi dështoi",
+   "desktop.cli.failed.message": "Instalimi i CLI-së dështoi: {{error}}",
+   "command.project.copyID": "Kopjo ID-në e projektit",
+diff --git a/packages/app/src/runtime/i18n/sr.ts b/packages/app/src/runtime/i18n/sr.ts
+index b1debe0b2f..72aa1d3892 100644
+--- a/packages/app/src/runtime/i18n/sr.ts
++++ b/packages/app/src/runtime/i18n/sr.ts
+@@ -617,7 +617,7 @@ export const dict = {
+   "desktop.menu.installCli": "Инсталирај CLI...",
+   "desktop.cli.installed.title": "CLI је инсталиран",
+   "desktop.cli.installed.message":
+-    "CLI је инсталиран у {{path}}\n\nПоново покрените терминал да бисте користили наредбу 'loophole2'.",
++    "CLI је инсталиран у {{path}}\n\nПоново покрените терминал да бисте користили наредбу 'loophole-cli'.",
+   "desktop.cli.failed.title": "Инсталација није успела",
+   "desktop.cli.failed.message": "Инсталација CLI-ја није успела: {{error}}",
+   "command.project.copyID": "Копирај ID пројекта",
+diff --git a/packages/app/src/runtime/i18n/sv.ts b/packages/app/src/runtime/i18n/sv.ts
+index e537bb60b6..b54ecfbd84 100644
+--- a/packages/app/src/runtime/i18n/sv.ts
++++ b/packages/app/src/runtime/i18n/sv.ts
+@@ -802,7 +802,7 @@ export const dict = {
+   "desktop.menu.installCli": "Installera CLI...",
+   "desktop.cli.installed.title": "CLI installerat",
+   "desktop.cli.installed.message":
+-    "CLI har installerats i {{path}}.\n\nStarta om terminalen fÃ¶r att anvÃ¤nda kommandot 'loophole2'.",
++    "CLI har installerats i {{path}}.\n\nStarta om terminalen fÃ¶r att anvÃ¤nda kommandot 'loophole-cli'.",
+   "desktop.cli.failed.title": "Installationen misslyckades",
+   "desktop.cli.failed.message": "Det gick inte att installera CLI: {{error}}",
+   "command.project.copyID": "Kopiera projekt-ID",
+diff --git a/packages/app/src/runtime/i18n/tg.ts b/packages/app/src/runtime/i18n/tg.ts
+index 970f742c4c..37d912ac9f 100644
+--- a/packages/app/src/runtime/i18n/tg.ts
++++ b/packages/app/src/runtime/i18n/tg.ts
+@@ -606,7 +606,7 @@ export const dict = {
+   "desktop.menu.installCli": "Насб кардани CLI...",
+   "desktop.cli.installed.title": "CLI насб шуд",
+   "desktop.cli.installed.message":
+-    "CLI дар {{path}} насб шуд\n\nБарои истифодаи фармони 'loophole2' терминалро аз нав оғоз кунед.",
++    "CLI дар {{path}} насб шуд\n\nБарои истифодаи фармони 'loophole-cli' терминалро аз нав оғоз кунед.",
+   "desktop.cli.failed.title": "Насбкунӣ ноком шуд",
+   "desktop.cli.failed.message": "Насб кардани CLI муяссар нашуд: {{error}}",
+   "command.project.copyID": "Нусхабардории ID-и лоиҳа",
+diff --git a/packages/app/src/runtime/i18n/th.ts b/packages/app/src/runtime/i18n/th.ts
+index 73aae96854..5fed50d389 100644
+--- a/packages/app/src/runtime/i18n/th.ts
++++ b/packages/app/src/runtime/i18n/th.ts
+@@ -667,7 +667,7 @@ export const dict = {
+   "desktop.menu.installCli": "ติดตั้ง CLI...",
+   "desktop.cli.installed.title": "ติดตั้ง CLI แล้ว",
+   "desktop.cli.installed.message":
+-    "ติดตั้ง CLI ไปยัง {{path}} แล้ว\n\nโปรดเริ่มเทอร์มินัลใหม่เพื่อใช้คำสั่ง 'loophole2'",
++    "ติดตั้ง CLI ไปยัง {{path}} แล้ว\n\nโปรดเริ่มเทอร์มินัลใหม่เพื่อใช้คำสั่ง 'loophole-cli'",
+   "desktop.cli.failed.title": "การติดตั้งล้มเหลว",
+   "desktop.cli.failed.message": "ติดตั้ง CLI ไม่สำเร็จ: {{error}}",
+   "command.project.copyID": "คัดลอก ID โปรเจกต์",
+diff --git a/packages/app/src/runtime/i18n/tk.ts b/packages/app/src/runtime/i18n/tk.ts
+index 50c685bac6..755e60e779 100644
+--- a/packages/app/src/runtime/i18n/tk.ts
++++ b/packages/app/src/runtime/i18n/tk.ts
+@@ -602,7 +602,7 @@ export const dict = {
+   "desktop.menu.installCli": "CLI gurmak...",
+   "desktop.cli.installed.title": "CLI guruldy",
+   "desktop.cli.installed.message":
+-    "CLI {{path}} ýoluna guruldy\n\n'loophole2' buýrugyny ulanmak üçin terminaly täzeden açyň.",
++    "CLI {{path}} ýoluna guruldy\n\n'loophole-cli' buýrugyny ulanmak üçin terminaly täzeden açyň.",
+   "desktop.cli.failed.title": "Gurmak başa barmady",
+   "desktop.cli.failed.message": "CLI gurup bolmady: {{error}}",
+   "command.project.copyID": "Taslama ID-sini nusgala",
+diff --git a/packages/app/src/runtime/i18n/tr.ts b/packages/app/src/runtime/i18n/tr.ts
+index 1a191ccb5e..815baefec1 100644
+--- a/packages/app/src/runtime/i18n/tr.ts
++++ b/packages/app/src/runtime/i18n/tr.ts
+@@ -51,7 +51,7 @@ export const dict = {
+ 
+   "desktop.cli.installed.title": "CLI yüklendi",
+   "desktop.cli.installed.message":
+-    "CLI, {{path}} konumuna yüklendi.\n\n'loophole2' komutunu kullanmak için terminalinizi yeniden başlatın.",
++    "CLI, {{path}} konumuna yüklendi.\n\n'loophole-cli' komutunu kullanmak için terminalinizi yeniden başlatın.",
+   "desktop.cli.failed.title": "Yükleme başarısız oldu",
+   "desktop.cli.failed.message": "CLI yüklenemedi: {{error}}",
+ 
+diff --git a/packages/app/src/runtime/i18n/uk.ts b/packages/app/src/runtime/i18n/uk.ts
+index e13297a78e..353ebb5949 100644
+--- a/packages/app/src/runtime/i18n/uk.ts
++++ b/packages/app/src/runtime/i18n/uk.ts
+@@ -697,7 +697,7 @@ export const dict = {
+   "desktop.menu.installCli": "Інсталювати CLI...",
+   "desktop.cli.installed.title": "CLI інстальовано",
+   "desktop.cli.installed.message":
+-    "CLI інстальовано в {{path}}\n\nПерезапустіть термінал, щоб використовувати команду «loophole2».",
++    "CLI інстальовано в {{path}}\n\nПерезапустіть термінал, щоб використовувати команду «loophole-cli».",
+   "desktop.cli.failed.title": "Не вдалося інсталювати",
+   "desktop.cli.failed.message": "Не вдалося інсталювати CLI: {{error}}",
+   "command.project.copyID": "Копіювати ідентифікатор проєкту",
+diff --git a/packages/app/src/runtime/i18n/ur.ts b/packages/app/src/runtime/i18n/ur.ts
+index c14f51643f..c0f12c3ea3 100644
+--- a/packages/app/src/runtime/i18n/ur.ts
++++ b/packages/app/src/runtime/i18n/ur.ts
+@@ -615,7 +615,7 @@ export const dict = {
+   "desktop.menu.installCli": "CLI انسٹال کریں...",
+   "desktop.cli.installed.title": "CLI انسٹال ہو گیا",
+   "desktop.cli.installed.message":
+-    "CLI کو \u2068{{path}}\u2069 پر انسٹال کر دیا گیا\n\n'loophole2' کمانڈ استعمال کرنے کے لیے اپنا ٹرمینل دوبارہ شروع کریں۔",
++    "CLI کو \u2068{{path}}\u2069 پر انسٹال کر دیا گیا\n\n'loophole-cli' کمانڈ استعمال کرنے کے لیے اپنا ٹرمینل دوبارہ شروع کریں۔",
+   "desktop.cli.failed.title": "تنصیب ناکام ہو گئی",
+   "desktop.cli.failed.message": "CLI انسٹال نہیں ہو سکا: \u2068{{error}}\u2069",
+   "command.project.copyID": "پروجیکٹ ID کاپی کریں",
+diff --git a/packages/app/src/runtime/i18n/uz.ts b/packages/app/src/runtime/i18n/uz.ts
+index fdbe956767..5b4d7bb271 100644
+--- a/packages/app/src/runtime/i18n/uz.ts
++++ b/packages/app/src/runtime/i18n/uz.ts
+@@ -608,7 +608,7 @@ export const dict = {
+   "desktop.menu.installCli": "CLI o‘rnatish...",
+   "desktop.cli.installed.title": "CLI o‘rnatildi",
+   "desktop.cli.installed.message":
+-    "CLI {{path}} manziliga o‘rnatildi\n\n'loophole2' buyrug‘idan foydalanish uchun terminalni qayta ishga tushiring.",
++    "CLI {{path}} manziliga o‘rnatildi\n\n'loophole-cli' buyrug‘idan foydalanish uchun terminalni qayta ishga tushiring.",
+   "desktop.cli.failed.title": "O‘rnatish amalga oshmadi",
+   "desktop.cli.failed.message": "CLI o‘rnatib bo‘lmadi: {{error}}",
+   "command.project.copyID": "Loyiha ID-sini nusxalash",
+diff --git a/packages/app/src/runtime/i18n/vi.ts b/packages/app/src/runtime/i18n/vi.ts
+index f7f32808a0..d889c9147f 100644
+--- a/packages/app/src/runtime/i18n/vi.ts
++++ b/packages/app/src/runtime/i18n/vi.ts
+@@ -614,7 +614,7 @@ export const dict = {
+   "desktop.menu.installCli": "Cài đặt CLI...",
+   "desktop.cli.installed.title": "Đã cài đặt CLI",
+   "desktop.cli.installed.message":
+-    "Đã cài đặt CLI vào {{path}}\n\nHãy khởi động lại terminal để sử dụng lệnh 'loophole2'.",
++    "Đã cài đặt CLI vào {{path}}\n\nHãy khởi động lại terminal để sử dụng lệnh 'loophole-cli'.",
+   "desktop.cli.failed.title": "Cài đặt thất bại",
+   "desktop.cli.failed.message": "Không thể cài đặt CLI: {{error}}",
+   "command.project.copyID": "Sao chép ID dự án",
+diff --git a/packages/app/src/runtime/i18n/zh.ts b/packages/app/src/runtime/i18n/zh.ts
+index 8519345af9..976703a45c 100644
+--- a/packages/app/src/runtime/i18n/zh.ts
++++ b/packages/app/src/runtime/i18n/zh.ts
+@@ -665,7 +665,7 @@ export const dict = {
+   "session.summary.basedOn": "基于 {{branch}}",
+   "desktop.menu.installCli": "安装 CLI...",
+   "desktop.cli.installed.title": "CLI 已安装",
+-  "desktop.cli.installed.message": "CLI 已安装到 {{path}}\n\n请重启终端以使用“loophole2”命令。",
++  "desktop.cli.installed.message": "CLI 已安装到 {{path}}\n\n请重启终端以使用“loophole-cli”命令。",
+   "desktop.cli.failed.title": "安装失败",
+   "desktop.cli.failed.message": "安装 CLI 失败：{{error}}",
+   "command.project.copyID": "复制项目 ID",
+diff --git a/packages/app/src/runtime/i18n/zht.ts b/packages/app/src/runtime/i18n/zht.ts
+index 1b876f73d7..f21aba1c91 100644
+--- a/packages/app/src/runtime/i18n/zht.ts
++++ b/packages/app/src/runtime/i18n/zht.ts
+@@ -657,7 +657,7 @@ export const dict = {
+   "session.summary.basedOn": "以 {{branch}} 為基礎",
+   "desktop.menu.installCli": "安裝 CLI...",
+   "desktop.cli.installed.title": "CLI 已安裝",
+-  "desktop.cli.installed.message": "CLI 已安裝至 {{path}}\n\n請重新啟動終端機，以使用「loophole2」命令。",
++  "desktop.cli.installed.message": "CLI 已安裝至 {{path}}\n\n請重新啟動終端機，以使用「loophole-cli」命令。",
+   "desktop.cli.failed.title": "安裝失敗",
+   "desktop.cli.failed.message": "無法安裝 CLI：{{error}}",
+   "command.project.copyID": "複製專案 ID",
+diff --git a/packages/cli/bin/lhc.cjs b/packages/cli/bin/lhc.cjs
+new file mode 100644
+index 0000000000..cf91e86a99
+--- /dev/null
++++ b/packages/cli/bin/lhc.cjs
+@@ -0,0 +1,3 @@
++#!/usr/bin/env node
++
++require("./loophole-cli.cjs")
+diff --git a/packages/cli/bin/loophole-cli.cjs b/packages/cli/bin/loophole-cli.cjs
+new file mode 100644
+index 0000000000..08dde6b77d
+--- /dev/null
++++ b/packages/cli/bin/loophole-cli.cjs
+@@ -0,0 +1,135 @@
++#!/usr/bin/env node
++
++const childProcess = require("child_process")
++const fs = require("fs")
++const path = require("path")
++const os = require("os")
++
++const forwardedSignals =
++  process.platform === "win32" ? ["SIGINT", "SIGTERM", "SIGHUP"] : ["SIGINT", "SIGTERM", "SIGHUP", "SIGUSR1"]
++
++function run(target) {
++  const child = childProcess.spawn(target, process.argv.slice(2), { stdio: "inherit" })
++  child.on("error", (error) => {
++    console.error(error.message)
++    process.exit(1)
++  })
++  const forwarders = {}
++  for (const signal of forwardedSignals) {
++    forwarders[signal] = () => {
++      try {
++        child.kill(signal)
++      } catch {}
++    }
++    process.on(signal, forwarders[signal])
++  }
++  child.on("exit", (code, signal) => {
++    for (const forwardedSignal of forwardedSignals) process.removeListener(forwardedSignal, forwarders[forwardedSignal])
++    if (signal) return process.kill(process.pid, signal)
++    process.exit(typeof code === "number" ? code : 0)
++  })
++}
++
++const envPath = process.env.OPENCODE_BIN_PATH
++const scriptDir = path.dirname(fs.realpathSync(__filename))
++const command = path.basename(__filename).replace(/\.cjs$/, "")
++const nodeBuild = command === "loophole-cli-node"
++const sourceCommand = nodeBuild ? "loophole-cli-node" : "loophole-cli"
++const cached = path.join(scriptDir, `.${command}`)
++const platform = { darwin: "darwin", linux: "linux", win32: "windows" }[os.platform()] || os.platform()
++const arch = { x64: "x64", arm64: "arm64", arm: "arm" }[os.arch()] || os.arch()
++const base = `@loophole-ai/cli${nodeBuild ? "-node" : ""}-` + platform + "-" + arch
++const binary = platform === "windows" ? `${sourceCommand}.exe` : sourceCommand
++
++function supportsAvx2() {
++  if (arch !== "x64") return false
++  if (platform === "linux") {
++    try {
++      return /(^|\s)avx2(\s|$)/i.test(fs.readFileSync("/proc/cpuinfo", "utf8"))
++    } catch {
++      return false
++    }
++  }
++  if (platform === "darwin") {
++    try {
++      const result = childProcess.spawnSync("sysctl", ["-n", "hw.optional.avx2_0"], { encoding: "utf8", timeout: 1500 })
++      return result.status === 0 && (result.stdout || "").trim() === "1"
++    } catch {
++      return false
++    }
++  }
++  if (platform === "windows") {
++    const command =
++      '(Add-Type -MemberDefinition "[DllImport(""kernel32.dll"")] public static extern bool IsProcessorFeaturePresent(int ProcessorFeature);" -Name Kernel32 -Namespace Win32 -PassThru)::IsProcessorFeaturePresent(40)'
++    for (const executable of ["powershell.exe", "pwsh.exe", "pwsh", "powershell"]) {
++      try {
++        const result = childProcess.spawnSync(executable, ["-NoProfile", "-NonInteractive", "-Command", command], {
++          encoding: "utf8",
++          timeout: 3000,
++          windowsHide: true,
++        })
++        if (result.status !== 0) continue
++        const output = (result.stdout || "").trim().toLowerCase()
++        if (output === "true" || output === "1") return true
++        if (output === "false" || output === "0") return false
++      } catch {
++        continue
++      }
++    }
++  }
++  return false
++}
++
++const names = (() => {
++  if (nodeBuild) return [base]
++  const baseline = arch === "x64" && !supportsAvx2()
++  if (platform === "linux") {
++    const musl = (() => {
++      try {
++        if (fs.existsSync("/etc/alpine-release")) return true
++        const result = childProcess.spawnSync("ldd", ["--version"], { encoding: "utf8" })
++        return ((result.stdout || "") + (result.stderr || "")).toLowerCase().includes("musl")
++      } catch {
++        return false
++      }
++    })()
++    if (musl)
++      return arch === "x64"
++        ? baseline
++          ? [`${base}-baseline-musl`, `${base}-musl`, `${base}-baseline`, base]
++          : [`${base}-musl`, `${base}-baseline-musl`, base, `${base}-baseline`]
++        : [`${base}-musl`, base]
++    return arch === "x64"
++      ? baseline
++        ? [`${base}-baseline`, base, `${base}-baseline-musl`, `${base}-musl`]
++        : [base, `${base}-baseline`, `${base}-musl`, `${base}-baseline-musl`]
++      : [base, `${base}-musl`]
++  }
++  return arch === "x64" ? (baseline ? [`${base}-baseline`, base] : [base, `${base}-baseline`]) : [base]
++})()
++
++function findBinary(startDir) {
++  let current = startDir
++  for (;;) {
++    const modules = path.join(current, "node_modules")
++    if (fs.existsSync(modules))
++      for (const name of names) {
++        const candidate = path.join(modules, name, "bin", binary)
++        if (fs.existsSync(candidate)) return candidate
++      }
++    const parent = path.dirname(current)
++    if (parent === current) return
++    current = parent
++  }
++}
++
++const resolved = envPath || (fs.existsSync(cached) ? cached : findBinary(scriptDir))
++if (!resolved) {
++  console.error(
++    `It seems that your package manager failed to install the right ${command} CLI package. Try manually installing ` +
++      names.map((name) => `"${name}"`).join(" or ") +
++      " package",
++  )
++  process.exit(1)
++}
++run(resolved)
+diff --git a/packages/cli/bin/loophole.cjs b/packages/cli/bin/loophole.cjs
+deleted file mode 100644
+index 098c3f27f7..0000000000
+--- a/packages/cli/bin/loophole.cjs
++++ /dev/null
+@@ -1,135 +0,0 @@
+-#!/usr/bin/env node
+-
+-const childProcess = require("child_process")
+-const fs = require("fs")
+-const path = require("path")
+-const os = require("os")
+-
+-const forwardedSignals =
+-  process.platform === "win32" ? ["SIGINT", "SIGTERM", "SIGHUP"] : ["SIGINT", "SIGTERM", "SIGHUP", "SIGUSR1"]
+-
+-function run(target) {
+-  const child = childProcess.spawn(target, process.argv.slice(2), { stdio: "inherit" })
+-  child.on("error", (error) => {
+-    console.error(error.message)
+-    process.exit(1)
+-  })
+-  const forwarders = {}
+-  for (const signal of forwardedSignals) {
+-    forwarders[signal] = () => {
+-      try {
+-        child.kill(signal)
+-      } catch {}
+-    }
+-    process.on(signal, forwarders[signal])
+-  }
+-  child.on("exit", (code, signal) => {
+-    for (const forwardedSignal of forwardedSignals) process.removeListener(forwardedSignal, forwarders[forwardedSignal])
+-    if (signal) return process.kill(process.pid, signal)
+-    process.exit(typeof code === "number" ? code : 0)
+-  })
+-}
+-
+-const envPath = process.env.OPENCODE_BIN_PATH
+-const scriptDir = path.dirname(fs.realpathSync(__filename))
+-const command = path.basename(__filename).replace(/\.cjs$/, "")
+-const nodeBuild = command === "loophole-node"
+-const sourceCommand = nodeBuild ? "loophole2-node" : "loophole"
+-const cached = path.join(scriptDir, `.${command}`)
+-const platform = { darwin: "darwin", linux: "linux", win32: "windows" }[os.platform()] || os.platform()
+-const arch = { x64: "x64", arm64: "arm64", arm: "arm" }[os.arch()] || os.arch()
+-const base = `@loophole-ai/cli${nodeBuild ? "-node" : ""}-` + platform + "-" + arch
+-const binary = platform === "windows" ? `${sourceCommand}.exe` : sourceCommand
+-
+-function supportsAvx2() {
+-  if (arch !== "x64") return false
+-  if (platform === "linux") {
+-    try {
+-      return /(^|\s)avx2(\s|$)/i.test(fs.readFileSync("/proc/cpuinfo", "utf8"))
+-    } catch {
+-      return false
+-    }
+-  }
+-  if (platform === "darwin") {
+-    try {
+-      const result = childProcess.spawnSync("sysctl", ["-n", "hw.optional.avx2_0"], { encoding: "utf8", timeout: 1500 })
+-      return result.status === 0 && (result.stdout || "").trim() === "1"
+-    } catch {
+-      return false
+-    }
+-  }
+-  if (platform === "windows") {
+-    const command =
+-      '(Add-Type -MemberDefinition "[DllImport(""kernel32.dll"")] public static extern bool IsProcessorFeaturePresent(int ProcessorFeature);" -Name Kernel32 -Namespace Win32 -PassThru)::IsProcessorFeaturePresent(40)'
+-    for (const executable of ["powershell.exe", "pwsh.exe", "pwsh", "powershell"]) {
+-      try {
+-        const result = childProcess.spawnSync(executable, ["-NoProfile", "-NonInteractive", "-Command", command], {
+-          encoding: "utf8",
+-          timeout: 3000,
+-          windowsHide: true,
+-        })
+-        if (result.status !== 0) continue
+-        const output = (result.stdout || "").trim().toLowerCase()
+-        if (output === "true" || output === "1") return true
+-        if (output === "false" || output === "0") return false
+-      } catch {
+-        continue
+-      }
+-    }
+-  }
+-  return false
+-}
+-
+-const names = (() => {
+-  if (nodeBuild) return [base]
+-  const baseline = arch === "x64" && !supportsAvx2()
+-  if (platform === "linux") {
+-    const musl = (() => {
+-      try {
+-        if (fs.existsSync("/etc/alpine-release")) return true
+-        const result = childProcess.spawnSync("ldd", ["--version"], { encoding: "utf8" })
+-        return ((result.stdout || "") + (result.stderr || "")).toLowerCase().includes("musl")
+-      } catch {
+-        return false
+-      }
+-    })()
+-    if (musl)
+-      return arch === "x64"
+-        ? baseline
+-          ? [`${base}-baseline-musl`, `${base}-musl`, `${base}-baseline`, base]
+-          : [`${base}-musl`, `${base}-baseline-musl`, base, `${base}-baseline`]
+-        : [`${base}-musl`, base]
+-    return arch === "x64"
+-      ? baseline
+-        ? [`${base}-baseline`, base, `${base}-baseline-musl`, `${base}-musl`]
+-        : [base, `${base}-baseline`, `${base}-musl`, `${base}-baseline-musl`]
+-      : [base, `${base}-musl`]
+-  }
+-  return arch === "x64" ? (baseline ? [`${base}-baseline`, base] : [base, `${base}-baseline`]) : [base]
+-})()
+-
+-function findBinary(startDir) {
+-  let current = startDir
+-  for (;;) {
+-    const modules = path.join(current, "node_modules")
+-    if (fs.existsSync(modules))
+-      for (const name of names) {
+-        const candidate = path.join(modules, name, "bin", binary)
+-        if (fs.existsSync(candidate)) return candidate
+-      }
+-    const parent = path.dirname(current)
+-    if (parent === current) return
+-    current = parent
+-  }
+-}
+-
+-const resolved = envPath || (fs.existsSync(cached) ? cached : findBinary(scriptDir))
+-if (!resolved) {
+-  console.error(
+-    `It seems that your package manager failed to install the right ${command} CLI package. Try manually installing ` +
+-      names.map((name) => `"${name}"`).join(" or ") +
+-      " package",
+-  )
+-  process.exit(1)
+-}
+-run(resolved)
+diff --git a/packages/cli/bin/loophole2.cjs b/packages/cli/bin/loophole2.cjs
+deleted file mode 100644
+index ce600dce8a..0000000000
+--- a/packages/cli/bin/loophole2.cjs
++++ /dev/null
+@@ -1,3 +0,0 @@
+-#!/usr/bin/env node
+-
+-require("./loophole.cjs")
+diff --git a/packages/cli/package.json b/packages/cli/package.json
+index e613e73025..f531c30831 100644
+--- a/packages/cli/package.json
++++ b/packages/cli/package.json
+@@ -5,8 +5,8 @@
+   "type": "module",
+   "license": "AGPL-3.0",
+   "bin": {
+-    "loophole": "./bin/loophole.cjs",
+-    "loophole2": "./bin/loophole2.cjs"
++    "loophole-cli": "./bin/loophole-cli.cjs",
++    "lhc": "./bin/lhc.cjs"
+   },
+   "files": [
+     "bin"
+diff --git a/packages/cli/script/build.ts b/packages/cli/script/build.ts
+index 7e394e0948..d5931e4125 100755
+--- a/packages/cli/script/build.ts
++++ b/packages/cli/script/build.ts
+@@ -17,7 +17,7 @@ import { NativeArch } from "../../../script/native-arch"
+ import { bundledModelsSnapshot, modelsSnapshotPlugin } from "../../core/script/models-snapshot"
+ 
+ const dir = path.resolve(import.meta.dirname, "..")
+-const binary = "loophole"
++const binary = "loophole-cli"
+ const outdir = path.resolve(
+   dir,
+   process.argv.find((arg) => arg.startsWith("--outdir="))?.slice("--outdir=".length) ?? "dist",
+@@ -194,7 +194,7 @@ export default { path: file, version: ${JSON.stringify(opencodePty.version)}, sh
+     },
+     define: {
+       OPENCODE_VERSION: `'${Script.version}'`,
+-      OPENCODE_CLI_NAME: "'loophole'",
++      OPENCODE_CLI_NAME: "'loophole-cli'",
+       OPENCODE_CHANNEL: `'${Script.channel}'`,
+       OPENCODE_ARTIFACT: `'cli'`,
+       ...(highlights ? { OPENCODE_RELEASE_HIGHLIGHTS: JSON.stringify(highlights) } : {}),
+diff --git a/packages/cli/src/acp/service.ts b/packages/cli/src/acp/service.ts
+index 991f5df03b..edbbb35097 100644
+--- a/packages/cli/src/acp/service.ts
++++ b/packages/cli/src/acp/service.ts
+@@ -106,14 +106,14 @@ export function make(input: {
+     initialize: Effect.fnUntraced(function* (params) {
+       yield* Ref.set(input.capabilities, ACPCapabilities.parse(params.clientCapabilities))
+       const authMethod: AuthMethod = {
+-        description: "Run `loophole auth login` in the terminal",
++        description: "Run `loophole-cli auth login` in the terminal",
+         name: "Login with Loophole",
+         id: AuthMethodID,
+         ...(params.clientCapabilities?.auth?.terminal ? { type: "terminal" as const, args: ["--login"] } : {}),
+       }
+       if (params.clientCapabilities?._meta?.["terminal-auth"] === true) {
+         authMethod._meta = {
+-          "terminal-auth": { command: "loophole", args: ["auth", "login"], label: "Loophole Login" },
++          "terminal-auth": { command: "loophole-cli", args: ["auth", "login"], label: "Loophole Login" },
+         }
+       }
+       return {
+diff --git a/packages/cli/src/commands/commands.ts b/packages/cli/src/commands/commands.ts
+index ce1d614c4b..2b3b6302fe 100644
+--- a/packages/cli/src/commands/commands.ts
++++ b/packages/cli/src/commands/commands.ts
+@@ -45,7 +45,7 @@ const PermissionParams = {
+   ),
+ }
+ 
+-const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME : "opencode", {
++const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME : "loophole-cli", {
+   description: "Loophole command line interface",
+   params: {
+     ...ServerParams,
+diff --git a/packages/cli/src/commands/handlers/acp.ts b/packages/cli/src/commands/handlers/acp.ts
+index ca74d864d4..d0de4a0df7 100644
+--- a/packages/cli/src/commands/handlers/acp.ts
++++ b/packages/cli/src/commands/handlers/acp.ts
+@@ -1,4 +1,4 @@
+-﻿import { MessageTooLargeError, ndJsonStream } from "@agentclientprotocol/sdk"
++import { MessageTooLargeError, ndJsonStream } from "@agentclientprotocol/sdk"
+ import { OpenCode } from "@opencode/client/effect"
+ import { Service } from "@opencode/client/effect/service"
+ import { CrossSpawnSpawner } from "@opencode/util/cross-spawn-spawner"
+@@ -52,7 +52,7 @@ export default Runtime.handler(
+     )
+     // Exit directly: closing the scope would wait on the server's graceful shutdown, and its lease pipe ends it anyway.
+     yield* Effect.sync(() => {
+-      if (failure) process.stderr.write(`loophole acp: ${failure}\n`)
++      if (failure) process.stderr.write(`loophole-cli acp: ${failure}\n`)
+       process.exit(failure ? 1 : 0)
+     })
+   }),
+diff --git a/packages/cli/src/commands/handlers/default.ts b/packages/cli/src/commands/handlers/default.ts
+index 6cfffec0d5..78269eba73 100644
+--- a/packages/cli/src/commands/handlers/default.ts
++++ b/packages/cli/src/commands/handlers/default.ts
+@@ -43,8 +43,8 @@ export default Runtime.handler(Commands, (input) =>
+         if (reason === "version-mismatch" && preflight.begin(previousVersion)) return
+         process.stderr.write(
+           reason === "version-mismatch"
+-            ? "Restarting background server (version mismatch)...\n"
+-            : "Starting background server...\n",
++            ? "Preparing server (version mismatch)...\n"
++            : "Preparing server...\n",
+         )
+       },
+     }).pipe(
+diff --git a/packages/cli/src/commands/handlers/pair.ts b/packages/cli/src/commands/handlers/pair.ts
+index fe8234dbc3..ac9765cb4d 100644
+--- a/packages/cli/src/commands/handlers/pair.ts
++++ b/packages/cli/src/commands/handlers/pair.ts
+@@ -1,4 +1,4 @@
+-﻿import { cancel, confirm, isCancel, log } from "@clack/prompts"
++import { cancel, confirm, isCancel, log } from "@clack/prompts"
+ import { EOL } from "os"
+ import { Effect, Option, Schedule } from "effect"
+ import { Service } from "@opencode/client/effect/service"
+@@ -15,7 +15,7 @@ export default Runtime.handler(
+     const config = yield* ServiceConfig.read()
+     if (config.disabled === true)
+       return yield* Effect.fail(
+-        new Error("Pairing requires the background service; run `loophole service unset disabled` first"),
++        new Error("Pairing requires the background service; run `loophole-cli service unset disabled` first"),
+       )
+     if (input.remote && Option.isSome(input.url))
+       return yield* Effect.fail(new Error("--remote cannot be combined with --url"))
+@@ -62,7 +62,7 @@ export default Runtime.handler(
+         `  ssh -L ${url.port}:${url.hostname}:${url.port} <host>`,
+         `  If port ${url.port} is busy locally, forward another port and use it in the link.`,
+         "",
+-        "  To connect from other devices, run `loophole service set hostname 0.0.0.0`.",
++        "  To connect from other devices, run `loophole-cli service set hostname 0.0.0.0`.",
+         "",
+       ].join(EOL) + EOL,
+     )
+@@ -72,7 +72,7 @@ export default Runtime.handler(
+ export const remoteWarning = [
+   "This will expose your Loophole server to the internet.",
+   "Traffic is end-to-end encrypted, and access requires your server password.",
+-  "To pair locally instead, run `loophole pair` without the --remote flag.",
++  "To pair locally instead, run `loophole-cli pair` without the --remote flag.",
+ ].join(EOL)
+ 
+ export interface RemoteConsentPrompt {
+@@ -102,12 +102,12 @@ export const remoteConsent = Effect.fn("cli.pair.remote-consent")(function* (
+   if (!input.yes) {
+     const accepted = yield* Effect.promise(terminal.confirm)
+     if (isCancel(accepted)) {
+-      cancel("Remote access was not enabled. To pair locally, run `loophole pair`.")
++      cancel("Remote access was not enabled. To pair locally, run `loophole-cli pair`.")
+       process.exitCode = 130
+       return false
+     }
+     if (accepted !== true) {
+-      log.info("Remote access was not enabled. To pair locally, run `loophole pair`.")
++      log.info("Remote access was not enabled. To pair locally, run `loophole-cli pair`.")
+       return false
+     }
+   }
+@@ -142,9 +142,9 @@ const remoteURL = Effect.fnUntraced(function* (client: ReturnType<typeof OpenCod
+         Effect.fail(
+           new Error(
+             [
+-              "Timed out waiting for the remote tunnel; run `loophole pair --remote` again to retry.",
++              "Timed out waiting for the remote tunnel; run `loophole-cli pair --remote` again to retry.",
+               // The service may not inherit the shell's environment, and Bun ignores the Windows system (WinINET) proxy.
+-              "Behind an HTTP proxy, give the background service its address with `loophole service set env HTTPS_PROXY <url>` (and `NO_PROXY` for hosts to reach directly).",
++              "Behind an HTTP proxy, give the background service its address with `loophole-cli service set env HTTPS_PROXY <url>` (and `NO_PROXY` for hosts to reach directly).",
+             ].join(EOL),
+           ),
+         ),
+diff --git a/packages/cli/src/commands/handlers/stats.ts b/packages/cli/src/commands/handlers/stats.ts
+index bced1e13bd..fbe69ab723 100644
+--- a/packages/cli/src/commands/handlers/stats.ts
++++ b/packages/cli/src/commands/handlers/stats.ts
+@@ -108,7 +108,7 @@ export function renderStats(stats: SessionStatsInfo, options: RenderOptions) {
+       : `${style(formatPercent(toolRate), primary, options.color)} tool success`
+   const details = options.models || options.tools || options.cost
+   const empty = stats.sessions === 0 && stats.prompts === 0 && stats.steps === 0
+-  const heading = `${style("loophole stats", primary, options.color)} ${style(`· ${options.label} · ${options.scope}`, "2", options.color)}`
++  const heading = `${style("loophole-cli stats", primary, options.color)} ${style(`· ${options.label} · ${options.scope}`, "2", options.color)}`
+   const lines = details
+     ? [style(`${options.label} · ${options.scope}`, "2", options.color)]
+     : empty
+diff --git a/packages/cli/src/mini-host.ts b/packages/cli/src/mini-host.ts
+index 06f9ed8e8f..0d4820108a 100644
+--- a/packages/cli/src/mini-host.ts
++++ b/packages/cli/src/mini-host.ts
+@@ -1,4 +1,4 @@
+-﻿import type { MiniFrontendInput } from "@opencode/tui/mini"
++import type { MiniFrontendInput } from "@opencode/tui/mini"
+ import { createModelPreferenceRepository } from "@opencode/tui/model-preference"
+ import fs from "node:fs"
+ import { readFile } from "node:fs/promises"
+@@ -6,7 +6,7 @@ import path from "node:path"
+ import { ReadStream } from "node:tty"
+ import { OPENCODE_VERSION } from "./version"
+ 
+-export const INTERACTIVE_INPUT_ERROR = "loophole mini requires a controlling terminal for input"
++export const INTERACTIVE_INPUT_ERROR = "loophole-cli mini requires a controlling terminal for input"
+ 
+ export type InteractiveStdin = {
+   stdin: NodeJS.ReadStream
+diff --git a/packages/cli/src/mini.ts b/packages/cli/src/mini.ts
+index a080ac41dc..3355e74d29 100644
+--- a/packages/cli/src/mini.ts
++++ b/packages/cli/src/mini.ts
+@@ -1,4 +1,4 @@
+-﻿import { Service, type Endpoint } from "@opencode/client/effect/service"
++import { Service, type Endpoint } from "@opencode/client/effect/service"
+ import { ClientError, OpenCode, type OpenCodeClient } from "@opencode/client/promise"
+ import type { MiniFrontendInput } from "@opencode/tui/mini"
+ import { noTimeoutFetch } from "@opencode/util/no-timeout-fetch"
+@@ -183,7 +183,7 @@ export async function resolveMiniTarget<A>(input: {
+ }
+ 
+ export function validateMiniTerminal() {
+-  if (!process.stdout.isTTY) fail("loophole mini requires a TTY stdout")
++  if (!process.stdout.isTTY) fail("loophole-cli mini requires a TTY stdout")
+ }
+ 
+ /** @internal Exported for testing. */
+diff --git a/packages/cli/src/run/interactive.ts b/packages/cli/src/run/interactive.ts
+index e06dbb531d..fa4894e157 100644
+--- a/packages/cli/src/run/interactive.ts
++++ b/packages/cli/src/run/interactive.ts
+@@ -1,7 +1,7 @@
+ /**
+  * Interactive mode using the Loophole screen (or the basic pi-tui chat with LOOPHOLE_TUI=basic).
+  *
+- * Used by `loophole` and by `loophole run` when stdout is a terminal. Connects exactly like
++ * Used by `loophole-cli` and by `loophole-cli run` when stdout is a terminal. Connects exactly like
+  * runNonInteractive (endpoint from input.server, same client headers) and honors
+  * --continue/--session/--fork/--model/--agent through resolveSessionTarget.
+  */
+diff --git a/packages/cli/src/run/ui-mode.ts b/packages/cli/src/run/ui-mode.ts
+index ac88b12968..b442e50a0a 100644
+--- a/packages/cli/src/run/ui-mode.ts
++++ b/packages/cli/src/run/ui-mode.ts
+@@ -1,9 +1,9 @@
+ /**
+- * Which terminal interface `loophole` and `loophole run` open, chosen with the LOOPHOLE_TUI environment variable:
++ * Which terminal interface `loophole-cli` and `loophole-cli run` open, chosen with the LOOPHOLE_TUI environment variable:
+  *
+  *   (unset) / screen   the Loophole screen (default)
+  *   basic              the basic pi-tui chat from patch 0008
+- *   mini               the plain interface that upstream ships; `loophole run` then prints and exits
++ *   mini               the plain interface that upstream ships; `loophole-cli run` then prints and exits
+  *
+  * Piped input/output always uses the plain paths regardless of this setting.
+  */
+diff --git a/packages/cli/src/screen/controller.ts b/packages/cli/src/screen/controller.ts
+index c062c55755..c83b0fa79c 100644
+--- a/packages/cli/src/screen/controller.ts
++++ b/packages/cli/src/screen/controller.ts
+@@ -737,7 +737,7 @@ export class ScreenController {
+       : await this.api.session.list({ directory: this.directory, order: "desc", limit: 30 })
+     const sessions: SessionInfo[] = response.data
+     if (sessions.length === 0) return this.screen.addStatus("There are no sessions yet.")
+-    const id = await this.screen.pick(
++    const id = await this.screen.pickFilterable(
+       all ? "Open a session" : "Switch session",
+       sessions.map((session) => ({
+         value: session.id,
+@@ -749,6 +749,8 @@ export class ScreenController {
+               : undefined
+             : session.location.directory,
+       })),
++      0,
++      "type to search sessions · ↑/↓ select · enter open · esc back",
+     )
+     const picked = sessions.find((session) => session.id === id)
+     if (!picked) return
+@@ -1082,9 +1084,11 @@ export class ScreenController {
+     const response = await this.api.skill.list({ location: { directory: this.directory } })
+     const skills = response.data
+     if (skills.length === 0) return this.screen.addStatus("No skills are available.")
+-    const id = await this.screen.pick(
++    const id = await this.screen.pickFilterable(
+       "Skills",
+       skills.map((skill) => ({ value: skill.id, label: skill.name, description: skill.description })),
++      0,
++      "type to search skills · ↑/↓ select · enter insert · esc back",
+     )
+     const skill = skills.find((item) => item.id === id)
+     if (!skill) return
+@@ -1231,7 +1235,7 @@ export class ScreenController {
+ 
+   /**
+    * `/stats` — usage, cost, activity, models and tool reliability, modelled on
+-   * `loophole stats --full`. Optional args: `all`, a number of days, or any of
++   * `loophole-cli stats --full`. Optional args: `all`, a number of days, or any of
+    * `cost`, `models`, `tools` to show only those sections.
+    */
+   private async showStats(args: string): Promise<void> {
+@@ -1898,27 +1902,30 @@ export class ScreenController {
+     if (options.length === 0) return
+     const selectedID =
+       current !== undefined && current.providerID === providerID ? current.id : undefined
+-    const modelID = await this.screen.pickCurrent(
++    const rows = options.map((model) => {
++      const isCurrent =
++        current !== undefined && current.providerID === providerID && current.id === model.id
++      return {
++        value: model.id,
++        label: `${isCurrent ? "✓ " : ""}${model.name}`,
++        description: [
++          `${String(Math.round(model.limit.context / 1000))}k context`,
++          model.limit.output > 0 ? `${String(Math.round(model.limit.output / 1000))}k output` : undefined,
++          model.variants.length > 0
++            ? `thinking: ${model.variants.map((variant) => variant.id).join(", ")}`
++            : undefined,
++          model.status === "alpha" || model.status === "beta" ? model.status : undefined,
++        ]
++          .filter((part): part is string => part !== undefined)
++          .join(" · "),
++      }
++    })
++    const currentIndex = Math.max(0, options.findIndex((model) => model.id === selectedID))
++    const modelID = await this.screen.pickFilterable(
+       `${providerLabel(providerID)} models`,
+-      options.map((model) => {
+-        const isCurrent =
+-          current !== undefined && current.providerID === providerID && current.id === model.id
+-        return {
+-          value: model.id,
+-          label: `${isCurrent ? "✓ " : ""}${model.name}`,
+-          description: [
+-            `${String(Math.round(model.limit.context / 1000))}k context`,
+-            model.limit.output > 0 ? `${String(Math.round(model.limit.output / 1000))}k output` : undefined,
+-            model.variants.length > 0
+-              ? `thinking: ${model.variants.map((variant) => variant.id).join(", ")}`
+-              : undefined,
+-            model.status === "alpha" || model.status === "beta" ? model.status : undefined,
+-          ]
+-            .filter((part): part is string => part !== undefined)
+-            .join(" · "),
+-        }
+-      }),
+-      selectedID,
++      rows,
++      currentIndex,
++      "type to search models · ↑/↓ select · enter confirm · esc back",
+     )
+     if (!modelID) return
+     const chosen = options.find((model) => model.id === modelID)
+diff --git a/packages/cli/src/server-process.ts b/packages/cli/src/server-process.ts
+index 8acb27e229..a2d332d2cb 100644
+--- a/packages/cli/src/server-process.ts
++++ b/packages/cli/src/server-process.ts
+@@ -1,4 +1,4 @@
+-﻿export * as ServerProcess from "./server-process"
++export * as ServerProcess from "./server-process"
+ 
+ import { NodeServices } from "@effect/platform-node"
+ import { Service } from "@opencode/client/effect/service"
+@@ -179,7 +179,7 @@ const processEffect = Effect.fnUntraced(function* (options: Options) {
+             return yield* Effect.fail(
+               new Error(
+                 `Managed service port ${port} on ${hostname} is already in use by ${owner ?? "another process"}. ` +
+-                  "Configure another port with `loophole service set port <port>` and start the service again.",
++                  "Configure another port with `loophole-cli service set port <port>` and start the service again.",
+                 { cause: error },
+               ),
+             )
+diff --git a/packages/cli/src/services/remote-tunnel.ts b/packages/cli/src/services/remote-tunnel.ts
+index 30e91e0bed..4164460cd4 100644
+--- a/packages/cli/src/services/remote-tunnel.ts
++++ b/packages/cli/src/services/remote-tunnel.ts
+@@ -1,4 +1,4 @@
+-﻿export * as RemoteTunnel from "./remote-tunnel"
++export * as RemoteTunnel from "./remote-tunnel"
+ 
+ import type { OpenTunnelError } from "@opentunnel/client/effect"
+ import { Cause, Effect, Schedule } from "effect"
+@@ -42,7 +42,7 @@ export const run = Effect.fnUntraced(function* (input: {
+     Effect.catchCause((cause) =>
+       Cause.hasInterruptsOnly(cause)
+         ? Effect.failCause(cause)
+-        : Effect.logError("remote access tunnel stopped; run `loophole service set remote true` to retry", { cause }),
++        : Effect.logError("remote access tunnel stopped; run `loophole-cli service set remote true` to retry", { cause }),
+     ),
+   )
+ })
+diff --git a/packages/cli/src/services/retained-image.ts b/packages/cli/src/services/retained-image.ts
+index d1b6223f64..6a5c132b78 100644
+--- a/packages/cli/src/services/retained-image.ts
++++ b/packages/cli/src/services/retained-image.ts
+@@ -58,10 +58,16 @@ export function installed(home: string) {
+   const runtime = path.basename(process.execPath, path.extname(process.execPath)).toLowerCase()
+   if (runtime === "bun" || runtime === "node" || runtime === "nodejs") return false
+   const executable = path.resolve(process.execPath)
++  const installedBinary = path.resolve(
++    home,
++    ".loophole",
++    "bin",
++    process.platform === "win32" ? "loophole-cli.exe" : "loophole-cli",
++  )
+   return (
+     executable.split(path.sep).includes("node_modules") ||
+     /[\\/]winget[\\/]packages[\\/]/i.test(executable) ||
+-    executable === path.resolve(home, ".loophole", "bin", "loophole.exe")
++    executable === installedBinary
+   )
+ }
+ 
+diff --git a/packages/cli/src/services/service-config.ts b/packages/cli/src/services/service-config.ts
+index 84daf44d5a..465c57b34c 100644
+--- a/packages/cli/src/services/service-config.ts
++++ b/packages/cli/src/services/service-config.ts
+@@ -1,4 +1,4 @@
+-﻿import { Global } from "@opencode/util/global"
++import { Global } from "@opencode/util/global"
+ import { OPENCODE_CHANNEL, OPENCODE_VERSION } from "../version"
+ import { Hash } from "@opencode/util/hash"
+ import { Service } from "@opencode/client/effect/service"
+@@ -221,7 +221,7 @@ export const get = Effect.fn("cli.service-config.get")(function* (key?: string,
+     return JSON.stringify(safe.remote === undefined ? safe : { ...safe, remote: {} }, null, 2)
+   }
+   const selected = configKey(key)
+-  if (selected !== "env" && name !== undefined) throw new Error(`Usage: loophole service get ${selected}`)
++  if (selected !== "env" && name !== undefined) throw new Error(`Usage: loophole-cli service get ${selected}`)
+   switch (selected) {
+     case "disabled": {
+       return String((yield* read()).disabled ?? false)
+@@ -253,7 +253,7 @@ export const get = Effect.fn("cli.service-config.get")(function* (key?: string,
+ export const set = Effect.fn("cli.service-config.set")(function* (key: string, value: string, nestedValue?: string) {
+   const selected = configKey(key)
+   if (selected !== "env" && nestedValue !== undefined)
+-    throw new Error(`Usage: loophole service set ${selected} <value>`)
++    throw new Error(`Usage: loophole-cli service set ${selected} <value>`)
+   switch (selected) {
+     case "disabled": {
+       if (value !== "true" && value !== "false") throw new Error("Disabled must be true or false")
+@@ -291,7 +291,7 @@ export const set = Effect.fn("cli.service-config.set")(function* (key: string, v
+       return
+     }
+     case "env": {
+-      if (nestedValue === undefined) throw new Error("Usage: loophole service set env <key> <value>")
++      if (nestedValue === undefined) throw new Error("Usage: loophole-cli service set env <key> <value>")
+       yield* Service.stop(yield* options())
+       const existing = yield* read()
+       yield* write({ ...existing, env: { ...existing.env, [value]: nestedValue } })
+@@ -315,7 +315,7 @@ export const set = Effect.fn("cli.service-config.set")(function* (key: string, v
+ 
+ export const unset = Effect.fn("cli.service-config.unset")(function* (key: string, name?: string) {
+   const selected = configKey(key)
+-  if (selected !== "env" && name !== undefined) throw new Error(`Usage: loophole service unset ${selected}`)
++  if (selected !== "env" && name !== undefined) throw new Error(`Usage: loophole-cli service unset ${selected}`)
+   switch (selected) {
+     case "disabled": {
+       const { disabled: _disabled, ...next } = yield* read()
+@@ -346,7 +346,7 @@ export const unset = Effect.fn("cli.service-config.unset")(function* (key: strin
+       return
+     }
+     case "env": {
+-      if (name === undefined) throw new Error("Usage: loophole service unset env <key>")
++      if (name === undefined) throw new Error("Usage: loophole-cli service unset env <key>")
+       yield* Service.stop(yield* options())
+       const existing = yield* read()
+       const { [name]: _removed, ...env } = existing.env ?? {}
+diff --git a/packages/cli/src/services/update-preflight.tsx b/packages/cli/src/services/update-preflight.tsx
+index 2ce45f47f7..5de0d13e97 100644
+--- a/packages/cli/src/services/update-preflight.tsx
++++ b/packages/cli/src/services/update-preflight.tsx
+@@ -22,7 +22,7 @@ import {
+   untrack,
+ } from "solid-js"
+ 
+-const stages = ["Keeping your session safe", "Starting the new background service", "Loading Loophole"] as const
++const stages = ["Keeping your session safe", "Preparing server", "Loading Loophole"] as const
+ const stageFloor = 480
+ const transitionDuration = 420
+ const completionHold = 650
+@@ -41,7 +41,7 @@ export const make = (): Handle => {
+     begin: (from) => {
+       if (!process.stdout.isTTY || !process.stdin.isTTY) return false
+       session ??= open(from).catch(() => {
+-        process.stderr.write("Restarting background server (version mismatch)...\n")
++        process.stderr.write("Preparing server...\n")
+         return undefined
+       })
+       return true
+diff --git a/packages/cli/src/services/updater.ts b/packages/cli/src/services/updater.ts
+index 13b338a13d..253ca61698 100644
+--- a/packages/cli/src/services/updater.ts
++++ b/packages/cli/src/services/updater.ts
+@@ -191,7 +191,7 @@ const make = Effect.gen(function* () {
+     global.home,
+     ".loophole",
+     "bin",
+-    process.platform === "win32" ? "loophole.exe" : "loophole",
++    process.platform === "win32" ? "loophole-cli.exe" : "loophole-cli",
+   )
+   const curlBinary = yield* fs.realPath(curlPath).pipe(Effect.orElseSucceed(() => curlPath))
+ 
+@@ -206,7 +206,7 @@ const make = Effect.gen(function* () {
+       new UpgradeError({
+         title: "Git Bash is required to update Loophole",
+         detail: "The Loophole installer runs with Git Bash on Windows, and it was not found.",
+-        retry: "Install Git for Windows or set OPENCODE_GIT_BASH_PATH, then run loophole upgrade again.",
++        retry: "Install Git for Windows or set OPENCODE_GIT_BASH_PATH, then run loophole-cli upgrade again.",
+       }),
+     )
+   })
+@@ -291,7 +291,7 @@ const make = Effect.gen(function* () {
+           {
+             title: "Could not check for Loophole updates",
+             detail: errorDetail(cause),
+-            retry: "Check your network, then run loophole upgrade again.",
++            retry: "Check your network, then run loophole-cli upgrade again.",
+           },
+           { cause },
+         ),
+@@ -338,7 +338,7 @@ const make = Effect.gen(function* () {
+           title: "Could not check for Loophole updates",
+           detail,
+           command: ["winget", "search", ...wingetArgs].join(" "),
+-          retry: "Fix the issue above, then run loophole upgrade again.",
++          retry: "Fix the issue above, then run loophole-cli upgrade again.",
+         },
+         cause === undefined ? undefined : { cause },
+       )
+@@ -401,7 +401,7 @@ const make = Effect.gen(function* () {
+           title: input.title ?? `${installNames[input.method]} could not install Loophole`,
+           detail,
+           command: (input.displayCommand ?? input.command).join(" "),
+-          retry: input.retry ?? "Fix the issue above, then run loophole upgrade again.",
++          retry: input.retry ?? "Fix the issue above, then run loophole-cli upgrade again.",
+         },
+         cause === undefined ? undefined : { cause },
+       )
+@@ -482,14 +482,14 @@ const make = Effect.gen(function* () {
+             command: ["curl", "-fsSL", "-o", installer, "https://raw.githubusercontent.com/loophole-ai/loophole-app/main/script/install.ts"],
+             displayCommand: ["curl", "-fsSL", "https://raw.githubusercontent.com/loophole-ai/loophole-app/main/script/install.ts"],
+             title: "Could not download the Loophole installer",
+-            retry: "Check your network, then run loophole upgrade again.",
++            retry: "Check your network, then run loophole-cli upgrade again.",
+           })
+           return yield* retaining(
+             method,
+             runUpgrade({
+               method,
+               command: [bash, installer, "--version", version, "--no-modify-path"],
+-              displayCommand: ["loophole", "upgrade", version, "--method", "curl"],
++              displayCommand: ["loophole-cli", "upgrade", version, "--method", "curl"],
+               title: "The Loophole installer failed",
+             }),
+           )
+@@ -521,7 +521,7 @@ const make = Effect.gen(function* () {
+               {
+                 title: "Could not prepare the Loophole upgrade",
+                 detail: errorDetail(cause),
+-                retry: "Fix the issue above, then run loophole upgrade again.",
++                retry: "Fix the issue above, then run loophole-cli upgrade again.",
+               },
+               { cause },
+             ),
+diff --git a/packages/desktop/script/utils.ts b/packages/desktop/script/utils.ts
+index 999a213b47..2bd82e53b8 100644
+--- a/packages/desktop/script/utils.ts
++++ b/packages/desktop/script/utils.ts
+@@ -1,3 +1,4 @@
++import { existsSync } from "node:fs"
+ import { chmod, copyFile, mkdtemp, rm } from "node:fs/promises"
+ import { tmpdir } from "node:os"
+ import { dirname, join } from "node:path"
+@@ -22,37 +23,37 @@ export function resolveChannel(): Channel {
+ export const CLI_BINARIES: Array<{ target: string; package: string; os: string; cpu: string }> = [
+   {
+     target: "darwin-arm64",
+-    package: "@opencode/cli-darwin-arm64",
++    package: "@loophole-ai/cli-darwin-arm64",
+     os: "darwin",
+     cpu: "arm64",
+   },
+   {
+     target: "darwin-x64",
+-    package: "@opencode/cli-darwin-x64-baseline",
++    package: "@loophole-ai/cli-darwin-x64-baseline",
+     os: "darwin",
+     cpu: "x64",
+   },
+   {
+     target: "windows-arm64",
+-    package: "@opencode/cli-windows-arm64",
++    package: "@loophole-ai/cli-windows-arm64",
+     os: "win32",
+     cpu: "arm64",
+   },
+   {
+     target: "windows-x64",
+-    package: "@opencode/cli-windows-x64-baseline",
++    package: "@loophole-ai/cli-windows-x64-baseline",
+     os: "win32",
+     cpu: "x64",
+   },
+   {
+     target: "linux-x64",
+-    package: "@opencode/cli-linux-x64-baseline",
++    package: "@loophole-ai/cli-linux-x64-baseline",
+     os: "linux",
+     cpu: "x64",
+   },
+   {
+     target: "linux-arm64",
+-    package: "@opencode/cli-linux-arm64",
++    package: "@loophole-ai/cli-linux-arm64",
+     os: "linux",
+     cpu: "arm64",
+   },
+@@ -100,7 +101,7 @@ export async function downloadCliToResources(version = CLI_VERSION, dest = windo
+ 
+ export async function copyBuiltCliToResources(root: string, dest = windowsify("resources/loophole-cli")) {
+   const cli = getCurrentCli()
+-  const directory = cli.package.replace("@opencode/", "")
++  const directory = cli.package.replace("@loophole-ai/", "")
+   await copyCliToResources(join(root, directory), dest)
+ }
+ 
+@@ -109,7 +110,12 @@ export async function copyBuiltCliToResources(root: string, dest = windowsify("r
+ // 200 MB binary on first launch.
+ async function copyCliToResources(pkg: string, dest: string) {
+   const cli = getCurrentCli()
+-  await copyFile(join(pkg, "bin", cli.os === "win32" ? "loophole.exe" : "loophole"), dest)
++  // Older published CLI packages still call the executable `loophole`; prefer
++  // the current `loophole-cli` name but keep the fallback for dev downloads.
++  const candidates = cli.os === "win32" ? ["loophole-cli.exe", "loophole.exe"] : ["loophole-cli", "loophole"]
++  const source = candidates.map((name) => join(pkg, "bin", name)).find((file) => existsSync(file))
++  if (!source) throw new Error(`Bundled CLI package has no executable: ${pkg}`)
++  await copyFile(source, dest)
+   await prepareCli(dest)
+ 
+   const manifest = Option.getOrUndefined(
+diff --git a/packages/desktop/src/main/service/desktop-cli.ts b/packages/desktop/src/main/service/desktop-cli.ts
+index 72ce80b758..43ac8e2006 100644
+--- a/packages/desktop/src/main/service/desktop-cli.ts
++++ b/packages/desktop/src/main/service/desktop-cli.ts
+@@ -43,7 +43,7 @@ export const layer = Layer.effect(
+       const home = app.getPath("home")
+       yield* runInstaller(cli.binary, home)
+ 
+-      return path.join(home, ".loophole", "bin", "loophole")
++      return path.join(home, ".loophole", "bin", process.platform === "win32" ? "loophole-cli.exe" : "loophole-cli")
+     })
+ 
+     return Service.of({ resolve, install })
+diff --git a/packages/screen/src/components/chrome/announcement.ts b/packages/screen/src/components/chrome/announcement.ts
+index dacc71c2e0..ad75df8821 100644
+--- a/packages/screen/src/components/chrome/announcement.ts
++++ b/packages/screen/src/components/chrome/announcement.ts
+@@ -42,6 +42,8 @@ export class AnnouncementComponent implements Component {
+       out.push('');
+       out.push(truncateToWidth(`  ${star} ${currentTheme.boldFg('textStrong', title)}`, width, '…'));
+       if (detail) out.push(truncateToWidth(`    ${currentTheme.fg('textDim', detail)}`, width, '…'));
++      // Keep a breathing line between the release note and the readiness line.
++      out.push('');
+     }
+ 
+     if (offline) {
+diff --git a/packages/screen/src/screen.ts b/packages/screen/src/screen.ts
+index 78bbb348dd..bfef2fa87b 100644
+--- a/packages/screen/src/screen.ts
++++ b/packages/screen/src/screen.ts
+@@ -553,7 +553,7 @@ export class Screen {
+         const listSlot = new Container();
+         const filterLine = new Text(this.filterLine(''), 0, 0);
+         let query = '';
+-        let list = makeList(items);
++        let list = makeList(items, initialIndex);
+         listSlot.addChild(list);
+ 
+         const rebuild = () => {
+@@ -648,6 +648,21 @@ export class Screen {
+     return this.prompt([], items, undefined, index, { title, accent: 'border' });
+   }
+ 
++  /** Like `pick`, with a text field that narrows the rows by name or description. */
++  pickFilterable(
++    title: string,
++    items: SelectItem[],
++    initialIndex = 0,
++    footer = 'type to filter · ↑/↓ select · enter confirm · esc back',
++  ): Promise<string | undefined> {
++    return this.prompt([], items, undefined, initialIndex, {
++      title,
++      accent: 'border',
++      filterable: true,
++      footer,
++    });
++  }
++
+   /**
+    * Ask one question of a form. Resolves with the answer, or undefined when the user cancelled
+    * (Esc), which the caller treats as dismissing the whole form.
