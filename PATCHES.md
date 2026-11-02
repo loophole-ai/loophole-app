@@ -29,6 +29,7 @@ patches/
   0018-screen-polish.patch     narrow wordmark, provider-first models, model persistence, live rename
   0019-stats-update-palette.patch  /stats usage report, /update, Ctrl+Shift+P command palette
   0020-cli-name-and-search.patch  loophole-cli/lhc install name, Preparing server line, search in pickers
+  0021-session-title-version.patch  keep renamed session titles in sync; CLI 1.1.0
   user/                        optional extra patches, applied after the numbered stack
   series                       legacy list, ignored by the scripts (sorted order wins)
   @ai-sdk%2F...@x.patch         copies of upstream bun patchedDependencies - NEVER applied
@@ -183,6 +184,12 @@ an older service) instead of mentioning the background server. `/models` now fil
 and the same filter applies to `/sessions`, `/open`, and `/skills`, so a 350-model OpenRouter list
 is searchable instead of scroll-only. The `/stats` activity calendar drops the blank line between
 weekday rows and uses a five-step glyph gradient, so the whole year reads as one compact heatmap.
+
+`0021-session-title-version.patch` keeps a renamed session's title in sync everywhere. The active
+title is tracked in the controller, refreshed by `session.renamed` events (including renames from
+the desktop or another client), shown by `/status` and `/debug`, and preferred in the `/sessions`
+picker, so it is not only the welcome box that updates. It also pins the CLI version to `1.1.0` in
+the package metadata and in every CLI/desktop build workflow.
 
 `0005-telemetry-posthog.patch` came from the `telemetry-posthog` / `tui-logo-art` branches.
 Every other custom commit on the local branches (Discord report link, service-port isolation,

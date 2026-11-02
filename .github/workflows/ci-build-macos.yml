@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "CLI version (empty = latest loophole-ai/cli release)"
+        description: "CLI version (empty = 1.1.0)"
         required: false
         default: ""
 
@@ -64,7 +64,7 @@ jobs:
       - name: Apply patches and assets
         run: bash ./prepare_src.sh
 
-      # The CLI version is the published CLI release, not a constant in a patch.
+      # The CLI version is pinned here so desktop and CLI builds agree. Override with the dispatch input.
       - name: Resolve CLI version
         id: version
         env:
@@ -72,10 +72,8 @@ jobs:
         run: |
           version="${{ inputs.version }}"
           if [ -z "$version" ]; then
-            version=$(curl -fsSL -H "Accept: application/vnd.github+json" \
-              -H "Authorization: Bearer $GITHUB_TOKEN" \
-              https://api.github.com/repos/loophole-ai/cli/releases/latest \
-              | jq -r '.tag_name // empty' | sed 's/^v//')
+            # Pinned CLI version for this build; bump when cutting a new CLI.
+            version="1.1.0"
           fi
           if [ -z "$version" ]; then
             echo "::error::could not resolve the latest CLI release"
