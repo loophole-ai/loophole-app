@@ -12,7 +12,7 @@ index a6cf314843..e06dbb531d 100644
      await controller.start()
      // The controller owns the terminal; keep the process alive until it calls process.exit().
 diff --git a/packages/cli/src/screen/controller.ts b/packages/cli/src/screen/controller.ts
-index b3688ffb05..e171b0e7a2 100644
+index b3688ffb05..a060a17276 100644
 --- a/packages/cli/src/screen/controller.ts
 +++ b/packages/cli/src/screen/controller.ts
 @@ -15,6 +15,7 @@ import type { Endpoint } from "@opencode/client/effect/service"
@@ -85,7 +85,15 @@ index b3688ffb05..e171b0e7a2 100644
    { name: "connect", description: "Connect a provider or integration" },
    { name: "login", description: "Alias of /connect — add a provider API key" },
    { name: "skills", description: "Insert a skill mention into the prompt" },
-@@ -96,6 +112,7 @@ const BUILTIN_COMMANDS: readonly SlashCommand[] = [
+@@ -89,6 +105,7 @@ const BUILTIN_COMMANDS: readonly SlashCommand[] = [
+   { name: "plugins", description: "List loaded plugins" },
+   { name: "settings", description: "Show the configuration files in use" },
+   { name: "themes", description: "Switch the screen theme" },
++  { name: "theme", description: "Alias of /themes" },
+   { name: "status", description: "Show session status and token usage" },
+   { name: "debug", description: "Show connection and session details" },
+   { name: "highlights", description: "Show this build's version and a short summary" },
+@@ -96,6 +113,7 @@ const BUILTIN_COMMANDS: readonly SlashCommand[] = [
    { name: "web", description: "Alias of /pair" },
    { name: "restart", description: "Show how to restart the local service" },
    { name: "update", description: "Show how to update Loophole" },
@@ -93,10 +101,11 @@ index b3688ffb05..e171b0e7a2 100644
    { name: "reload", description: "Reload configuration" },
    { name: "terminal", description: "Show how to run a shell command" },
    { name: "exit", description: "Exit Loophole" },
-@@ -116,6 +133,13 @@ const COMMAND_ALIASES: Readonly<Record<string, string>> = {
+@@ -116,6 +134,14 @@ const COMMAND_ALIASES: Readonly<Record<string, string>> = {
    project: "open",
    web: "pair",
    login: "connect",
++  theme: "themes",
 +  title: "rename",
 +  mcp: "mcps",
 +  reset: "clear",
@@ -107,7 +116,7 @@ index b3688ffb05..e171b0e7a2 100644
    quit: "exit",
    q: "exit",
  }
-@@ -255,6 +279,8 @@ export class ScreenController {
+@@ -255,6 +281,8 @@ export class ScreenController {
    private readonly texts = new Map<string, { handle: StreamHandle; text: string }>()
    private readonly reasonings = new Map<string, { handle: StreamHandle; text: string }>()
    private readonly rawInputs = new Map<string, string>()
@@ -116,7 +125,7 @@ index b3688ffb05..e171b0e7a2 100644
    private lastAssistant = ""
    private tokensIn = 0
    private tokensOut = 0
-@@ -271,6 +297,10 @@ export class ScreenController {
+@@ -271,6 +299,10 @@ export class ScreenController {
    private currentModel: ModelRef | undefined
    private currentAgent: string | undefined
    private models: ModelInfo[] | undefined
@@ -127,7 +136,7 @@ index b3688ffb05..e171b0e7a2 100644
    /** A staged /undo revert must be committed before the next prompt is admitted. */
    private pendingRevert = false
  
-@@ -279,6 +309,7 @@ export class ScreenController {
+@@ -279,6 +311,7 @@ export class ScreenController {
      this.directory = options.directory
      this.auto = options.auto ?? false
      this.sessionID = options.sessionID
@@ -135,7 +144,7 @@ index b3688ffb05..e171b0e7a2 100644
      this.screen = new Screen({
        directory: options.directory,
        auto: this.auto,
-@@ -294,8 +325,8 @@ export class ScreenController {
+@@ -294,8 +327,8 @@ export class ScreenController {
      // One-shot home-screen announcement. Kept before start() so it lands in the
      // first frame above the transcript instead of being inserted later.
      this.screen.setAnnouncement({
@@ -146,7 +155,7 @@ index b3688ffb05..e171b0e7a2 100644
      })
      this.screen.start()
      if (this.sessionID) this.ready = this.loadSession()
-@@ -305,8 +336,11 @@ export class ScreenController {
+@@ -305,8 +338,11 @@ export class ScreenController {
      } else {
        await this.ready
      }
@@ -159,7 +168,7 @@ index b3688ffb05..e171b0e7a2 100644
      await this.refreshServerCommands()
      this.screen.setReady(true)
      if (this.options.initialMessage?.trim()) await this.send(this.options.initialMessage.trim())
-@@ -473,6 +507,14 @@ export class ScreenController {
+@@ -473,6 +509,14 @@ export class ScreenController {
            return void (await this.exit())
          case "help":
            return this.showHelp()
@@ -174,7 +183,7 @@ index b3688ffb05..e171b0e7a2 100644
          case "status":
            return this.screen.addStatus(
              `Session ${sessionID ?? "(none)"} · ${String(this.tokensIn)} tokens in · ${String(this.tokensOut)} out`,
-@@ -499,13 +541,24 @@ export class ScreenController {
+@@ -499,13 +543,24 @@ export class ScreenController {
            if (!sessionID) return this.screen.addStatus("There is no active session.", "warning")
            const title = args || (await this.screen.askText("Rename session", "New title"))
            if (!title?.trim()) return
@@ -204,7 +213,7 @@ index b3688ffb05..e171b0e7a2 100644
          case "undo":
            return await this.undo()
          case "redo":
-@@ -1024,22 +1077,25 @@ export class ScreenController {
+@@ -1024,22 +1079,25 @@ export class ScreenController {
    private async showDiff(): Promise<void> {
      const sessionID = this.sessionID
      if (!sessionID) return this.screen.addStatus("There is no session.", "warning")
@@ -245,7 +254,7 @@ index b3688ffb05..e171b0e7a2 100644
      const files = await this.changedFiles(sessionID)
      if (files.length === 0) return this.screen.addStatus("This session has not changed any files.")
      const rows = files.slice(0, 40).map((file) => `  ${file}`)
-@@ -1049,6 +1105,17 @@ export class ScreenController {
+@@ -1049,6 +1107,17 @@ export class ScreenController {
      )
    }
  
@@ -263,7 +272,17 @@ index b3688ffb05..e171b0e7a2 100644
    /** Files a session touched, from assistant snapshots and tool inputs. */
    private async changedFiles(sessionID: string): Promise<string[]> {
      const response = await this.api.message.list({ sessionID, limit: 500, order: "asc" }).catch(() => undefined)
-@@ -1484,11 +1551,43 @@ export class ScreenController {
+@@ -1473,6 +1542,9 @@ export class ScreenController {
+ 
+   private async loadModels(force = false): Promise<ModelInfo[]> {
+     if (this.models && !force) return this.models
++    // A forced reload follows /connect or /reload, so refresh the provider
++    // display names too instead of keeping the pre-connect cache.
++    if (force) this.providerNames = undefined
+     try {
+       const response = await this.api.model.list({ location: { directory: this.directory }, types: ["chat"] })
+       this.models = response.data.filter((model) => model.enabled && model.status !== "deprecated")
+@@ -1484,11 +1556,43 @@ export class ScreenController {
      return this.models
    }
  
@@ -307,7 +326,7 @@ index b3688ffb05..e171b0e7a2 100644
      this.refreshIdentity()
      this.screen.addStatus(`Model: ${this.modelLabel(model)}`)
    }
-@@ -1497,57 +1596,96 @@ export class ScreenController {
+@@ -1497,57 +1601,96 @@ export class ScreenController {
      const models = await this.loadModels(true)
      if (models.length === 0) return this.screen.addStatus("No models are available. Connect a provider first.", "warning")
  
@@ -436,7 +455,7 @@ index b3688ffb05..e171b0e7a2 100644
        const picked = await this.chooseVariant(chosen, sameModel ? current?.variant : undefined)
        if (picked === undefined) return
        variant = picked || undefined
-@@ -1555,6 +1693,16 @@ export class ScreenController {
+@@ -1555,6 +1698,16 @@ export class ScreenController {
      await this.applyModel({ providerID: chosen.providerID, id: chosen.id, variant })
    }
  
@@ -453,7 +472,7 @@ index b3688ffb05..e171b0e7a2 100644
    /** Resolves with the variant id, "" for the model's default, or undefined when cancelled. */
    private chooseVariant(model: ModelInfo, current: string | undefined): Promise<string | undefined> {
      return this.screen.pickCurrent(
-@@ -1713,9 +1861,36 @@ export class ScreenController {
+@@ -1713,9 +1866,36 @@ export class ScreenController {
        case "session.retry.scheduled":
          return this.screen.addStatus(`Request failed, retrying (attempt ${String(event.data.attempt)})…`, "warning")
        case "session.compaction.started":

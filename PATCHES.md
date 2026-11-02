@@ -160,8 +160,8 @@ session rename immediately changes its `Session:` row. `/models` is now a provid
 last model is remembered in `~/.local/state/loophole/screen.json` across launches (an explicit
 `--model` still wins). `/diff` unwraps the `session.diff` response and falls back to the
 working-tree diff, `/compact` streams the compaction summary the way OpenCode does, and `/help`,
-`/version`, `/changelog`, `/feedback`, `/title`, `/mcp`, `/reset` and `/upgrade` join the palette
-with their aliases as visible rows.
+`/version`, `/changelog`, `/feedback`, `/title`, `/mcp`, `/theme`, `/reset` and `/upgrade` join the
+palette with their aliases as visible rows.
 
 `0005-telemetry-posthog.patch` came from the `telemetry-posthog` / `tui-logo-art` branches.
 Every other custom commit on the local branches (Discord report link, service-port isolation,
