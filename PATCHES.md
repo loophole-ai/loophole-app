@@ -26,6 +26,7 @@ patches/
   0015-home-composer.patch     Loophole wordmark, borderless composer, /diff fallback
   0016-rich-diff-and-approval.patch  diff panels, approval dialog with feedback, bordered prompts
   0017-home-polish.patch       boxed composer, provider login, flat model picker, settings hub
+  0018-screen-polish.patch     narrow wordmark, provider-first models, model persistence, live rename
   user/                        optional extra patches, applied after the numbered stack
   series                       legacy list, ignored by the scripts (sorted order wins)
   @ai-sdk%2F...@x.patch         copies of upstream bun patchedDependencies - NEVER applied
@@ -151,6 +152,16 @@ for model, thinking effort, agent, theme, auto-approve, directory, providers, co
 plugins, usage and debug info. A one-shot `✦` release announcement sits under the welcome panel,
 the wordmark is trimmed to three rows, and assistant/thinking blocks drop the duplicate leading
 blank line and trailing padding that produced extra gaps in the transcript.
+
+`0018-screen-polish.patch` finishes the home-screen pass: the wordmark uses the taller `narrow`
+art, the `✦` announcement sits above the `✓ Ready` line, and the welcome panel updates live so a
+session rename immediately changes its `Session:` row. `/models` is now a provider-first picker
+(with `/models <provider>` jumping straight in), model rows no longer repeat the provider, and the
+last model is remembered in `~/.local/state/loophole/screen.json` across launches (an explicit
+`--model` still wins). `/diff` unwraps the `session.diff` response and falls back to the
+working-tree diff, `/compact` streams the compaction summary the way OpenCode does, and `/help`,
+`/version`, `/changelog`, `/feedback`, `/title`, `/mcp`, `/reset` and `/upgrade` join the palette
+with their aliases as visible rows.
 
 `0005-telemetry-posthog.patch` came from the `telemetry-posthog` / `tui-logo-art` branches.
 Every other custom commit on the local branches (Discord report link, service-port isolation,

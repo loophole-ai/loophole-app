@@ -1,0 +1,812 @@
+diff --git a/packages/cli/src/run/interactive.ts b/packages/cli/src/run/interactive.ts
+index a6cf314843..e06dbb531d 100644
+--- a/packages/cli/src/run/interactive.ts
++++ b/packages/cli/src/run/interactive.ts
+@@ -57,6 +57,8 @@ export async function runInteractive(input: RunCommandInput) {
+       sessionID: target.session.id,
+       auto: input.auto ?? false,
+       initialMessage: message || undefined,
++      // Only an explicit `--model` overrides the model remembered from last launch.
++      model: explicit ? target.model : undefined,
+     })
+     await controller.start()
+     // The controller owns the terminal; keep the process alive until it calls process.exit().
+diff --git a/packages/cli/src/screen/controller.ts b/packages/cli/src/screen/controller.ts
+index b3688ffb05..e171b0e7a2 100644
+--- a/packages/cli/src/screen/controller.ts
++++ b/packages/cli/src/screen/controller.ts
+@@ -15,6 +15,7 @@ import type { Endpoint } from "@opencode/client/effect/service"
+ import type {
+   CommandInfo,
+   EventSubscribeOutput,
++  FileDiffInfo,
+   FormField,
+   FormInfo,
+   IntegrationInfo,
+@@ -34,6 +35,7 @@ import {
+ import { getNativeClipboard, type SlashCommand } from "@loophole/tui-engine"
+ 
+ import { OPENCODE_VERSION } from "../version"
++import { readScreenPreferences, saveScreenModel } from "./preferences"
+ 
+ export interface ScreenControllerOptions {
+   readonly client: OpenCodeClient
+@@ -45,24 +47,34 @@ export interface ScreenControllerOptions {
+   readonly auto?: boolean
+   /** Sent as the first prompt once the screen is up. */
+   readonly initialMessage?: string
++  /** A model chosen on the command line; it wins over the remembered preference. */
++  readonly model?: ModelRef
+ }
+ 
+ /**
+- * The same commands the OpenCode TUI exposes, so the Loophole screen is not a reduced subset.
+- * The nine upstream aliases are listed as their own palette rows (OpenCode shows all 47), while
++ * The same commands the OpenCode TUI exposes, plus the useful Kimi-CLI commands, so the
++ * Loophole screen is not a reduced subset. Aliases are listed as their own palette rows, while
+  * COMMAND_ALIASES still resolves each alias to its canonical handler in runCommand.
+  */
+ const BUILTIN_COMMANDS: readonly SlashCommand[] = [
+   { name: "help", description: "List available commands" },
++  { name: "h", description: "Alias of /help" },
++  { name: "?", description: "Alias of /help" },
++  { name: "version", description: "Show the Loophole version" },
++  { name: "changelog", description: "Show this build's version and highlights" },
++  { name: "release-notes", description: "Alias of /changelog" },
++  { name: "feedback", description: "Show where to send feedback" },
+   { name: "sessions", description: "Switch to another session" },
+   { name: "resume", description: "Alias of /sessions" },
+   { name: "continue", description: "Alias of /sessions" },
+   { name: "new", description: "Start a new session" },
+   { name: "clear", description: "Clear the transcript view" },
++  { name: "reset", description: "Alias of /clear" },
+   { name: "open", description: "Open a session from any project" },
+   { name: "projects", description: "Alias of /open" },
+   { name: "project", description: "Alias of /open" },
+   { name: "rename", description: "Rename the current session" },
++  { name: "title", description: "Alias of /rename" },
+   { name: "timeline", description: "Show the recent user messages of this session" },
+   { name: "fork", description: "Fork this session" },
+   { name: "compact", description: "Summarize the session context to free tokens" },
+@@ -71,12 +83,16 @@ const BUILTIN_COMMANDS: readonly SlashCommand[] = [
+   { name: "copy", description: "Copy the last assistant message" },
+   { name: "export", description: "Export the session transcript (add `copy` to copy it)" },
+   { name: "models", description: "Choose the model and thinking effort (alias: model)" },
++  { name: "model", description: "Alias of /models" },
+   { name: "agents", description: "Choose the agent (alias: agent)" },
++  { name: "agent", description: "Alias of /agents" },
+   { name: "variants", description: "Choose the thinking effort" },
++  { name: "variant", description: "Alias of /variants" },
+   { name: "thinking", description: "Alias of /variants" },
+   { name: "effort", description: "Alias of /variants" },
+   { name: "usage", description: "Show the current usage limits" },
+   { name: "mcps", description: "List MCP servers and connect or disconnect one" },
++  { name: "mcp", description: "Alias of /mcps" },
+   { name: "connect", description: "Connect a provider or integration" },
+   { name: "login", description: "Alias of /connect — add a provider API key" },
+   { name: "skills", description: "Insert a skill mention into the prompt" },
+@@ -96,6 +112,7 @@ const BUILTIN_COMMANDS: readonly SlashCommand[] = [
+   { name: "web", description: "Alias of /pair" },
+   { name: "restart", description: "Show how to restart the local service" },
+   { name: "update", description: "Show how to update Loophole" },
++  { name: "upgrade", description: "Alias of /update" },
+   { name: "reload", description: "Reload configuration" },
+   { name: "terminal", description: "Show how to run a shell command" },
+   { name: "exit", description: "Exit Loophole" },
+@@ -116,6 +133,13 @@ const COMMAND_ALIASES: Readonly<Record<string, string>> = {
+   project: "open",
+   web: "pair",
+   login: "connect",
++  title: "rename",
++  mcp: "mcps",
++  reset: "clear",
++  upgrade: "update",
++  "release-notes": "changelog",
++  h: "help",
++  "?": "help",
+   quit: "exit",
+   q: "exit",
+ }
+@@ -255,6 +279,8 @@ export class ScreenController {
+   private readonly texts = new Map<string, { handle: StreamHandle; text: string }>()
+   private readonly reasonings = new Map<string, { handle: StreamHandle; text: string }>()
+   private readonly rawInputs = new Map<string, string>()
++  /** The streaming compaction summary, shown the way OpenCode renders it. */
++  private compaction: { handle: StreamHandle; text: string } | undefined
+   private lastAssistant = ""
+   private tokensIn = 0
+   private tokensOut = 0
+@@ -271,6 +297,10 @@ export class ScreenController {
+   private currentModel: ModelRef | undefined
+   private currentAgent: string | undefined
+   private models: ModelInfo[] | undefined
++  /** Provider display names, fetched lazily for the model picker. */
++  private providerNames: Map<string, string> | undefined
++  /** A model passed with `--model`; it must not be overridden by the remembered preference. */
++  private readonly explicitModel: ModelRef | undefined
+   /** A staged /undo revert must be committed before the next prompt is admitted. */
+   private pendingRevert = false
+ 
+@@ -279,6 +309,7 @@ export class ScreenController {
+     this.directory = options.directory
+     this.auto = options.auto ?? false
+     this.sessionID = options.sessionID
++    this.explicitModel = options.model
+     this.screen = new Screen({
+       directory: options.directory,
+       auto: this.auto,
+@@ -294,8 +325,8 @@ export class ScreenController {
+     // One-shot home-screen announcement. Kept before start() so it lands in the
+     // first frame above the transcript instead of being inserted later.
+     this.screen.setAnnouncement({
+-      title: `Loophole ${OPENCODE_VERSION} is ready`,
+-      detail: "Run /connect or /login to add a provider key. Start a fresh session for the best results.",
++      title: `New release: Loophole ${OPENCODE_VERSION}`,
++      detail: "Run /changelog to see what changed, or /connect to add a provider key.",
+     })
+     this.screen.start()
+     if (this.sessionID) this.ready = this.loadSession()
+@@ -305,8 +336,11 @@ export class ScreenController {
+     } else {
+       await this.ready
+     }
+-    // Await the model list so the welcome panel can show the model's real name before it freezes.
++    // Await the model list so the welcome panel can show the model's real name.
+     await this.loadModels()
++    // Restore the model the user picked last time, so a fresh launch does not
++    // silently fall back to the server's default provider/model.
++    await this.restoreModelPreference()
+     await this.refreshServerCommands()
+     this.screen.setReady(true)
+     if (this.options.initialMessage?.trim()) await this.send(this.options.initialMessage.trim())
+@@ -473,6 +507,14 @@ export class ScreenController {
+           return void (await this.exit())
+         case "help":
+           return this.showHelp()
++        case "version":
++          return this.screen.addStatus(`Loophole ${OPENCODE_VERSION}`)
++        case "changelog":
++          return await this.showHighlights()
++        case "feedback":
++          return this.screen.addStatus(
++            "Feedback\nReport issues and ideas at https://github.com/loophole-ai/loophole-app/issues",
++          )
+         case "status":
+           return this.screen.addStatus(
+             `Session ${sessionID ?? "(none)"} · ${String(this.tokensIn)} tokens in · ${String(this.tokensOut)} out`,
+@@ -499,13 +541,24 @@ export class ScreenController {
+           if (!sessionID) return this.screen.addStatus("There is no active session.", "warning")
+           const title = args || (await this.screen.askText("Rename session", "New title"))
+           if (!title?.trim()) return
+-          await this.api.session.update({ sessionID, title: title.trim() })
+-          return this.screen.addStatus(`Session renamed to "${title.trim()}".`)
++          const next = title.trim()
++          await this.api.session.update({ sessionID, title: next })
++          // Keep the welcome box in sync: it shows the live session title.
++          this.screen.setSession(next)
++          return this.screen.addStatus(`Session renamed to "${next}".`)
+         }
+-        case "compact":
++        case "compact": {
+           if (!sessionID) return this.screen.addStatus("There is no session to compact.", "warning")
+-          await this.api.session.compact({ sessionID })
+-          return this.screen.addStatus("Compaction requested.")
++          try {
++            await this.api.session.compact({ sessionID })
++            this.screen.addStatus(
++              "Compaction requested. The conversation summary appears here when the model finishes.",
++            )
++          } catch (error) {
++            this.screen.addStatus(`Could not compact the session: ${String(error)}`, "error")
++          }
++          return
++        }
+         case "undo":
+           return await this.undo()
+         case "redo":
+@@ -1024,22 +1077,25 @@ export class ScreenController {
+   private async showDiff(): Promise<void> {
+     const sessionID = this.sessionID
+     if (!sessionID) return this.screen.addStatus("There is no session.", "warning")
+-    const diffs = await this.api.session.diff({ sessionID }).catch(() => [])
+-    if (diffs.length > 0) {
+-      // `more: true` rows are folder placeholders from the VCS plugin, not files.
+-      const files = diffs.filter((diff) => diff.more !== true)
+-      const shown = files.slice(0, 20)
+-      this.screen.addDiff(shown)
+-      if (files.length > shown.length) {
+-        this.screen.addStatus(`… ${String(files.length - shown.length)} more changed files.`)
+-      }
+-      return
+-    }
+ 
+-    // The server computes turn diffs from git snapshots, so a directory that is
+-    // not a git repository (or a session that predates snapshots) reports
+-    // nothing even after files were edited. Fall back to the files the session
+-    // actually touched so /diff is still useful there.
++    // `session.diff` is wrapped in `{ data }`; the promise client does not
++    // unwrap it, unlike the session getters. Missing this made /diff always
++    // look empty.
++    const turn = await this.api.session
++      .diff({ sessionID, context: 12 })
++      .catch(() => undefined)
++    const turnFiles = (turn?.data ?? []).filter((diff) => diff.more !== true)
++    if (this.renderDiffFiles(turnFiles)) return
++
++    // The turn diff compares git snapshots, so a directory that is not a git
++    // repository (or a session that predates snapshots) reports nothing. Fall
++    // back to the working-tree diff, then to the files the session touched.
++    const working = await this.api.vcs
++      .diff({ location: { directory: this.directory }, mode: "working", context: 12 })
++      .catch(() => undefined)
++    const workingFiles = (working?.data ?? []).filter((diff) => diff.more !== true)
++    if (this.renderDiffFiles(workingFiles)) return
++
+     const files = await this.changedFiles(sessionID)
+     if (files.length === 0) return this.screen.addStatus("This session has not changed any files.")
+     const rows = files.slice(0, 40).map((file) => `  ${file}`)
+@@ -1049,6 +1105,17 @@ export class ScreenController {
+     )
+   }
+ 
++  /** Render diff panels; returns false when there is nothing to show. */
++  private renderDiffFiles(files: ReadonlyArray<FileDiffInfo>): boolean {
++    if (files.length === 0) return false
++    const shown = files.slice(0, 20)
++    this.screen.addDiff(shown)
++    if (files.length > shown.length) {
++      this.screen.addStatus(`… ${String(files.length - shown.length)} more changed files.`)
++    }
++    return true
++  }
++
+   /** Files a session touched, from assistant snapshots and tool inputs. */
+   private async changedFiles(sessionID: string): Promise<string[]> {
+     const response = await this.api.message.list({ sessionID, limit: 500, order: "asc" }).catch(() => undefined)
+@@ -1484,11 +1551,43 @@ export class ScreenController {
+     return this.models
+   }
+ 
++  /**
++   * Apply the model chosen in an earlier CLI session. A model passed with
++   * `--model` always wins, and an unknown/unavailable preference is ignored so
++   * removing a provider never leaves the screen pointing at a dead model.
++   */
++  private async restoreModelPreference(): Promise<void> {
++    if (this.explicitModel || !this.sessionID) return
++    const preferred = readScreenPreferences().model
++    if (!preferred) return
++    const known = this.models?.find(
++      (model) => model.providerID === preferred.providerID && model.id === preferred.id,
++    )
++    if (!known) return
++    const current = this.currentModel
++    if (
++      current !== undefined &&
++      current.providerID === preferred.providerID &&
++      current.id === preferred.id &&
++      current.variant === preferred.variant
++    ) {
++      return
++    }
++    try {
++      await this.api.session.switchModel({ sessionID: this.sessionID, model: preferred })
++      this.currentModel = preferred
++      this.refreshIdentity()
++    } catch {
++      // The session may already have moved on; the remembered model is best-effort.
++    }
++  }
++
+   private async applyModel(model: ModelRef): Promise<void> {
+     const sessionID = this.sessionID
+     if (!sessionID) return this.screen.addStatus("There is no active session.", "warning")
+     await this.api.session.switchModel({ sessionID, model })
+     this.currentModel = model
++    saveScreenModel(model)
+     this.refreshIdentity()
+     this.screen.addStatus(`Model: ${this.modelLabel(model)}`)
+   }
+@@ -1497,57 +1596,96 @@ export class ScreenController {
+     const models = await this.loadModels(true)
+     if (models.length === 0) return this.screen.addStatus("No models are available. Connect a provider first.", "warning")
+ 
+-    // `/model provider/model` selects directly.
+-    if (args) {
++    // `/models provider/model` selects directly. A bare provider name (no slash)
++    // falls through to the provider picker below.
++    if (args.includes("/")) {
+       const [reference, variant] = args.split(/\s+/)
+       const match = models.find(
+         (model) =>
+           `${model.providerID}/${model.id}` === reference ||
+           `${model.providerID}/${model.modelID}` === reference,
+       )
+-      if (!match) return this.screen.addStatus(`Unknown model "${reference}". Use /model to browse.`, "warning")
++      if (!match) return this.screen.addStatus(`Unknown model "${reference}". Use /models to browse.`, "warning")
+       if (variant && !match.variants.some((item) => item.id === variant)) {
+         return this.screen.addStatus(`"${match.name}" has no thinking effort called "${variant}".`, "warning")
+       }
+       return await this.applyModel({ providerID: match.providerID, id: match.id, variant })
+     }
+ 
+-    // One flat list (the way the upstream screen does it): provider in the
+-    // label, current row marked, context size and thinking efforts in the
+-    // description. No provider → model drill-down.
++    // Provider first, then that provider's models (the Kimi picker flow). The
++    // provider is no longer repeated on every row, because the second dialog
++    // already scopes the list to one provider.
+     const current = this.currentModel
+-    const currentReference = current ? `${current.providerID}/${current.id}` : undefined
+-    const reference = await this.screen.pickCurrent(
+-      "Select a model",
+-      [...models]
+-        .sort(
+-          (a, b) =>
+-            a.providerID.localeCompare(b.providerID) ||
+-            a.name.localeCompare(b.name) ||
+-            a.id.localeCompare(b.id),
++    const names = await this.loadProviderNames()
++    const grouped = new Map<string, ModelInfo[]>()
++    for (const model of models) {
++      const list = grouped.get(model.providerID)
++      if (list) list.push(model)
++      else grouped.set(model.providerID, [model])
++    }
++    const providerLabel = (id: string) => names.get(id) ?? id
++    const providerIDs = [...grouped.keys()].sort((a, b) => {
++      if (a === current?.providerID) return -1
++      if (b === current?.providerID) return 1
++      return providerLabel(a).localeCompare(providerLabel(b))
++    })
++
++    // `/models openrouter` jumps straight to that provider's models.
++    const requested = args.trim().toLowerCase()
++    const direct = requested
++      ? providerIDs.find(
++          (id) => id.toLowerCase() === requested || providerLabel(id).toLowerCase() === requested,
+         )
+-        .map((model) => {
+-          const value = `${model.providerID}/${model.id}`
+-          return {
+-            value,
+-            label: `${model.name}  (${model.providerID})${value === currentReference ? "  ← current" : ""}`,
+-            description: [
+-              `${String(Math.round(model.limit.context / 1000))}k context`,
+-              model.variants.length > 0 ? `thinking: ${model.variants.map((variant) => variant.id).join(", ")}` : undefined,
+-            ]
+-              .filter((part): part is string => part !== undefined)
+-              .join(" · "),
+-          }
+-        }),
+-      currentReference,
++      : undefined
++    const providerID =
++      direct ??
++      (await this.screen.pickCurrent(
++        "Select a provider",
++        providerIDs.map((id) => ({
++          value: id,
++          label: `${id === current?.providerID ? "✓ " : ""}${providerLabel(id)}`,
++          description: `${String(grouped.get(id)?.length ?? 0)} model${(grouped.get(id)?.length ?? 0) === 1 ? "" : "s"}`,
++        })),
++        current?.providerID,
++      ))
++    if (!providerID) return
++
++    const options = [...(grouped.get(providerID) ?? [])].sort(
++      (a, b) => b.time.released - a.time.released || a.name.localeCompare(b.name) || a.id.localeCompare(b.id),
++    )
++    if (options.length === 0) return
++    const selectedID =
++      current !== undefined && current.providerID === providerID ? current.id : undefined
++    const modelID = await this.screen.pickCurrent(
++      `${providerLabel(providerID)} models`,
++      options.map((model) => {
++        const isCurrent =
++          current !== undefined && current.providerID === providerID && current.id === model.id
++        return {
++          value: model.id,
++          label: `${isCurrent ? "✓ " : ""}${model.name}`,
++          description: [
++            `${String(Math.round(model.limit.context / 1000))}k context`,
++            model.limit.output > 0 ? `${String(Math.round(model.limit.output / 1000))}k output` : undefined,
++            model.variants.length > 0
++              ? `thinking: ${model.variants.map((variant) => variant.id).join(", ")}`
++              : undefined,
++            model.status === "alpha" || model.status === "beta" ? model.status : undefined,
++          ]
++            .filter((part): part is string => part !== undefined)
++            .join(" · "),
++        }
++      }),
++      selectedID,
+     )
+-    if (!reference) return
+-    const chosen = models.find((model) => `${model.providerID}/${model.id}` === reference)
++    if (!modelID) return
++    const chosen = options.find((model) => model.id === modelID)
+     if (!chosen) return
+ 
+     let variant: string | undefined
+     if (chosen.variants.length > 0) {
+-      const sameModel = current?.providerID === chosen.providerID && current.id === chosen.id
++      const sameModel =
++        current !== undefined && current.providerID === chosen.providerID && current.id === chosen.id
+       const picked = await this.chooseVariant(chosen, sameModel ? current?.variant : undefined)
+       if (picked === undefined) return
+       variant = picked || undefined
+@@ -1555,6 +1693,16 @@ export class ScreenController {
+     await this.applyModel({ providerID: chosen.providerID, id: chosen.id, variant })
+   }
+ 
++  /** Provider display names for the model picker; ids are the fallback. */
++  private async loadProviderNames(): Promise<Map<string, string>> {
++    if (this.providerNames) return this.providerNames
++    const response = await this.api.provider
++      .list({ location: { directory: this.directory } })
++      .catch(() => undefined)
++    this.providerNames = new Map((response?.data ?? []).map((provider) => [provider.id, provider.name]))
++    return this.providerNames
++  }
++
+   /** Resolves with the variant id, "" for the model's default, or undefined when cancelled. */
+   private chooseVariant(model: ModelInfo, current: string | undefined): Promise<string | undefined> {
+     return this.screen.pickCurrent(
+@@ -1713,9 +1861,36 @@ export class ScreenController {
+       case "session.retry.scheduled":
+         return this.screen.addStatus(`Request failed, retrying (attempt ${String(event.data.attempt)})…`, "warning")
+       case "session.compaction.started":
+-        return this.screen.addStatus("Compacting the conversation…")
+-      case "session.compaction.ended":
+-        return this.screen.addStatus("Conversation compacted.")
++        // Mirror the upstream TUI: a "Compaction" block that streams the summary
++        // as the model writes it, instead of a status line that only appears at
++        // the end.
++        this.screen.addStatus("Compacting the conversation…")
++        this.compaction = { handle: this.screen.beginText(), text: "**Compaction**\n\n" }
++        this.compaction.handle.update(this.compaction.text)
++        return
++      case "session.compaction.delta": {
++        if (!this.compaction) return
++        this.compaction.text += event.data.text
++        this.compaction.handle.update(this.compaction.text)
++        return
++      }
++      case "session.compaction.ended": {
++        const tokens = event.data.tokens
++        if (tokens) {
++          this.contextTokens = tokens.input + tokens.output + tokens.reasoning + tokens.cache.read + tokens.cache.write
++          this.screen.setContext(this.contextTokens, this.contextWindow())
++        }
++        const summary = event.data.text.trim()
++        if (this.compaction) {
++          this.compaction.handle.end(summary ? `**Compaction**\n\n${summary}` : this.compaction.text)
++          this.compaction = undefined
++          return
++        }
++        return this.screen.addStatus(summary ? `Conversation compacted.\n\n${summary}` : "Conversation compacted.")
++      }
++      case "session.compaction.failed":
++        this.compaction = undefined
++        return this.screen.addStatus(`Could not compact the conversation: ${event.data.error.message}`, "error")
+       case "session.text.started":
+         this.texts.set(this.key(event.data), { handle: this.screen.beginText(), text: "" })
+         return
+diff --git a/packages/cli/src/screen/preferences.ts b/packages/cli/src/screen/preferences.ts
+new file mode 100644
+index 0000000000..26217204bd
+--- /dev/null
++++ b/packages/cli/src/screen/preferences.ts
+@@ -0,0 +1,81 @@
++/**
++ * Small preference store for the Loophole screen.
++ *
++ * The screen remembers the model the user last picked so a fresh CLI launch
++ * does not fall back to the server default. It lives in the global state
++ * directory rather than `cli.json` so a screen write can never corrupt the
++ * config service's file, and so it stays independent of the project config.
++ */
++
++import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs"
++import { dirname, join } from "node:path"
++import { Global } from "@opencode/util/global"
++
++export interface ScreenModelPreference {
++  readonly providerID: string
++  readonly id: string
++  readonly variant?: string
++}
++
++export interface ScreenPreferences {
++  readonly model?: ScreenModelPreference
++  readonly recentModels?: ReadonlyArray<ScreenModelPreference>
++}
++
++const MAX_RECENT = 8
++
++function file(): string {
++  return join(Global.Path.state, "screen.json")
++}
++
++function decodeModel(value: unknown): ScreenModelPreference | undefined {
++  if (typeof value !== "object" || value === null) return undefined
++  const record = value as Record<string, unknown>
++  if (typeof record.providerID !== "string" || record.providerID.length === 0) return undefined
++  if (typeof record.id !== "string" || record.id.length === 0) return undefined
++  const variant = typeof record.variant === "string" && record.variant.length > 0 ? record.variant : undefined
++  return variant ? { providerID: record.providerID, id: record.id, variant } : { providerID: record.providerID, id: record.id }
++}
++
++export function readScreenPreferences(): ScreenPreferences {
++  try {
++    const parsed: unknown = JSON.parse(readFileSync(file(), "utf8"))
++    if (typeof parsed !== "object" || parsed === null) return {}
++    const record = parsed as Record<string, unknown>
++    const model = decodeModel(record.model)
++    const recent = Array.isArray(record.recentModels)
++      ? record.recentModels.flatMap((item) => {
++          const entry = decodeModel(item)
++          return entry ? [entry] : []
++        })
++      : undefined
++    return {
++      ...(model ? { model } : {}),
++      ...(recent && recent.length > 0 ? { recentModels: recent } : {}),
++    }
++  } catch {
++    return {}
++  }
++}
++
++function write(preferences: ScreenPreferences): void {
++  const target = file()
++  try {
++    mkdirSync(dirname(target), { recursive: true })
++    const temp = `${target}.tmp`
++    writeFileSync(temp, `${JSON.stringify(preferences, null, 2)}\n`, "utf8")
++    renameSync(temp, target)
++  } catch {
++    // Preferences are a convenience; never fail a prompt because they cannot be saved.
++  }
++}
++
++export function saveScreenModel(model: ScreenModelPreference): void {
++  const current = readScreenPreferences()
++  const key = `${model.providerID}/${model.id}`
++  const recent = [model, ...(current.recentModels ?? []).filter((item) => `${item.providerID}/${item.id}` !== key)].slice(
++    0,
++    MAX_RECENT,
++  )
++  write({ model, recentModels: recent })
++}
+diff --git a/packages/screen/src/components/chrome/announcement.ts b/packages/screen/src/components/chrome/announcement.ts
+index 21e548665c..dacc71c2e0 100644
+--- a/packages/screen/src/components/chrome/announcement.ts
++++ b/packages/screen/src/components/chrome/announcement.ts
+@@ -1,7 +1,8 @@
+ /**
+- * A one-shot release / status announcement under the welcome panel, modelled on
+- * the Kimi home screen: a rendered star glyph (not an emoji), a bold headline
+- * and an optional dim detail line.
++ * The lines under the welcome box, modelled on the Kimi home screen:
++ * a release announcement with a rendered star glyph (not an emoji), then the
++ * readiness note. Keeping the note here means the announcement always sits
++ * above it, directly under the box.
+  */
+ 
+ import { truncateToWidth, type Component } from '@loophole/tui-engine';
+@@ -11,8 +12,12 @@ import { currentTheme } from '../../theme/index';
+ export interface AnnouncementState {
+   readonly title: string;
+   readonly detail?: string;
+-  /** Hide the whole block (the default before the controller publishes one). */
++  /** Hide the announcement block (the default before the controller publishes one). */
+   readonly visible?: boolean;
++  /** The session is connected and ready to take a prompt. */
++  readonly ready?: boolean;
++  /** The connection dropped and the screen is reconnecting. */
++  readonly offline?: boolean;
+ }
+ 
+ export class AnnouncementComponent implements Component {
+@@ -29,12 +34,36 @@ export class AnnouncementComponent implements Component {
+   invalidate(): void {}
+ 
+   render(width: number): string[] {
+-    if (this.state.visible === false || this.state.title.length === 0) return [];
+-    const star = currentTheme.fg('primary', '✦');
+-    const lines = ['', truncateToWidth(`  ${star} ${currentTheme.boldFg('textStrong', this.state.title)}`, width, '…')];
+-    if (this.state.detail) {
+-      lines.push(truncateToWidth(`    ${currentTheme.fg('textDim', this.state.detail)}`, width, '…'));
++    const out: string[] = [];
++    const { title, detail, visible, ready, offline } = this.state;
++
++    if (visible !== false && title.length > 0) {
++      const star = currentTheme.fg('primary', '✦');
++      out.push('');
++      out.push(truncateToWidth(`  ${star} ${currentTheme.boldFg('textStrong', title)}`, width, '…'));
++      if (detail) out.push(truncateToWidth(`    ${currentTheme.fg('textDim', detail)}`, width, '…'));
++    }
++
++    if (offline) {
++      out.push(
++        truncateToWidth(
++          `  ${currentTheme.fg('error', '✗ Offline')}${currentTheme.fg('textMuted', ' · reconnecting…')}`,
++          width,
++          '…',
++        ),
++      );
++    } else if (ready) {
++      out.push(
++        truncateToWidth(
++          `  ${currentTheme.fg('success', '✓ Ready')}${currentTheme.fg('textMuted', ' · type a message, / for commands, @ for files')}`,
++          width,
++          '…',
++        ),
++      );
++    } else {
++      out.push(truncateToWidth(`  ${currentTheme.fg('textDim', '○ Starting…')}`, width, '…'));
+     }
+-    return lines;
++
++    return out;
+   }
+ }
+diff --git a/packages/screen/src/components/chrome/welcome.ts b/packages/screen/src/components/chrome/welcome.ts
+index 6ef86b9c5f..0f885e1b1c 100644
+--- a/packages/screen/src/components/chrome/welcome.ts
++++ b/packages/screen/src/components/chrome/welcome.ts
+@@ -8,22 +8,19 @@ export interface WelcomeState {
+   readonly session?: string;
+   readonly model?: string;
+   readonly version?: string;
+-  /** The session is connected and ready to take a prompt. */
+-  readonly ready?: boolean;
+-  /** The connection dropped and the screen is reconnecting. */
+-  readonly offline?: boolean;
+ }
+ 
+ /**
+  * The Loophole wordmark: `packages/ui/src/assets/logo/wordmark.svg` rasterized
+- * into terminal half-block art (the `tiny` variant from `packages/tui/src/logo.ts`,
+- * trimmed to three rows so it stays compact like the home-screen mark). Copied
+- * here so the screen package keeps its narrow dependency surface.
++ * into terminal half-block art (the `narrow` variant from `packages/tui/src/logo.ts`).
++ * Copied here so the screen package keeps its narrow dependency surface.
+  */
+ const WORDMARK = [
+-  '█ ████ ████ ████ ████ ████ █  █▀██',
+-  '█ █  █ █  █ █▄▄█ █  █ █  █ █  ████',
+-  '█ ████ ████ █▀▀▀ █  █ ████ █  █▄▄▄',
++  '██                      ██            ██',
++  '██ ██████ ██████ ██████ ██████ ██████ ██  ██▀██',
++  '██ ██  ██ ██  ██ ██▄▄██ ██  ██ ██  ██ ██  ██▄██',
++  '██ ██████ ██████ ██▀▀▀▀ ██  ██ ██████ ██  █▄▄▄▄',
++  '                 ██',
+ ];
+ const WORDMARK_WIDTH = Math.max(...WORDMARK.map((row) => visibleWidth(row)));
+ const WORDMARK_HEIGHT = WORDMARK.length;
+@@ -36,28 +33,24 @@ const COLUMN_MIN = 24;
+ /**
+  * The opening panel, modelled on a modern CLI welcome box: a rounded border around the
+  * wordmark, a greeting with the `/help` hint, and the session facts (directory, session, model,
+- * version), followed by a one-line readiness note. The panel always spans the terminal width.
++ * version). The panel always spans the terminal width. The readiness note and the release
++ * announcement live in `AnnouncementComponent`, directly below the box.
+  */
+ export class WelcomeComponent implements Component {
+   private state: WelcomeState;
+-  /** The panel is a startup banner: once it is drawn it must never change, or the main-screen
+-   * renderer would have to redraw lines that are already in the terminal's scrollback. */
+-  private frozen = false;
+ 
+   constructor(state: WelcomeState) {
+     this.state = state;
+   }
+ 
+   update(state: WelcomeState): void {
+-    if (this.frozen) return;
+     this.state = state;
+   }
+ 
+   invalidate(): void {}
+ 
+   render(width: number): string[] {
+-    if (this.state.ready) this.frozen = true;
+-    const { directory, session, model, version, ready, offline } = this.state;
++    const { directory, session, model, version } = this.state;
+ 
+     const facts: Array<[string, string]> = [['Directory', shortenHome(directory)]];
+     if (session) facts.push(['Session', session]);
+@@ -89,26 +82,6 @@ export class WelcomeComponent implements Component {
+     out.push(blank());
+     out.push(border(`╰${rule}╯`));
+ 
+-    if (offline) {
+-      out.push(
+-        truncateToWidth(
+-          `  ${currentTheme.fg('error', '✗ Offline')}${currentTheme.fg('textMuted', ' · reconnecting…')}`,
+-          width,
+-          '…',
+-        ),
+-      );
+-    } else if (ready) {
+-      out.push(
+-        truncateToWidth(
+-          `  ${currentTheme.fg('success', '✓ Ready')}${currentTheme.fg('textMuted', ' · type a message, / for commands, @ for files')}`,
+-          width,
+-          '…',
+-        ),
+-      );
+-    } else {
+-      out.push(truncateToWidth(`  ${currentTheme.fg('textDim', '○ Starting…')}`, width, '…'));
+-    }
+-
+     return out;
+   }
+ 
+diff --git a/packages/screen/src/screen.ts b/packages/screen/src/screen.ts
+index 736cda2b04..d05ba6f0c0 100644
+--- a/packages/screen/src/screen.ts
++++ b/packages/screen/src/screen.ts
+@@ -140,6 +140,7 @@ export class Screen {
+   private version: string | undefined;
+   private ready = false;
+   private offline = false;
++  private announcementState: AnnouncementState = { title: '', visible: false };
+   private autoMode: boolean;
+ 
+   constructor(options: ScreenOptions) {
+@@ -235,14 +236,14 @@ export class Screen {
+ 
+   /** Publish the one-shot release announcement under the welcome panel. */
+   setAnnouncement(state: AnnouncementState): void {
+-    this.announcement.update(state);
+-    this.ui.requestRender();
++    this.announcementState = state;
++    this.refreshAnnouncement();
+   }
+ 
+   /** The screen finished connecting and can take a prompt. */
+   setReady(ready: boolean): void {
+     this.ready = ready;
+-    this.refreshWelcome();
++    this.refreshAnnouncement();
+   }
+ 
+   /** Tokens in the model's context window and the window size, for the footer percentage. */
+@@ -262,7 +263,7 @@ export class Screen {
+   setOffline(offline: boolean): void {
+     this.offline = offline;
+     this.refreshFooter();
+-    this.refreshWelcome();
++    this.refreshAnnouncement();
+   }
+ 
+   setCommands(commands: readonly SlashCommand[]): void {
+@@ -747,8 +748,6 @@ export class Screen {
+       session: this.sessionLabel,
+       model: this.modelLabel,
+       version: this.version,
+-      ready: this.ready,
+-      offline: this.offline,
+     };
+   }
+ 
+@@ -757,6 +756,15 @@ export class Screen {
+     this.ui.requestRender();
+   }
+ 
++  private refreshAnnouncement(): void {
++    this.announcement.update({
++      ...this.announcementState,
++      ready: this.ready,
++      offline: this.offline,
++    });
++    this.ui.requestRender();
++  }
++
+   private wireEditor(): void {
+     this.editor.onSubmit = (text) => {
+       this.editor.setText('');
