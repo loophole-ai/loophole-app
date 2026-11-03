@@ -845,6 +845,19 @@ index 128606c1f1..df7fda7c3a 100644
        )
        expect(denied.metadata?.error).toBe(true)
        expect(server.state.resourceReads).toHaveLength(reads)
+diff --git a/packages/core/test/plugin/provider-chatgpt.test.ts b/packages/core/test/plugin/provider-chatgpt.test.ts
+index 46fc786a53..1af3d6c5db 100644
+--- a/packages/core/test/plugin/provider-chatgpt.test.ts
++++ b/packages/core/test/plugin/provider-chatgpt.test.ts
+@@ -400,7 +400,7 @@ describe("ChatGPTPlugin", () => {
+       expect(`${url.origin}${url.pathname}`).toBe("https://auth.openai.com/api/accounts/authorize")
+       expect(Object.fromEntries(url.searchParams)).toMatchObject({
+         client_id: "dynamic_agent_client",
+-        agent_name_hint: "OpenCode",
++        agent_name_hint: "Loophole",
+         response_type: "code",
+         scope: "openid profile email offline_access resource.invoke chatgpt.tokens.use.direct",
+         resource: "https://api.openai.com/v1",
 diff --git a/packages/core/test/plugin/skill.test.ts b/packages/core/test/plugin/skill.test.ts
 index ff117800f7..61aae21b0b 100644
 --- a/packages/core/test/plugin/skill.test.ts
@@ -896,6 +909,19 @@ index 42737e3457..b4cf056529 100644
          },
        })
      const run = (name: string, input: Record<string, unknown>) =>
+diff --git a/packages/core/test/tool-websearch.test.ts b/packages/core/test/tool-websearch.test.ts
+index c3f1fcf5d2..6362ebef60 100644
+--- a/packages/core/test/tool-websearch.test.ts
++++ b/packages/core/test/tool-websearch.test.ts
+@@ -227,7 +227,7 @@ describe("WebSearchTool registration", () => {
+           fields: [
+             {
+               key: "choice",
+-              description: "Allow OpenCode to search the web for up-to-date information?",
++              description: "Allow Loophole to search the web for up-to-date information?",
+               type: "string",
+               required: true,
+               custom: false,
 diff --git a/packages/screen/src/components/editor/custom-editor.ts b/packages/screen/src/components/editor/custom-editor.ts
 index 5dfe647587..a6223d32bb 100644
 --- a/packages/screen/src/components/editor/custom-editor.ts
@@ -1035,3 +1061,40 @@ index 33dff7be58..43c2d3f611 100644
        "Or check your config (opencode.json) provider/model names",
      ].join("\n")
    }
+diff --git a/packages/tui/test/component/dialog-update.test.tsx b/packages/tui/test/component/dialog-update.test.tsx
+index 066933e036..a9634dcf3e 100644
+--- a/packages/tui/test/component/dialog-update.test.tsx
++++ b/packages/tui/test/component/dialog-update.test.tsx
+@@ -48,8 +48,8 @@ test("installation progress replaces checking while the update job is still pend
+     setState({ type: "installing", version: "2.0.0" })
+     await app.waitForFrame(
+       (frame) =>
+-        frame.includes("Updating OpenCode") &&
+-        frame.includes("Installing OpenCode 2.0.0") &&
++        frame.includes("Updating Loophole") &&
++        frame.includes("Installing Loophole 2.0.0") &&
+         !frame.includes("Checking"),
+     )
+     expect(app.captureCharFrame()).not.toContain("Skip")
+diff --git a/packages/tui/test/stats.view.test.tsx b/packages/tui/test/stats.view.test.tsx
+index c9044780e4..3b945fb447 100644
+--- a/packages/tui/test/stats.view.test.tsx
++++ b/packages/tui/test/stats.view.test.tsx
+@@ -74,7 +74,7 @@ test("stats shows only this year and returns after errors or success", async ()
+       setup
+         .captureCharFrame()
+         .split("\n")
+-        .find((line) => line.includes("opencode / stats")),
++        .find((line) => line.includes("loophole / stats")),
+     ).not.toContain("tab")
+     setup.mockInput.pressKey("RETURN")
+     setup.mockInput.pressKey("SPACE")
+@@ -86,7 +86,7 @@ test("stats shows only this year and returns after errors or success", async ()
+     expect(setup.captureCharFrame()).toContain("TOKENS")
+     expect(setup.captureCharFrame()).not.toContain("headline")
+     setup.mockInput.pressKey("ESCAPE")
+-    await setup.waitForFrame((frame) => frame.includes("commands") && !frame.includes("opencode / stats"))
++    await setup.waitForFrame((frame) => frame.includes("commands") && !frame.includes("loophole / stats"))
+   } finally {
+     if (!setup.renderer.isDestroyed) setup.renderer.destroy()
+     await task.finally(() => server.stop(true))
