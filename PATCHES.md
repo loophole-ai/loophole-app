@@ -32,6 +32,7 @@ patches/
   0021-session-title-version.patch  keep renamed session titles in sync; CLI 1.1.0
   0022-branding-and-picker.patch  drop the last OpenCode strings; harden the filter pickers
   0023-picker-identity-retry.patch  confirm rows in every picker; Loophole identity; free-router hint
+  0024-connect-search.patch  search the /connect provider list
   user/                        optional extra patches, applied after the numbered stack
   series                       legacy list, ignored by the scripts (sorted order wins)
   @ai-sdk%2F...@x.patch         copies of upstream bun patchedDependencies - NEVER applied
@@ -214,6 +215,11 @@ the same. Provider errors prefer an upstream explanation over a gateway's generi
 error", and retry status shows the real reason, `(Esc to stop)`, and (for OpenRouter `:free` models) a
 hint pointing at the Free Models Router, which now sits at the top of OpenRouter's model list as
 "Free Models Router".
+
+`0024-connect-search.patch` makes `/connect` (and its `/login` alias) searchable. The provider list can
+hold 350+ integrations, so it now opens the same filterable picker as `/models`: type to narrow by
+provider name, method, environment variable or connection label, then Enter connects. It uses the
+shared picker host from `0023`, so Enter/Escape behave the same in every terminal.
 
 `0005-telemetry-posthog.patch` came from the `telemetry-posthog` / `tui-logo-art` branches.
 Every other custom commit on the local branches (Discord report link, service-port isolation,

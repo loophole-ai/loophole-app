@@ -1,0 +1,22 @@
+diff --git a/packages/cli/src/screen/controller.ts b/packages/cli/src/screen/controller.ts
+index f06e3e6596..c798a6fdb8 100644
+--- a/packages/cli/src/screen/controller.ts
++++ b/packages/cli/src/screen/controller.ts
+@@ -892,7 +892,7 @@ export class ScreenController {
+         a.name.localeCompare(b.name) ||
+         a.id.localeCompare(b.id),
+     )
+-    const integrationID = await this.screen.pick(
++    const integrationID = await this.screen.pickFilterable(
+       "Connect a provider or integration",
+       sorted.map((integration) => {
+         const methods = connectMethods(integration)
+@@ -910,6 +910,8 @@ export class ScreenController {
+                   : "no connect method",
+         }
+       }),
++      0,
++      "type to search providers · ↑/↓ select · enter connect · esc cancel",
+     )
+     if (!integrationID) return
+     const integration = sorted.find((item) => item.id === integrationID)
