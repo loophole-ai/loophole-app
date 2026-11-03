@@ -31,6 +31,7 @@ patches/
   0020-cli-name-and-search.patch  loophole-cli/lhc install name, Preparing server line, search in pickers
   0021-session-title-version.patch  keep renamed session titles in sync; CLI 1.1.0
   0022-branding-and-picker.patch  drop the last OpenCode strings; harden the filter pickers
+  0023-picker-identity-retry.patch  confirm rows in every picker; Loophole identity; free-router hint
   user/                        optional extra patches, applied after the numbered stack
   series                       legacy list, ignored by the scripts (sorted order wins)
   @ai-sdk%2F...@x.patch         copies of upstream bun patchedDependencies - NEVER applied
@@ -202,6 +203,17 @@ rebranded, and the model-visible tool namespace is now `loophole` (`tools.loopho
 ignores repeated Enter/Escape, Enter confirms the highlighted row explicitly, and any open slash/path
 autocomplete is dismissed before a picker takes focus. Retry status lines now include the provider's
 reason, e.g. `Request failed: <reason> - retrying (attempt 2)...`.
+
+`0023-picker-identity-retry.patch` fixes confirming a row in every picker, makes the assistant introduce
+itself as Loophole, and explains free-model retries. Pickers (filterable or not) now share one focused
+host that handles Enter and Escape itself and accepts every Enter encoding (CR, LF, SS3 numpad, Kitty
+CSI-u, xterm modifyOtherKeys), so a highlighted model is selected regardless of the terminal's keyboard
+protocol. The `identity` plugin now tells the model it is Loophole, an AI agent built by Loophole AI,
+and never to present itself as the underlying model or provider; the generic and per-model prompts say
+the same. Provider errors prefer an upstream explanation over a gateway's generic "Provider returned
+error", and retry status shows the real reason, `(Esc to stop)`, and (for OpenRouter `:free` models) a
+hint pointing at the Free Models Router, which now sits at the top of OpenRouter's model list as
+"Free Models Router".
 
 `0005-telemetry-posthog.patch` came from the `telemetry-posthog` / `tui-logo-art` branches.
 Every other custom commit on the local branches (Discord report link, service-port isolation,

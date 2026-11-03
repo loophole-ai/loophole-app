@@ -1,0 +1,459 @@
+diff --git a/packages/ai/src/provider-error.ts b/packages/ai/src/provider-error.ts
+index 1822eede06..a3150da8fd 100644
+--- a/packages/ai/src/provider-error.ts
++++ b/packages/ai/src/provider-error.ts
+@@ -190,6 +190,10 @@ const SERVER_ERROR_TEXT =
+ 
+ const Message = Schema.String.check(Schema.isPattern(/\S/))
+ 
++// OpenRouter (and some gateways) put the useful explanation in error.metadata.raw
++// while error.message only says "Provider returned error".
++const GENERIC_PROVIDER_MESSAGE = /^provider returned (?:an )?error\.?$/i
++
+ const messageAt = <Fields extends Schema.Struct.Fields>(
+   fields: Fields,
+   message: (body: Schema.Struct<Fields>["Type"]) => string,
+@@ -206,6 +210,11 @@ const messageAt = <Fields extends Schema.Struct.Fields>(
+ const decodeMessage = Schema.decodeUnknownOption(
+   Schema.fromJsonString(
+     Schema.Union([
++      // Prefer a specific upstream reason over a generic gateway message.
++      messageAt(
++        { error: Schema.Struct({ message: Message, metadata: Schema.Struct({ raw: Message }) }) },
++        (body) => (GENERIC_PROVIDER_MESSAGE.test(body.error.message) ? body.error.metadata.raw : body.error.message),
++      ),
+       messageAt({ error: Schema.Struct({ message: Message }) }, (body) => body.error.message),
+       messageAt({ error: Message }, (body) => body.error),
+       messageAt({ message: Message }, (body) => body.message),
+diff --git a/packages/ai/test/provider-error.test.ts b/packages/ai/test/provider-error.test.ts
+index 6b266533cc..c7800c134e 100644
+--- a/packages/ai/test/provider-error.test.ts
++++ b/packages/ai/test/provider-error.test.ts
+@@ -57,6 +57,25 @@ describe("provider error classification", () => {
+     expect(messages.some(isContextOverflow)).toBe(false)
+   })
+ 
++  test("prefers OpenRouter's upstream reason over its generic message", () => {
++    const body = JSON.stringify({
++      error: {
++        message: "Provider returned error",
++        code: 429,
++        metadata: {
++          raw: "google/gemma-4-31b-it:free is temporarily rate-limited upstream. Please retry shortly, or add your own provider key to use your own limits.",
++        },
++      },
++    })
++    expect(providerErrorMessage(body)).toBe(
++      "google/gemma-4-31b-it:free is temporarily rate-limited upstream. Please retry shortly, or add your own provider key to use your own limits.",
++    )
++  })
++
++  test("keeps a specific provider message untouched", () => {
++    expect(providerErrorMessage(JSON.stringify({ error: { message: "Invalid API key" } }))).toBe("Invalid API key")
++  })
++
+   test("classifies V1 plain-text rate limit fallbacks", () => {
+     expect(
+       [
+diff --git a/packages/cli/src/screen/controller.ts b/packages/cli/src/screen/controller.ts
+index 1d1d60bc4a..f06e3e6596 100644
+--- a/packages/cli/src/screen/controller.ts
++++ b/packages/cli/src/screen/controller.ts
+@@ -1908,28 +1908,37 @@ export class ScreenController {
+       ))
+     if (!providerID) return
+ 
+-    const options = [...(grouped.get(providerID) ?? [])].sort(
+-      (a, b) => b.time.released - a.time.released || a.name.localeCompare(b.name) || a.id.localeCompare(b.id),
+-    )
++    const options = [...(grouped.get(providerID) ?? [])].sort((a, b) => {
++      // OpenRouter's free router picks any free model with capacity, so it is the
++      // most reliable free choice; keep it at the top of OpenRouter's list.
++      if (providerID === "openrouter") {
++        const freeRouter = Number(b.id === "openrouter/free") - Number(a.id === "openrouter/free")
++        if (freeRouter !== 0) return freeRouter
++      }
++      return b.time.released - a.time.released || a.name.localeCompare(b.name) || a.id.localeCompare(b.id)
++    })
+     if (options.length === 0) return
+     const selectedID =
+       current !== undefined && current.providerID === providerID ? current.id : undefined
+     const rows = options.map((model) => {
+       const isCurrent =
+         current !== undefined && current.providerID === providerID && current.id === model.id
++      const isFreeRouter = providerID === "openrouter" && model.id === "openrouter/free"
+       return {
+         value: model.id,
+-        label: `${isCurrent ? "✓ " : ""}${model.name}`,
+-        description: [
+-          `${String(Math.round(model.limit.context / 1000))}k context`,
+-          model.limit.output > 0 ? `${String(Math.round(model.limit.output / 1000))}k output` : undefined,
+-          model.variants.length > 0
+-            ? `thinking: ${model.variants.map((variant) => variant.id).join(", ")}`
+-            : undefined,
+-          model.status === "alpha" || model.status === "beta" ? model.status : undefined,
+-        ]
+-          .filter((part): part is string => part !== undefined)
+-          .join(" · "),
++        label: `${isCurrent ? "✓ " : ""}${isFreeRouter ? "Free Models Router" : model.name}`,
++        description: isFreeRouter
++          ? "free · picks an available free model automatically"
++          : [
++              `${String(Math.round(model.limit.context / 1000))}k context`,
++              model.limit.output > 0 ? `${String(Math.round(model.limit.output / 1000))}k output` : undefined,
++              model.variants.length > 0
++                ? `thinking: ${model.variants.map((variant) => variant.id).join(", ")}`
++                : undefined,
++              model.status === "alpha" || model.status === "beta" ? model.status : undefined,
++            ]
++              .filter((part): part is string => part !== undefined)
++              .join(" · "),
+       }
+     })
+     const currentIndex = Math.max(0, options.findIndex((model) => model.id === selectedID))
+@@ -2131,8 +2140,17 @@ export class ScreenController {
+       case "session.retry.scheduled": {
+         const reason = event.data.error.message.replace(/\s+/g, " ").trim()
+         const detail = reason.length > 160 ? `${reason.slice(0, 157)}…` : reason
++        // OpenRouter's per-model ":free" endpoints share an upstream pool and can
++        // be saturated; its free router picks an available one. Say so instead of
++        // letting the retry loop look like a broken model.
++        const tip =
++          event.data.attempt === 1 &&
++          this.currentModel?.providerID === "openrouter" &&
++          this.currentModel.id.endsWith(":free")
++            ? "\nTip: /models openrouter/openrouter/free picks an available free model automatically."
++            : ""
+         return this.screen.addStatus(
+-          `Request failed${detail ? `: ${detail}` : ""} — retrying (attempt ${String(event.data.attempt)})…`,
++          `Request failed${detail ? `: ${detail}` : ""} — retrying (attempt ${String(event.data.attempt)})… (Esc to stop)${tip}`,
+           "warning",
+         )
+       }
+diff --git a/packages/core/src/aisdk.ts b/packages/core/src/aisdk.ts
+index d90beb9ec0..97fc2e03be 100644
+--- a/packages/core/src/aisdk.ts
++++ b/packages/core/src/aisdk.ts
+@@ -1021,6 +1021,9 @@ function errorBody(value: unknown) {
+ const ProviderErrorDetail = Schema.Struct({
+   message: Schema.optionalKey(Schema.String),
+   code: Schema.optionalKey(Schema.Union([Schema.String, Schema.Finite])),
++  // OpenRouter puts the useful explanation here while `message` says
++  // "Provider returned error".
++  metadata: Schema.optionalKey(Schema.Struct({ raw: Schema.optionalKey(Schema.String) })),
+ })
+ const ProviderErrorBody = Schema.Struct({
+   ...ProviderErrorDetail.fields,
+@@ -1043,16 +1046,31 @@ function unknownErrorMessage(error: unknown) {
+   return message.trim() === "" ? "Provider request failed" : message
+ }
+ 
++const genericProviderMessage = /^provider returned (?:an )?error\.?$/i
++
++/** Prefer a specific reason over a gateway's generic "Provider returned error". */
++function preferProviderMessage(primary: string | undefined, detail: string | undefined) {
++  const value = primary?.trim()
++  if (value && !genericProviderMessage.test(value)) return value
++  const specific = detail?.trim()
++  if (specific) return specific
++  return value || undefined
++}
++
+ function providerErrorMessage(error: APICallError) {
+   const data = Option.getOrUndefined(decodeProviderError(error.data))
+   const body = Option.getOrUndefined(decodeProviderError(error.responseBody))
+   const details = [data?.error, data, body?.error, body]
++  const raw = details.map((detail) => detail?.metadata?.raw).find((value) => value?.trim())
+   const message = details.map((detail) => detail?.message).find((value) => value?.trim())
+   const value = details.map((detail) => detail?.code).find((value) => value !== undefined)
+   const code = value === undefined ? undefined : String(value)
+   const prefix =
+     error.statusCode === undefined ? "Provider request failed" : `Provider request failed with HTTP ${error.statusCode}`
+-  return error.message.trim() !== "" ? error.message : (message ?? (code === undefined ? prefix : `${prefix}: ${code}`))
++  return (
++    preferProviderMessage(error.message, raw ?? message) ??
++    (code === undefined ? prefix : `${prefix}: ${code}`)
++  )
+ }
+ 
+ export const node = makeLocationNode({ service: Service, layer: locationLayer, deps: [] })
+diff --git a/packages/core/src/plugin/identity.ts b/packages/core/src/plugin/identity.ts
+index e6e301607f..dad1d969c1 100644
+--- a/packages/core/src/plugin/identity.ts
++++ b/packages/core/src/plugin/identity.ts
+@@ -9,8 +9,12 @@ import { OptimizePlugin } from "./optimize.js"
+ 
+ export function identity(model: { readonly name: string; readonly ref: Model.Ref }) {
+   return [
+-    "# Your Model",
+-    `- Name: ${model.name}`,
++    "# Your Identity",
++    "You are Loophole, an AI agent built by Loophole AI.",
++    "When the user asks who you are or which model you are, answer that you are Loophole, an AI agent built by Loophole AI. Never identify yourself as the underlying model or provider; the runtime details below are for your own reference only.",
++    "",
++    "# Runtime",
++    `- Model: ${model.name}`,
+     `- Provider ID: ${model.ref.providerID}`,
+     `- Model ID: ${model.ref.id}`,
+   ].join("\n")
+diff --git a/packages/core/src/plugin/system-prompt/gpt-astra.txt b/packages/core/src/plugin/system-prompt/gpt-astra.txt
+index 42e8c513fd..cf928d106d 100644
+--- a/packages/core/src/plugin/system-prompt/gpt-astra.txt
++++ b/packages/core/src/plugin/system-prompt/gpt-astra.txt
+@@ -1,4 +1,4 @@
+-You are an AI agent running in Loophole, a coding agent harness. Help the user accomplish their goals using the tools you have available.
++You are Loophole, an AI agent built by Loophole AI. You are running in a coding agent harness; help the user accomplish their goals using the tools you have available.
+ 
+ # Harness
+ - Responses are rendered as GitHub-flavored Markdown.
+diff --git a/packages/core/src/plugin/system-prompt/gpt.txt b/packages/core/src/plugin/system-prompt/gpt.txt
+index 2b32bd4330..2cfd45ef53 100644
+--- a/packages/core/src/plugin/system-prompt/gpt.txt
++++ b/packages/core/src/plugin/system-prompt/gpt.txt
+@@ -1,4 +1,4 @@
+-You are an AI agent running in Loophole, a coding agent harness. Help the user accomplish their goals using the tools you have available.
++You are Loophole, an AI agent built by Loophole AI. You are running in a coding agent harness; help the user accomplish their goals using the tools you have available.
+ 
+ # Harness
+ - Responses are rendered as GitHub-flavored Markdown.
+diff --git a/packages/core/src/plugin/system-prompt/kimi.txt b/packages/core/src/plugin/system-prompt/kimi.txt
+index 2a447784fb..d7ae3e39b8 100644
+--- a/packages/core/src/plugin/system-prompt/kimi.txt
++++ b/packages/core/src/plugin/system-prompt/kimi.txt
+@@ -1,4 +1,4 @@
+-You are Loophole, an interactive general AI agent running on a user's computer.
++You are Loophole, an interactive general AI agent built by Loophole AI, running on a user's computer.
+ 
+ Your primary goal is to help users with software engineering tasks by taking action — use the tools available to you to make real changes on the user's system. You should also answer questions when asked. Always adhere strictly to the following system instructions and the user's requirements.
+ 
+diff --git a/packages/core/src/plugin/system-prompt/meta.txt b/packages/core/src/plugin/system-prompt/meta.txt
+index e2e78f2ca1..09c156b36e 100644
+--- a/packages/core/src/plugin/system-prompt/meta.txt
++++ b/packages/core/src/plugin/system-prompt/meta.txt
+@@ -1,4 +1,4 @@
+-You are Loophole, a coding agent that helps users with software engineering tasks. You are powered by {{MODEL_NAME}}, a large language model trained by Meta MSL.
++You are Loophole, a coding agent built by Loophole AI that helps users with software engineering tasks.
+ 
+ Use the instructions below and the tools available to assist the user.
+ 
+diff --git a/packages/core/src/plugin/system-prompt/trinity.txt b/packages/core/src/plugin/system-prompt/trinity.txt
+index e8496d8b35..e531bf712b 100644
+--- a/packages/core/src/plugin/system-prompt/trinity.txt
++++ b/packages/core/src/plugin/system-prompt/trinity.txt
+@@ -1,4 +1,4 @@
+-You are Loophole, an interactive CLI tool that helps users with software engineering tasks. Use the instructions below and the tools available to you to assist the user.
++You are Loophole, an interactive CLI tool built by Loophole AI that helps users with software engineering tasks. Use the instructions below and the tools available to you to assist the user.
+ 
+ # Tone and style
+ You should be concise, direct, and to the point. When you run a non-trivial shell command, you should explain what the command does and why you are running it, to make sure the user understands what you are doing (this is especially important when you are running a command that will make changes to the user's system).
+diff --git a/packages/core/src/session/runner/prompt/system.txt b/packages/core/src/session/runner/prompt/system.txt
+index bcd859a5e8..79add2337b 100644
+--- a/packages/core/src/session/runner/prompt/system.txt
++++ b/packages/core/src/session/runner/prompt/system.txt
+@@ -1,4 +1,4 @@
+-You are an AI agent running in Loophole, a coding agent harness. Help the user accomplish their goals using the tools you have available.
++You are Loophole, an AI agent built by Loophole AI. You are running in a coding agent harness; help the user accomplish their goals using the tools you have available.
+ 
+ # Harness
+ - Responses are rendered as GitHub-flavored Markdown.
+diff --git a/packages/core/test/fixtures/recordings/session-runner/openai-chat-streams-text.json b/packages/core/test/fixtures/recordings/session-runner/openai-chat-streams-text.json
+index 9c8baae120..c1a376260f 100644
+--- a/packages/core/test/fixtures/recordings/session-runner/openai-chat-streams-text.json
++++ b/packages/core/test/fixtures/recordings/session-runner/openai-chat-streams-text.json
+@@ -13,7 +13,7 @@
+         "headers": {
+           "content-type": "application/json"
+         },
+-        "body": "{\"model\":\"gpt-4o-mini\",\"messages\":[{\"role\":\"system\",\"content\":\"You are an AI agent running in Loophole, a coding agent harness. Help the user accomplish their goals using the tools you have available.\\n\\n# Harness\\n- Responses are rendered as GitHub-flavored Markdown.\\n- `<system-reminder>` blocks are harness instructions, not user-authored content. Read and follow them.\\n- Prefer parallelizing independent tool calls.\\n\\n\\n# Communication\\n\\nUse clear file paths when referring to files. Keep responses clear and concise, and avoid unnecessary technical jargon.\\n\\n## Intermediate Commentary\\n\\nAs you work, you send messages to the commentary channel. These are how you collaborate with the user while you work: stating assumptions and providing updates. Keep them concise and quickly scannable, and send them only when they add real information, such as a discovery, a tradeoff, or a blocker. Do not narrate routine reads, searches, or edits.\\n\\nBy default, treat new messages received during ongoing work as steering the active task rather than replacing it. Incorporate corrections and constraints, and answer questions briefly in commentary before continuing. Replace the task only when the user clearly cancels it or requests an incompatible objective.\\n\\nDo not put a final response, such as a blocking or clarifying question, in the commentary channel. The final answer must always be fully self-contained.\\n\\n## Final Answer\\n\\nIn the final answer, lead with the outcome, not the steps you took to reach it. Cover the most important information, use only as much structure as the answer needs, and avoid long-winded explanations unless necessary. Include technical detail only where it helps.\\n\\n# Working in codebases\\n- Keep changes consistent with the structure, naming, style, and patterns of the surrounding code.\\n- Treat unfamiliar files or changes as potential user work and investigate before deleting or overwriting them.\\n\\n# Delegation\\n\\nDo not spawn subagents unless the user or applicable AGENTS.md/skill instructions explicitly ask for subagents, delegation, or parallel agent work.\\n\\n# Destructive actions\\n\\nDo not revert, reset, or discard changes you did not make. Never run destructive commands such as `git reset --hard`, `git checkout --`, or recursive deletes on broad paths unless the user clearly asked for that operation; if the target or scope is unclear, ask first. Prefer non-interactive git commands.\\n\\n# Autonomy\\n\\nDo not infer authorization for work beyond the user's request. Assumptions that help you make progress are fine as long as they stay within the user's intent and the scope of the task.\\n\\n# Your Model\\n- Name: gpt-4o-mini\\n- Provider ID: openai\\n- Model ID: gpt-4o-mini\"},{\"role\":\"user\",\"content\":\"Say hello in one short sentence.\"}],\"stream\":true,\"stream_options\":{\"include_usage\":true},\"store\":false,\"prompt_cache_key\":\"ses_runner_recorded\",\"max_completion_tokens\":20,\"temperature\":0}"
++        "body": "{\"model\":\"gpt-4o-mini\",\"messages\":[{\"role\":\"system\",\"content\":\"You are Loophole, an AI agent built by Loophole AI. You are running in a coding agent harness; help the user accomplish their goals using the tools you have available.\\n\\n# Harness\\n- Responses are rendered as GitHub-flavored Markdown.\\n- `<system-reminder>` blocks are harness instructions, not user-authored content. Read and follow them.\\n- Prefer parallelizing independent tool calls.\\n\\n\\n# Communication\\n\\nUse clear file paths when referring to files. Keep responses clear and concise, and avoid unnecessary technical jargon.\\n\\n## Intermediate Commentary\\n\\nAs you work, you send messages to the commentary channel. These are how you collaborate with the user while you work: stating assumptions and providing updates. Keep them concise and quickly scannable, and send them only when they add real information, such as a discovery, a tradeoff, or a blocker. Do not narrate routine reads, searches, or edits.\\n\\nBy default, treat new messages received during ongoing work as steering the active task rather than replacing it. Incorporate corrections and constraints, and answer questions briefly in commentary before continuing. Replace the task only when the user clearly cancels it or requests an incompatible objective.\\n\\nDo not put a final response, such as a blocking or clarifying question, in the commentary channel. The final answer must always be fully self-contained.\\n\\n## Final Answer\\n\\nIn the final answer, lead with the outcome, not the steps you took to reach it. Cover the most important information, use only as much structure as the answer needs, and avoid long-winded explanations unless necessary. Include technical detail only where it helps.\\n\\n# Working in codebases\\n- Keep changes consistent with the structure, naming, style, and patterns of the surrounding code.\\n- Treat unfamiliar files or changes as potential user work and investigate before deleting or overwriting them.\\n\\n# Delegation\\n\\nDo not spawn subagents unless the user or applicable AGENTS.md/skill instructions explicitly ask for subagents, delegation, or parallel agent work.\\n\\n# Destructive actions\\n\\nDo not revert, reset, or discard changes you did not make. Never run destructive commands such as `git reset --hard`, `git checkout --`, or recursive deletes on broad paths unless the user clearly asked for that operation; if the target or scope is unclear, ask first. Prefer non-interactive git commands.\\n\\n# Autonomy\\n\\nDo not infer authorization for work beyond the user's request. Assumptions that help you make progress are fine as long as they stay within the user's intent and the scope of the task.\\n\\n# Your Model\\n- Name: gpt-4o-mini\\n- Provider ID: openai\\n- Model ID: gpt-4o-mini\"},{\"role\":\"user\",\"content\":\"Say hello in one short sentence.\"}],\"stream\":true,\"stream_options\":{\"include_usage\":true},\"store\":false,\"prompt_cache_key\":\"ses_runner_recorded\",\"max_completion_tokens\":20,\"temperature\":0}"
+       },
+       "response": {
+         "status": 200,
+diff --git a/packages/core/test/plugin/identity.test.ts b/packages/core/test/plugin/identity.test.ts
+index b5b97f3233..94eab70230 100644
+--- a/packages/core/test/plugin/identity.test.ts
++++ b/packages/core/test/plugin/identity.test.ts
+@@ -21,11 +21,19 @@ test("formats the model identity part", () => {
+       name: "GPT-4o mini",
+       ref: Model.Ref.make({ providerID: Provider.ID.make("openai"), id: Model.ID.make("gpt-4o-mini") }),
+     }),
+-  ).toBe(["# Your Model", "- Name: GPT-4o mini", "- Provider ID: openai", "- Model ID: gpt-4o-mini"].join("\n"))
++  ).toBe(identity("GPT-4o mini", "gpt-4o-mini", "openai"))
+ })
+ 
+-const identity = (name: string, id: string) =>
+-  ["# Your Model", `- Name: ${name}`, "- Provider ID: test", `- Model ID: ${id}`].join("\n")
++const IDENTITY_PREAMBLE = [
++  "# Your Identity",
++  "You are Loophole, an AI agent built by Loophole AI.",
++  "When the user asks who you are or which model you are, answer that you are Loophole, an AI agent built by Loophole AI. Never identify yourself as the underlying model or provider; the runtime details below are for your own reference only.",
++  "",
++  "# Runtime",
++].join("\n")
++
++const identity = (name: string, id: string, providerID = "test") =>
++  `${IDENTITY_PREAMBLE}\n- Model: ${name}\n- Provider ID: ${providerID}\n- Model ID: ${id}`
+ 
+ const context = (id: string): SessionHooks["context"] => ({
+   sessionID: Session.ID.make("ses_model_identity"),
+diff --git a/packages/core/test/session-runner.test.ts b/packages/core/test/session-runner.test.ts
+index 3ccc251819..98c74c5b9b 100644
+--- a/packages/core/test/session-runner.test.ts
++++ b/packages/core/test/session-runner.test.ts
+@@ -123,8 +123,15 @@ const testModel = (id: string, limit: ModelLimit = defaultModelLimit) => {
+ }
+ const model = testModel("fake-model")
+ const defaultSystem = SessionSystemPrompt.make([])
++const IDENTITY_PREAMBLE = [
++  "# Your Identity",
++  "You are Loophole, an AI agent built by Loophole AI.",
++  "When the user asks who you are or which model you are, answer that you are Loophole, an AI agent built by Loophole AI. Never identify yourself as the underlying model or provider; the runtime details below are for your own reference only.",
++  "",
++  "# Runtime",
++].join("\n")
+ const identity = (providerID: string, id: string) =>
+-  ["# Your Model", `- Name: ${id}`, `- Provider ID: ${providerID}`, `- Model ID: ${id}`].join("\n")
++  `${IDENTITY_PREAMBLE}\n- Model: ${id}\n- Provider ID: ${providerID}\n- Model ID: ${id}`
+ const fakeIdentity = identity("fake", "fake-model")
+ const replacementIdentity = identity("fake", "replacement")
+ const gptIdentity = identity("openai", "gpt-5")
+diff --git a/packages/screen/src/screen.ts b/packages/screen/src/screen.ts
+index f5d068470b..41f9f56b9f 100644
+--- a/packages/screen/src/screen.ts
++++ b/packages/screen/src/screen.ts
+@@ -552,29 +552,49 @@ export class Screen {
+       }
+ 
+       let focus: Component;
+-      if (options.filterable) {
+-        const listSlot = new Container();
+-        const filterLine = new Text(this.filterLine(''), 0, 0);
+-        let query = '';
+-        let list = makeList(items, initialIndex);
++      const listSlot = new Container();
++      const filterLine = new Text(this.filterLine(''), 0, 0);
++      let query = '';
++      let list = makeList(items, initialIndex);
++      listSlot.addChild(list);
++
++      const rebuild = () => {
++        list = makeList(filterPaletteItems(items, query));
++        listSlot.clear();
+         listSlot.addChild(list);
++        filterLine.setText(this.filterLine(query));
++        this.ui.requestRender();
++      };
+ 
+-        const rebuild = () => {
+-          list = makeList(filterPaletteItems(items, query));
+-          listSlot.clear();
+-          listSlot.addChild(list);
+-          filterLine.setText(this.filterLine(query));
+-          this.ui.requestRender();
+-        };
+-
+-        // The focused component owns the filter text; arrows/enter/escape are
+-        // forwarded to whichever SelectList currently holds the filtered rows.
+-        let done = false;
+-        const host: Component = {
+-          handleInput: (data: string) => {
+-            // A picker that has already resolved must not react to the same
+-            // keystroke twice (or to a key repeat arriving right after close).
+-            if (done) return;
++      if (options.filterable) {
++        panel.addChild(filterLine);
++        panel.addChild(new Spacer(1));
++      }
++      panel.addChild(listSlot);
++
++      // Every picker shares one focused host. Enter, Escape and the filter text
++      // are handled here (so they cannot be lost to a terminal's key encoding),
++      // while arrows, paging, Tab and number keys go to the visible list.
++      let done = false;
++      const host: Component = {
++        handleInput: (data: string) => {
++          // A picker that has already resolved must not react to the same
++          // keystroke twice (or to a key repeat arriving right after close).
++          if (done) return;
++          if (isPickerEnter(data)) {
++            const item = list.getSelectedItem();
++            if (item) {
++              done = true;
++              finish(item.value);
++            }
++            return;
++          }
++          if (isPickerEscape(data)) {
++            done = true;
++            finish(cancelValue);
++            return;
++          }
++          if (options.filterable) {
+             if (matchesKey(data, Key.backspace)) {
+               if (query.length === 0) return;
+               query = query.slice(0, -1);
+@@ -587,34 +607,13 @@ export class Screen {
+               rebuild();
+               return;
+             }
+-            if (matchesKey(data, Key.enter)) {
+-              const item = list.getSelectedItem();
+-              if (item) {
+-                done = true;
+-                finish(item.value);
+-              }
+-              return;
+-            }
+-            if (matchesKey(data, Key.escape)) {
+-              done = true;
+-              finish(cancelValue);
+-              return;
+-            }
+-            list.handleInput(data);
+-          },
+-          invalidate: () => {},
+-          render: () => [],
+-        };
+-
+-        panel.addChild(filterLine);
+-        panel.addChild(new Spacer(1));
+-        panel.addChild(listSlot);
+-        focus = host;
+-      } else {
+-        const list = makeList(items, initialIndex);
+-        panel.addChild(list);
+-        focus = list;
+-      }
++          }
++          list.handleInput(data);
++        },
++        invalidate: () => {},
++        render: () => [],
++      };
++      focus = host;
+ 
+       if (options.footer) {
+         panel.addChild(new Spacer(1));
+@@ -951,6 +950,22 @@ function filterPaletteItems(items: readonly SelectItem[], query: string): Select
+   );
+ }
+ 
++/**
++ * Terminal Enter comes in several encodings: legacy CR, LF, numpad SS3 M, Kitty
++ * CSI-u (13 or 57414, optionally with modifiers or an event type), and xterm
++ * modifyOtherKeys. Accept all of them so confirming a row never depends on the
++ * terminal's keyboard protocol.
++ */
++const PICKER_ENTER_SEQUENCE = /^\x1b\[(?:13|57414)(?:;[0-9]+(?::[0-9]+)?)?u$|^\x1b\[27;[0-9]+;(?:13|57414)~$/
++
++function isPickerEnter(data: string): boolean {
++  return matchesKey(data, Key.enter) || matchesKey(data, Key.return) || PICKER_ENTER_SEQUENCE.test(data);
++}
++
++function isPickerEscape(data: string): boolean {
++  return data === '\x1b' || matchesKey(data, Key.escape);
++}
++
+ /** The diff carried by permission metadata: `{ diff }` or `{ files: [{ patch }] }`. */
+ function permissionPatch(metadata: Record<string, unknown> | undefined): string {
+   if (!metadata) return '';
