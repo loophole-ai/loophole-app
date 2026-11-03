@@ -1,0 +1,877 @@
+diff --git a/packages/cli/src/commands/handlers/mcp/auth.ts b/packages/cli/src/commands/handlers/mcp/auth.ts
+index 3440237937..856fc72724 100644
+--- a/packages/cli/src/commands/handlers/mcp/auth.ts
++++ b/packages/cli/src/commands/handlers/mcp/auth.ts
+@@ -29,7 +29,7 @@ const authenticate = Effect.fn("cli.mcp.auth.run")(function* (name?: string) {
+   if (!name && choices.length === 0) {
+     log.warn("No OAuth-capable MCP servers configured")
+     log.info(
+-      `Remote MCP servers support OAuth by default. Add one with \`opencode mcp add\` or in opencode.json:\n${exampleConfig}`,
++      `Remote MCP servers support OAuth by default. Add one with \`loophole-cli mcp add\` or in opencode.json:\n${exampleConfig}`,
+     )
+     outro("Done")
+     return
+diff --git a/packages/cli/src/screen/controller.ts b/packages/cli/src/screen/controller.ts
+index e2dc063584..1d1d60bc4a 100644
+--- a/packages/cli/src/screen/controller.ts
++++ b/packages/cli/src/screen/controller.ts
+@@ -1595,7 +1595,7 @@ export class ScreenController {
+   private async showHighlights(): Promise<void> {
+     const info = await this.api.server.info().catch(() => undefined)
+     this.screen.addStatus(
+-      `Loophole ${info?.version ?? ""}\nThe Loophole terminal screen on the OpenCode engine: sessions, agents, tools, MCP, skills, plugins and the full command set.`,
++      `Loophole ${info?.version ?? ""}\nThe Loophole terminal screen: sessions, agents, tools, MCP, skills, plugins and the full command set.`,
+     )
+   }
+ 
+@@ -2128,8 +2128,14 @@ export class ScreenController {
+       case "session.execution.failed":
+         this.screen.setBusy(false)
+         return this.screen.addStatus(`Error: ${event.data.error.message}`, "error")
+-      case "session.retry.scheduled":
+-        return this.screen.addStatus(`Request failed, retrying (attempt ${String(event.data.attempt)})…`, "warning")
++      case "session.retry.scheduled": {
++        const reason = event.data.error.message.replace(/\s+/g, " ").trim()
++        const detail = reason.length > 160 ? `${reason.slice(0, 157)}…` : reason
++        return this.screen.addStatus(
++          `Request failed${detail ? `: ${detail}` : ""} — retrying (attempt ${String(event.data.attempt)})…`,
++          "warning",
++        )
++      }
+       case "session.compaction.started":
+         // Mirror the upstream TUI: a "Compaction" block that streams the summary
+         // as the model writes it, instead of a status line that only appears at
+diff --git a/packages/core/src/generate.ts b/packages/core/src/generate.ts
+index 2ec73e3e48..70135d8d7d 100644
+--- a/packages/core/src/generate.ts
++++ b/packages/core/src/generate.ts
+@@ -244,7 +244,7 @@ function resolutionError(ref: Model.Ref, type: string, error: ModelResolver.Erro
+       providerID: ref.providerID,
+       modelID: ref.id,
+       capability: type,
+-      message: `${ref.providerID}/${ref.id} has no ${type} API opencode can call (package ${error.package})`,
++      message: `${ref.providerID}/${ref.id} has no ${type} API Loophole can call (package ${error.package})`,
+     })
+   return new InvalidRequestError({ message: error.message, field: "model" })
+ }
+diff --git a/packages/core/src/oauth/page.ts b/packages/core/src/oauth/page.ts
+index accead6216..c6202d3d4b 100644
+--- a/packages/core/src/oauth/page.ts
++++ b/packages/core/src/oauth/page.ts
+@@ -6,9 +6,9 @@
+ // offline and drop into any transport (`res.end(...)`, Effect `response.end`,
+ // etc.).
+ //
+-// The visual language mirrors the OpenCode app: the design tokens are a curated
++// The visual language mirrors the Loophole app: the design tokens are a curated
+ // subset of the OC-2 semantic tokens in `packages/ui/src/styles/theme.css`, and
+-// the wordmark is the same geometry as `packages/ui/src/components/logo.tsx`.
++// the wordmark is a plain text mark so the page needs no external assets.
+ // Keep this file in sync with those sources when the brand changes.
+ 
+ export interface CallbackPageOptions {
+@@ -25,7 +25,7 @@ export function success(options?: CallbackPageOptions) {
+     body: renderCard({
+       status: "success",
+       headline: "Authorization successful",
+-      message: provider ? `OpenCode is now connected to ${escapeHtml(provider)}.` : "OpenCode is now authorized.",
++      message: provider ? `Loophole is now connected to ${escapeHtml(provider)}.` : "Loophole is now authorized.",
+       footnote: "You can close this window.",
+     }),
+     script: options?.autoClose === false ? undefined : AUTO_CLOSE_SCRIPT,
+@@ -40,10 +40,10 @@ export function error(detail: string, options?: CallbackPageOptions) {
+       status: "error",
+       headline: "Authorization failed",
+       message: provider
+-        ? `OpenCode couldn't finish connecting to ${escapeHtml(provider)}.`
+-        : "OpenCode couldn't complete authorization.",
++        ? `Loophole couldn't finish connecting to ${escapeHtml(provider)}.`
++        : "Loophole couldn't complete authorization.",
+       detail,
+-      footnote: "Close this window and try again from OpenCode.",
++      footnote: "Close this window and try again from Loophole.",
+     }),
+   })
+ }
+@@ -100,7 +100,7 @@ function renderDocument(input: { title: string; body: string; script?: string })
+     <meta charset="utf-8" />
+     <meta name="viewport" content="width=device-width, initial-scale=1" />
+     <meta name="robots" content="noindex" />
+-    <title>${escapeHtml(input.title)} · OpenCode</title>
++    <title>${escapeHtml(input.title)} · Loophole</title>
+     <style>${STYLES}</style>
+   </head>
+   <body>
+@@ -116,8 +116,8 @@ function bootstrapScript(options: BootstrapOptions) {
+ var TOKEN_URL=new URL(${scriptString(options.tokenPath)},window.location.origin).href;
+ (function(){
+   var card=document.getElementById("oc-card"),headline=document.getElementById("oc-headline"),message=document.getElementById("oc-message"),detail=document.getElementById("oc-detail"),footnote=document.getElementById("oc-footnote");
+-  function fail(text){card.dataset.status="error";headline.textContent="Authorization failed";message.textContent=PROVIDER?("OpenCode couldn't finish connecting to "+PROVIDER+"."):"OpenCode couldn't complete authorization.";if(text){detail.textContent=text;detail.hidden=false}footnote.textContent="Close this window and try again from OpenCode."}
+-  function ok(){card.dataset.status="success";headline.textContent="Authorization successful";message.textContent=PROVIDER?("OpenCode is now connected to "+PROVIDER+"."):"OpenCode is now authorized.";detail.hidden=true;footnote.textContent="You can close this window.";setTimeout(function(){try{window.close()}catch(e){}},2500)}
++  function fail(text){card.dataset.status="error";headline.textContent="Authorization failed";message.textContent=PROVIDER?("Loophole couldn't finish connecting to "+PROVIDER+"."):"Loophole couldn't complete authorization.";if(text){detail.textContent=text;detail.hidden=false}footnote.textContent="Close this window and try again from Loophole."}
++  function ok(){card.dataset.status="success";headline.textContent="Authorization successful";message.textContent=PROVIDER?("Loophole is now connected to "+PROVIDER+"."):"Loophole is now authorized.";detail.hidden=true;footnote.textContent="You can close this window.";setTimeout(function(){try{window.close()}catch(e){}},2500)}
+   try{
+     var hash=new URLSearchParams((window.location.hash||"").slice(1));
+     var search=new URLSearchParams(window.location.search||"");
+@@ -215,6 +215,7 @@ const STYLES = `
+   }
+   .brand { display: flex; justify-content: center; margin-bottom: 1.75rem; }
+   .brand svg { height: 19px; width: auto; }
++  .brand .wordmark { font-size: 19px; font-weight: 600; letter-spacing: -0.02em; color: var(--oc-text-strong); }
+   .status { display: flex; justify-content: center; margin-bottom: 1.125rem; }
+   .icon { display: none; line-height: 0; }
+   .icon svg { display: block; }
+@@ -249,25 +250,8 @@ const STYLES = `
+   @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+ `
+ 
+-// OpenCode wordmark — same path geometry as packages/ui/src/components/logo.tsx (Logo).
+-const WORDMARK = `<svg class="wordmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 234 42" fill="none" aria-label="OpenCode" role="img">
+-        <path d="M18 30H6V18H18V30Z" fill="var(--oc-icon-weak)" />
+-        <path d="M18 12H6V30H18V12ZM24 36H0V6H24V36Z" fill="var(--oc-icon-base)" />
+-        <path d="M48 30H36V18H48V30Z" fill="var(--oc-icon-weak)" />
+-        <path d="M36 30H48V12H36V30ZM54 36H36V42H30V6H54V36Z" fill="var(--oc-icon-base)" />
+-        <path d="M84 24V30H66V24H84Z" fill="var(--oc-icon-weak)" />
+-        <path d="M84 24H66V30H84V36H60V6H84V24ZM66 18H78V12H66V18Z" fill="var(--oc-icon-base)" />
+-        <path d="M108 36H96V18H108V36Z" fill="var(--oc-icon-weak)" />
+-        <path d="M108 12H96V36H90V6H108V12ZM114 36H108V12H114V36Z" fill="var(--oc-icon-base)" />
+-        <path d="M144 30H126V18H144V30Z" fill="var(--oc-icon-weak)" />
+-        <path d="M144 12H126V30H144V36H120V6H144V12Z" fill="var(--oc-icon-strong)" />
+-        <path d="M168 30H156V18H168V30Z" fill="var(--oc-icon-weak)" />
+-        <path d="M168 12H156V30H168V12ZM174 36H150V6H174V36Z" fill="var(--oc-icon-strong)" />
+-        <path d="M198 30H186V18H198V30Z" fill="var(--oc-icon-weak)" />
+-        <path d="M198 12H186V30H198V12ZM204 36H180V6H198V0H204V36Z" fill="var(--oc-icon-strong)" />
+-        <path d="M234 24V30H216V24H234Z" fill="var(--oc-icon-weak)" />
+-        <path d="M216 12V18H228V12H216ZM234 24H216V30H234V36H210V6H234V24Z" fill="var(--oc-icon-strong)" />
+-      </svg>`
++// Loophole wordmark: plain text so the page stays self-contained.
++const WORDMARK = `<div class="wordmark" aria-label="Loophole">Loophole</div>`
+ 
+ const ICON_CHECK = `<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="m8.5 12.5 2.4 2.4 4.6-5.4" /></svg>`
+ 
+diff --git a/packages/core/src/plugin/provider/chatgpt.ts b/packages/core/src/plugin/provider/chatgpt.ts
+index 018c275d9c..8907a1e6c0 100644
+--- a/packages/core/src/plugin/provider/chatgpt.ts
++++ b/packages/core/src/plugin/provider/chatgpt.ts
+@@ -19,7 +19,7 @@ import { configuredSettings } from "./configured.js"
+ 
+ // First-time sign-in registers a user-owned client; OpenAI returns its issued client ID on the callback.
+ const registrationClientID = "dynamic_agent_client"
+-const agentName = "OpenCode"
++const agentName = "Loophole"
+ const issuer = "https://auth.openai.com"
+ const tokenURL = `${issuer}/api/accounts/oauth/token`
+ const resource = "https://api.openai.com/v1"
+diff --git a/packages/core/src/plugin/skill.ts b/packages/core/src/plugin/skill.ts
+index dc2f72cc05..216453ddab 100644
+--- a/packages/core/src/plugin/skill.ts
++++ b/packages/core/src/plugin/skill.ts
+@@ -9,31 +9,18 @@ import { AbsolutePath } from "../schema.js"
+ import { Skill } from "../skill.js"
+ import { Config } from "../config.js"
+ import os from "os"
+-import opencodeContent from "./skill/opencode.md" with { type: "text" }
+ import reportContent from "./skill/report.md" with { type: "text" }
+ 
+-export const OpencodeContent = opencodeContent
+ export const ReportContent = reportContent
+ 
+-export const OpencodeDescription =
+-  "Use this skill for any question about OpenCode itself, including how OpenCode works, using or configuring it, migrating from V1 to V2, troubleshooting it, developing plugins or integrations, using the OpenCode SDK, clients, server, or API, and contributing to the OpenCode codebase. Also use it for OpenCode agents, commands, skills, tools, permissions, MCP servers, providers, models, themes, keybinds, formatters, the CLI, TUI, desktop app, and web app."
+ const REPORT_DESCRIPTION =
+-  "Use when the user wants to report an opencode issue or bug. Collect standard diagnostics, add user-specific reproduction context, and publish the issue with GitHub CLI."
++  "Use when the user wants to report a Loophole issue or bug. Collect standard diagnostics, add user-specific reproduction context, and publish the issue with GitHub CLI."
+ 
+ export const Plugin = define({
+   id: "opencode.skill",
+   effect: Effect.fn(function* (ctx) {
+     const reportContent = yield* reportContentWithDiagnostics(ctx.app)
+     yield* ctx.skill.transform((editor) => {
+-      editor.add(
+-        Skill.Info.make({
+-          id: Skill.ID.make("opencode"),
+-          name: Skill.Name.make("OpenCode"),
+-          description: OpencodeDescription,
+-          path: AbsolutePath.make("/builtin/opencode.md"),
+-          content: OpencodeContent,
+-        }),
+-      )
+       editor.add(
+         Skill.Info.make({
+           id: Skill.ID.make("report"),
+@@ -61,7 +48,7 @@ const reportContentWithDiagnostics = Effect.fn("SkillPlugin.reportContentWithDia
+     "",
+     "These values were captured when the built-in report skill was registered. Verify them before publishing.",
+     "",
+-    `- opencode version: ${app.version}`,
++    `- Loophole version: ${app.version}`,
+     `- install/channel: ${app.channel}`,
+     `- OS: ${os.type()} ${os.release()} (${os.platform()} ${os.arch()}${emulated ? ", emulated on ARM64" : ""})`,
+     `- Terminal: ${terminal()}`,
+diff --git a/packages/core/src/plugin/skill/opencode.md b/packages/core/src/plugin/skill/opencode.md
+deleted file mode 100644
+index ceca99f791..0000000000
+--- a/packages/core/src/plugin/skill/opencode.md
++++ /dev/null
+@@ -1,269 +0,0 @@
+-# OpenCode
+-
+-Use this guide as the starting point for work involving OpenCode itself. It
+-covers the core concepts needed to configure and customize OpenCode, extend it
+-with plugins, and build integrations with the OpenCode SDK, clients, and API.
+-
+-Full documentation is available at <https://opencode.ai/v2/docs/>. This overview is
+-only an index of core concepts. Before answering a question about a topic below,
+-fetch the URL named in that section and use the full page as the source of
+-truth. Follow links from that page when the question needs more detail. Fetch
+-<https://opencode.ai/v2/docs/> first when you need to discover the relevant
+-documentation page.
+-
+-A machine-readable documentation index is available at
+-<https://opencode.ai/v2/llms.txt>.
+-
+-## Version policy
+-
+-Always answer for OpenCode V2 unless the user explicitly asks about V1,
+-legacy OpenCode, or migrating from V1.
+-
+-Use only <https://opencode.ai/v2/docs/> documentation as the source of truth for V2.
+-Do not use <https://opencode.ai/docs/>, which documents V1, and do not use
+-general web search to resolve a V2 documentation question when the V2 docs or
+-linked pages cover it. The schema served from
+-<https://opencode.ai/config.json> accepts both V2 fields and deprecated V1
+-fields. Never recommend a field it marks deprecated. If V2 documentation is
+-missing or contradictory, state the uncertainty or ask for clarification instead of falling back to V1.
+-
+-V1 documentation and syntax may be consulted only when the user explicitly
+-asks about V1 or when needed as migration input. Outputs and recommendations
+-must still use V2 unless the user specifically requests a V1 result.
+-
+-## [CLI](https://opencode.ai/v2/docs/cli)
+-
+-For questions about the terminal interface, command-line invocation, `run`,
+-`mini`, terminal providers, or other CLI behavior, fetch the
+-[CLI guide](https://opencode.ai/v2/docs/cli) and the relevant page linked from
+-that section.
+-
+-CLI and TUI preferences are separate from OpenCode's server and project
+-configuration. They live in the global `~/.config/opencode/cli.json`, or
+-`$XDG_CONFIG_HOME/opencode/cli.json` when `XDG_CONFIG_HOME` is set. There is no
+-project-local CLI configuration. Set `OPENCODE_CLI_CONFIG_CONTENT` to merge
+-inline JSON over the global settings. Most preferences can also be changed from
+-the TUI by pressing `Ctrl+P` and selecting **Open settings**.
+-
+-### [Settings](https://opencode.ai/v2/docs/cli/config)
+-
+-Fetch the full [CLI settings reference](https://opencode.ai/v2/docs/cli/config)
+-before editing `cli.json`. It documents every terminal-only setting, accepted
+-values, and examples, including themes, input, sessions, tabs, diffs, alerts,
+-Mini, keybindings, terminal plugins, and debugging. Do not put these settings
+-in `opencode.json(c)`.
+-
+-### [Keybinds](https://opencode.ai/v2/docs/cli/keybinds)
+-
+-Configure keybindings under `keybinds` in `cli.json`. The leader key is the
+-`keybinds.leader` entry; leader timing is configured separately under
+-`leader.timeout`. Bindings can use a string, an array of strings, or an object
+-when event behavior such as `preventDefault` is required. Disable a binding
+-with `"none"` or `false`.
+-
+-Never guess a command ID, default binding, or accepted key syntax. Fetch the
+-full [keybind reference](https://opencode.ai/v2/docs/cli/keybinds), which lists
+-the current IDs and defaults, before answering or editing a binding.
+-
+-## [OpenCode configuration](https://opencode.ai/v2/docs/config)
+-
+-OpenCode's server and project configuration uses JSON or JSONC. Include the
+-published schema so the user's editor can validate fields and provide
+-autocomplete:
+-
+-```jsonc
+-{
+-  "$schema": "https://opencode.ai/config.json",
+-}
+-```
+-
+-Global configuration lives at `~/.config/opencode/opencode.json(c)` and applies
+-to every project for that user. Project configuration can live in any directory
+-as `opencode.json(c)` or `.opencode/opencode.json(c)`, including nested packages
+-in a monorepo.
+-
+-During ordinary project discovery, OpenCode searches the current Location
+-directory and every ancestor through the filesystem root, including directories
+-above the detected project or repository root. It merges direct
+-`opencode.json(c)` files from the farthest ancestor to the current directory,
+-then does the same for `.opencode/opencode.json(c)` files. This means every
+-discovered `.opencode` config overrides every discovered direct config. Global
+-filesystem configuration has lower precedence than these discovered documents.
+-
+-Common configuration fields include `model`, `default_agent`, `permissions`,
+-`agents`, `commands`, `plugins`, `providers`, `mcp`, `skills`, `instructions`,
+-`references`, `formatter`, and `lsp`.
+-
+-This configuration is distinct from `cli.json`. Use the
+-[CLI settings reference](https://opencode.ai/v2/docs/cli/config) for terminal
+-preferences, especially themes and keybindings.
+-
+-Config changes apply without a restart. OpenCode watches config files and
+-reloads agents, commands, skills, MCP servers, and plugins after a save. The TUI
+-does the same for `cli.json`. To force a full reload, use `/reload`. Don't tell
+-the user to restart OpenCode after editing config.
+-
+-Do not guess field names or shapes. Fetch the V2 configuration guide and its
+-linked topic guide as the source of truth, and preserve unrelated settings when
+-editing an existing file. Keep the published `$schema` URL in configuration
+-examples, but do not fetch it to determine the V2 configuration shape.
+-
+-See the [full configuration guide](https://opencode.ai/v2/docs/config) for
+-every field, examples, config locations, and links to dedicated feature guides.
+-
+-## [MCP servers](https://opencode.ai/v2/docs/mcp-servers)
+-
+-Configure MCP servers under `mcp.servers`. Prefer the CLI because it preserves
+-unrelated configuration. Use `--global` when the user asks to set up a service
+-for themselves without limiting it to the current project; omit it when they
+-explicitly want project-local configuration.
+-
+-```sh
+-opencode mcp add <name> --global --url <remote-url>
+-opencode mcp list
+-```
+-
+-Remote servers use OAuth by default. If `mcp list` reports that a server needs
+-authentication, tell the user to run `/mcps`, select the server, and sign in.
+-Do not run `opencode mcp auth` through the shell tool: it starts an interactive
+-flow whose authorization link can be hidden in background process output.
+-Use the user-facing MCP interface instead.
+-
+-Report the server as configured but awaiting sign-in until its connection
+-status confirms it is connected.
+-
+-OAuth credentials are stored outside the OpenCode configuration. Do not ask for or
+-store an API key when the server supports OAuth. Use header-based credentials
+-only when OAuth is unavailable or the user explicitly requires them, and use an
+-environment substitution such as `{env:MCP_API_KEY}` instead of writing a
+-secret into configuration.
+-
+-## [V1 to V2 migration](https://opencode.ai/v2/docs/migrate-v1)
+-
+-For any request to migrate OpenCode configuration, agents, commands, skills,
+-plugins, integrations, or other behavior from V1 to V2, read the full
+-[migration guide](https://opencode.ai/v2/docs/migrate-v1) before acting. In
+-the repository, its source is `services/www/src/docs/content/migrate-v1.mdx`.
+-
+-V1 config files and `.opencode/` definitions are intended to remain compatible.
+-The only intentional breaking changes are the server API and plugin API. Native
+-V2 config uses more ergonomic shapes, but conversion is optional. When the user
+-requests conversion, inspect the complete configuration, preserve behavior and
+-unrelated settings, and apply only the relevant migrations from the guide. For
+-plugin migrations, fetch and follow both the migration guide and the full
+-[plugins guide](https://opencode.ai/v2/docs/build/plugins). If non-API V1
+-functionality fails in V2, use the `report` skill to file it as a compatibility
+-bug.
+-
+-## [Plugins](https://opencode.ai/v2/docs/build/plugins)
+-
+-For questions about creating, configuring, loading, publishing, or migrating
+-plugins, fetch the full [plugins guide](https://opencode.ai/v2/docs/build/plugins)
+-before answering. Refer to this guide when the user wants to build a plugin. It
+-covers hooks, transforms, tools, plugin context capabilities, and package
+-entrypoints. Plugins can also extend the TUI; for those, fetch the
+-[CLI plugin guide](https://opencode.ai/v2/docs/build/plugins/cli).
+-For custom methods and events shared with other plugins or clients, fetch the
+-[RPC guide](https://opencode.ai/v2/docs/build/plugins/rpc).
+-
+-## [Service](https://opencode.ai/v2/docs/troubleshooting#check-the-background-service)
+-
+-OpenCode uses a client-server architecture. Interfaces such as the TUI connect
+-to a background OpenCode service, which owns sessions, configuration, plugins,
+-permissions, and tool execution.
+-
+-OpenCode normally discovers or starts the shared background service
+-automatically. Restart it only if it is stuck or unhealthy, not to apply
+-configuration changes:
+-
+-```sh
+-opencode service restart
+-```
+-
+-Check its status after restarting:
+-
+-```sh
+-opencode service status
+-```
+-
+-## [API](https://opencode.ai/v2/docs/api)
+-
+-OpenCode exposes an HTTP API from its server. The API is described by an
+-OpenAPI document available from the running server at `/openapi.json`.
+-
+-Use OpenCode's built-in `api` command for local requests. It uses the same
+-discovery and authentication flow as the TUI and may start the background
+-service when no compatible healthy service is available. It accepts either an
+-HTTP method and path or an OpenAPI operation ID.
+-
+-Call an endpoint with an HTTP method and path:
+-
+-```sh
+-opencode api get /api/info
+-```
+-
+-Pass a request body with `--data` or `-d`, and additional headers with
+-`--header` or `-H`:
+-
+-```sh
+-opencode api post /api/example --data '{"key":"value"}'
+-opencode api get /api/example --header 'X-Example:value'
+-```
+-
+-Request bodies default to `Content-Type: application/json`. When OpenCode is
+-connected to an explicit server instead of its managed background service, use
+-the same configured server and authentication context rather than constructing
+-an unauthenticated request separately.
+-
+-See the [full API reference](https://opencode.ai/v2/docs/api) for available
+-endpoints, parameters, request bodies, and response schemas. The
+-raw [OpenAPI specification](https://opencode.ai/v2/openapi.json) is also
+-available for code generation and other tooling.
+-
+-## [Client](https://opencode.ai/v2/docs/build/client)
+-
+-For questions about connecting an application to OpenCode over the network,
+-fetch the full [client guide](https://opencode.ai/v2/docs/build/client) before
+-answering.
+-
+-`@opencode/client` is the generated TypeScript client for the OpenCode HTTP
+-API. Its methods and types come from the same contract as the API reference.
+-The default entrypoint exposes Promise-based resource clients and async
+-iterables for streaming endpoints. The `@opencode/client/effect` entrypoint
+-exposes typed Effects, Streams, and decoded OpenCode schema values. Its
+-`Service` API can discover, start, stop, and authenticate with the local
+-background service from a Node application.
+-
+-## [SDK](https://opencode.ai/v2/docs/build/sdk)
+-
+-For questions about embedding OpenCode directly in an application, fetch the
+-full [SDK guide](https://opencode.ai/v2/docs/build/sdk) before answering. The SDK
+-hosts OpenCode in the application without opening an HTTP listener.
+-
+-Use the [Effect SDK guide](https://opencode.ai/v2/docs/build/sdk/effect) for
+-Effect applications. For Cloudflare Durable Objects, use the
+-[Cloudflare SDK guide](https://opencode.ai/v2/docs/build/sdk/cloudflare).
+-
+-## [Troubleshooting](https://opencode.ai/v2/docs/troubleshooting)
+-
+-OpenCode runs a client and a background server. Start by determining whether a
+-problem belongs to the client, the shared server, or one project.
+-
+-- Check the service with `opencode service status` and verify the API with
+-  `opencode api get /api/info`.
+-- Compare with `opencode --standalone`, which runs the TUI with a private
+-  server, to isolate shared-service issues.
+-- Inspect `~/.local/share/opencode/log/opencode.log`. Filter `role=cli` for
+-  client startup and `role=server` for sessions, providers, plugins,
+-  permissions, and tools.
+-- Run one reproduction with `OPENCODE_LOG_LEVEL=DEBUG` when normal logs are not
+-  sufficient.
+-- Do not delete or edit the database, service registration, or service config
+-  while diagnosing a problem. Back up persistent data before inspecting it
+-  with external tools.
+-- Redact API keys, authorization headers, prompts, file contents, and other
+-  sensitive data before sharing diagnostics.
+-
+-See the [full troubleshooting guide](https://opencode.ai/v2/docs/troubleshooting)
+-for service lifecycle commands, API inspection, log locations, explicit server
+-connections, issue-reporting details, and local development paths.
+diff --git a/packages/core/src/plugin/skill/report.md b/packages/core/src/plugin/skill/report.md
+index 60d497197c..0de2246e98 100644
+--- a/packages/core/src/plugin/skill/report.md
++++ b/packages/core/src/plugin/skill/report.md
+@@ -4,9 +4,9 @@
+   content.
+ -->
+ 
+-# Report an opencode Issue
++# Report a Loophole Issue
+ 
+-Use this skill when the user wants to report an opencode issue or bug. Your job
++Use this skill when the user wants to report a Loophole issue or bug. Your job
+ is to turn the user's problem into a useful GitHub issue with standard
+ diagnostics plus the context needed to reproduce and resolve it.
+ 
+@@ -26,7 +26,7 @@ title/body for the user.
+ 
+ Collect these values when possible:
+ 
+-- opencode version: run `opencode --version`.
++- Loophole version: run `loophole-cli --version`.
+ - Operating system: run `uname -a` on Unix-like systems, or `ver` on Windows.
+ - Terminal: inspect `$TERM`, `$TERM_PROGRAM`, `$COLORTERM`, and any obvious
+   terminal app context the user provides.
+@@ -34,7 +34,7 @@ Collect these values when possible:
+   Windows when relevant.
+ - Install/channel context: include whether this appears to be local, dev, beta,
+   or release if the version output or environment reveals it.
+-- Active plugins: inspect opencode config for configured plugins when possible.
++- Active plugins: inspect Loophole config for configured plugins when possible.
+   Check likely config locations such as `opencode.json`, `opencode.jsonc`,
+   `.opencode/opencode.json`, and `~/.config/opencode/opencode.json`. Record
+   configured plugin entries, local plugin files under `.opencode/plugin/` or
+@@ -53,7 +53,7 @@ Capture the details that make the issue actionable:
+ - Reproduction steps, ideally minimal and numbered.
+ - Relevant logs, stack traces, screenshots, terminal output, or config snippets.
+ - Whether the issue is reproducible consistently, intermittently, or only once.
+-- Recent changes that may be related, such as updating opencode, changing
++- Recent changes that may be related, such as updating Loophole, changing
+   config, installing a plugin, changing terminal, or switching workspace.
+ - Workarounds tried and whether they helped.
+ 
+@@ -72,7 +72,7 @@ otherwise:
+ 
+ ## Environment
+ 
+-- opencode version: <!-- value or Unavailable: reason -->
++- Loophole version: <!-- value or Unavailable: reason -->
+ - OS: <!-- value or Unavailable: reason -->
+ - Terminal: <!-- value or Unavailable: reason -->
+ - Shell: <!-- value or Unavailable: reason -->
+diff --git a/packages/core/src/plugin/system-prompt/gpt-astra.txt b/packages/core/src/plugin/system-prompt/gpt-astra.txt
+index cb48b61a98..42e8c513fd 100644
+--- a/packages/core/src/plugin/system-prompt/gpt-astra.txt
++++ b/packages/core/src/plugin/system-prompt/gpt-astra.txt
+@@ -1,4 +1,4 @@
+-You are an AI agent running in OpenCode, a coding agent harness. Help the user accomplish their goals using the tools you have available.
++You are an AI agent running in Loophole, a coding agent harness. Help the user accomplish their goals using the tools you have available.
+ 
+ # Harness
+ - Responses are rendered as GitHub-flavored Markdown.
+diff --git a/packages/core/src/plugin/system-prompt/gpt.txt b/packages/core/src/plugin/system-prompt/gpt.txt
+index 4a30126f76..2b32bd4330 100644
+--- a/packages/core/src/plugin/system-prompt/gpt.txt
++++ b/packages/core/src/plugin/system-prompt/gpt.txt
+@@ -1,4 +1,4 @@
+-You are an AI agent running in OpenCode, a coding agent harness. Help the user accomplish their goals using the tools you have available.
++You are an AI agent running in Loophole, a coding agent harness. Help the user accomplish their goals using the tools you have available.
+ 
+ # Harness
+ - Responses are rendered as GitHub-flavored Markdown.
+diff --git a/packages/core/src/plugin/system-prompt/kimi.txt b/packages/core/src/plugin/system-prompt/kimi.txt
+index 351b97cb72..2a447784fb 100644
+--- a/packages/core/src/plugin/system-prompt/kimi.txt
++++ b/packages/core/src/plugin/system-prompt/kimi.txt
+@@ -1,4 +1,4 @@
+-You are OpenCode, an interactive general AI agent running on a user's computer.
++You are Loophole, an interactive general AI agent running on a user's computer.
+ 
+ Your primary goal is to help users with software engineering tasks by taking action — use the tools available to you to make real changes on the user's system. You should also answer questions when asked. Always adhere strictly to the following system instructions and the user's requirements.
+ 
+diff --git a/packages/core/src/plugin/system-prompt/meta.txt b/packages/core/src/plugin/system-prompt/meta.txt
+index bb6094bf60..e2e78f2ca1 100644
+--- a/packages/core/src/plugin/system-prompt/meta.txt
++++ b/packages/core/src/plugin/system-prompt/meta.txt
+@@ -1,4 +1,4 @@
+-You are OpenCode, a coding agent that helps users with software engineering tasks. You are powered by {{MODEL_NAME}}, a large language model trained by Meta MSL.
++You are Loophole, a coding agent that helps users with software engineering tasks. You are powered by {{MODEL_NAME}}, a large language model trained by Meta MSL.
+ 
+ Use the instructions below and the tools available to assist the user.
+ 
+@@ -47,7 +47,7 @@ Use the instructions below and the tools available to assist the user.
+ - For simple one-off Python computations, such as local file parsing, template rendering, or statistics computations, call `shell` with `python3 -c`. Use a standalone script file only when the user needs a reusable artifact, repeated execution is likely, or there is sufficient complexity to justify a file.
+ - `read` may be used to inspect or locate files, but final numeric or rendered results should come from executed code, not copied text plus mental math.
+ 
+-# Tool Use - OpenCode Specifics
++# Tool Use - Loophole Specifics
+ - When `webfetch` returns a message about a redirect to a different host, you should immediately make a new `webfetch` request with the redirect URL provided in the response.
+ - When `plan` mode is active, you will see a <system-reminder> about this. Follow that reminder for the files you may edit and all other Plan mode restrictions. If the user asks you to implement changes, inform them that `plan` mode is active and that they need to switch to build mode.
+ 
+diff --git a/packages/core/src/plugin/system-prompt/trinity.txt b/packages/core/src/plugin/system-prompt/trinity.txt
+index 6ee4e6f70a..e8496d8b35 100644
+--- a/packages/core/src/plugin/system-prompt/trinity.txt
++++ b/packages/core/src/plugin/system-prompt/trinity.txt
+@@ -1,4 +1,4 @@
+-You are opencode, an interactive CLI tool that helps users with software engineering tasks. Use the instructions below and the tools available to you to assist the user.
++You are Loophole, an interactive CLI tool that helps users with software engineering tasks. Use the instructions below and the tools available to you to assist the user.
+ 
+ # Tone and style
+ You should be concise, direct, and to the point. When you run a non-trivial shell command, you should explain what the command does and why you are running it, to make sure the user understands what you are doing (this is especially important when you are running a command that will make changes to the user's system).
+diff --git a/packages/core/src/session/runner/prompt/system.txt b/packages/core/src/session/runner/prompt/system.txt
+index 0e02ced78d..bcd859a5e8 100644
+--- a/packages/core/src/session/runner/prompt/system.txt
++++ b/packages/core/src/session/runner/prompt/system.txt
+@@ -1,4 +1,4 @@
+-You are an AI agent running in OpenCode, a coding agent harness. Help the user accomplish their goals using the tools you have available.
++You are an AI agent running in Loophole, a coding agent harness. Help the user accomplish their goals using the tools you have available.
+ 
+ # Harness
+ - Responses are rendered as GitHub-flavored Markdown.
+diff --git a/packages/core/src/tool/plugin/mcp-resource.ts b/packages/core/src/tool/plugin/mcp-resource.ts
+index 214b60d6c3..5b6e8cfd92 100644
+--- a/packages/core/src/tool/plugin/mcp-resource.ts
++++ b/packages/core/src/tool/plugin/mcp-resource.ts
+@@ -17,7 +17,7 @@ export const Plugin = {
+       .transform((editor) => {
+         editor.add({
+           name: "list_mcp_resources",
+-          options: { namespace: "opencode", codemode: true },
++          options: { namespace: "loophole", codemode: true },
+           description:
+             "List documents, records, and other data exposed by MCP servers. Use this when the user refers to something that is not a local file, such as a URI with a custom scheme, then load a match with read_mcp_resource. Each entry names the server to read it from. Templates are resources addressed by a parameter such as a record ID; fill in the uriTemplate placeholders before reading.",
+           input: Schema.Struct({
+@@ -35,7 +35,7 @@ export const Plugin = {
+               const servers =
+                 input.server === undefined ? (yield* mcp.servers()).map((server) => server.name) : [input.server]
+               yield* permission.assert({
+-                action: "opencode_list_mcp_resources",
++                action: "loophole_list_mcp_resources",
+                 resources: servers,
+                 save: servers,
+                 metadata: {},
+@@ -49,7 +49,7 @@ export const Plugin = {
+         })
+         editor.add({
+           name: "read_mcp_resource",
+-          options: { namespace: "opencode", codemode: true },
++          options: { namespace: "loophole", codemode: true },
+           description:
+             "Read one MCP resource by server and URI. Not for local files. Always return the full contents rather than slicing or filtering them; oversized output is truncated automatically and the full content is saved to a file you can read. Images and PDFs are shown to you directly.",
+           input: Schema.Struct({
+@@ -64,7 +64,7 @@ export const Plugin = {
+           execute: (input, context) =>
+             Effect.gen(function* () {
+               yield* permission.assert({
+-                action: "opencode_read_mcp_resource",
++                action: "loophole_read_mcp_resource",
+                 resources: [`${input.server}:${input.uri}`],
+                 save: [`${input.server}:*`],
+                 metadata: { server: input.server, uri: input.uri },
+diff --git a/packages/core/src/tool/plugin/opencode.ts b/packages/core/src/tool/plugin/opencode.ts
+index c5783f6dc0..3484d39a7f 100644
+--- a/packages/core/src/tool/plugin/opencode.ts
++++ b/packages/core/src/tool/plugin/opencode.ts
+@@ -93,7 +93,7 @@ export const Plugin = {
+       Effect.sync(() => {
+         event.system.push(
+           SystemPart.make(
+-            "When you create a worktree outside the current working directory and intend to use it as your primary working directory, consider using `execute` to call `tools.opencode.session_move` and make the worktree the session's working directory.",
++            "When you create a worktree outside the current working directory and intend to use it as your primary working directory, consider using `execute` to call `tools.loophole.session_move` and make the worktree the session's working directory.",
+           ),
+         )
+       })
+@@ -103,9 +103,9 @@ export const Plugin = {
+     yield* ctx.tool
+       .transform((draft) => {
+         draft.namespace({
+-          name: "opencode",
++          name: "loophole",
+           description:
+-            "Tools for managing OpenCode itself, such as working with sessions and worktrees, searching the available models, and reading MCP resources.",
++            "Tools for managing Loophole itself, such as working with sessions and worktrees, searching the available models, and reading MCP resources.",
+         })
+         draft.add({
+           name: "session_rename",
+@@ -113,7 +113,7 @@ export const Plugin = {
+             "Rename a session, or omit sessionID to rename the current session. Use a short, specific title that summarizes the work being done.",
+           input: RenameInput,
+           output: RenameOutput,
+-          options: { namespace: "opencode", codemode: true },
++          options: { namespace: "loophole", codemode: true },
+           execute: (input, context) => {
+             const sessionID = input.sessionID ?? context.sessionID
+             const title = input.title.trim()
+@@ -133,7 +133,7 @@ export const Plugin = {
+             "Move a session to another directory, or omit sessionID to move the current session. The current session moves at the next safe boundary; do not run destination-dependent tools in the same execute call.",
+           input: MoveInput,
+           output: MoveOutput,
+-          options: { namespace: "opencode", codemode: true, pinned: true },
++          options: { namespace: "loophole", codemode: true, pinned: true },
+           execute: (input, context) =>
+             Effect.gen(function* () {
+               const sessionID = input.sessionID ?? context.sessionID
+@@ -157,7 +157,7 @@ export const Plugin = {
+           description: "Create a named worktree. Returns its directory.",
+           input: WorktreeCreateInput,
+           output: Worktree.Info,
+-          options: { namespace: "opencode", codemode: true, pinned: true },
++          options: { namespace: "loophole", codemode: true, pinned: true },
+           execute: (input) =>
+             ctx.worktree.create({ projectID: ctx.location.project.id, name: input.name }).pipe(
+               Effect.map((output) => ({ output, content: `Created worktree in ${output.directory}.` })),
+@@ -171,7 +171,7 @@ export const Plugin = {
+           description: "List a repository's worktrees.",
+           input: Schema.Struct({}),
+           output: Schema.Struct({ worktrees: Worktree.List }),
+-          options: { namespace: "opencode", codemode: true, pinned: true },
++          options: { namespace: "loophole", codemode: true, pinned: true },
+           execute: () =>
+             ctx.worktree.list({ projectID: ctx.location.project.id }).pipe(
+               Effect.map((worktrees) => ({ output: { worktrees } })),
+@@ -184,7 +184,7 @@ export const Plugin = {
+             "Remove a worktree. The repository location selects configuration; directory identifies the worktree to remove.",
+           input: WorktreeRemoveInput,
+           output: WorktreeRemoveOutput,
+-          options: { namespace: "opencode", codemode: true, pinned: true, permission: "edit" },
++          options: { namespace: "loophole", codemode: true, pinned: true, permission: "edit" },
+           execute: (input, context) =>
+             Effect.gen(function* () {
+               // Removing a worktree deletes files, so it requires the same approval as editing them.
+@@ -222,7 +222,7 @@ export const Plugin = {
+             "Search the models available to use. Use this to turn a model name the user mentions into an exact reference before running a subagent on it. Check your own provider first.",
+           input: ModelsInput,
+           output: ModelsOutput,
+-          options: { namespace: "opencode", codemode: true },
++          options: { namespace: "loophole", codemode: true },
+           execute: (input, context) =>
+             Effect.gen(function* () {
+               const offset = input.offset ?? 0
+diff --git a/packages/core/src/tool/plugin/websearch.ts b/packages/core/src/tool/plugin/websearch.ts
+index feb6393edf..02739b0441 100644
+--- a/packages/core/src/tool/plugin/websearch.ts
++++ b/packages/core/src/tool/plugin/websearch.ts
+@@ -79,7 +79,7 @@ export const Plugin = {
+                           fields: [
+                             {
+                               key: "choice",
+-                              description: "Allow OpenCode to search the web for up-to-date information?",
++                              description: "Allow Loophole to search the web for up-to-date information?",
+                               type: "string",
+                               required: true,
+                               custom: false,
+diff --git a/packages/screen/src/components/editor/custom-editor.ts b/packages/screen/src/components/editor/custom-editor.ts
+index 5dfe647587..a6223d32bb 100644
+--- a/packages/screen/src/components/editor/custom-editor.ts
++++ b/packages/screen/src/components/editor/custom-editor.ts
+@@ -273,6 +273,11 @@ export class CustomEditor extends Editor {
+     );
+   }
+ 
++  /** Close the slash/path menu and cancel any pending request (e.g. before a picker opens). */
++  public dismissAutocomplete(): void {
++    if (this.hasAutocompleteActivity()) this.cancelAutocompleteActivity();
++  }
++
+   private cancelAutocompleteActivity(): void {
+     // pi-tui exposes `isShowingAutocomplete()` but keeps cancellation private.
+     // The screen needs Esc to win over app-level cancel while the slash menu request is active.
+diff --git a/packages/screen/src/screen.ts b/packages/screen/src/screen.ts
+index bfef2fa87b..f5d068470b 100644
+--- a/packages/screen/src/screen.ts
++++ b/packages/screen/src/screen.ts
+@@ -505,7 +505,10 @@ export class Screen {
+         noMatch: (text: string) => currentTheme.fg('textMuted', text),
+       };
+ 
++      let settled = false;
+       const finish = (value: string | undefined) => {
++        if (settled) return;
++        settled = true;
+         this.prompting = false;
+         this.promptSlot.clear();
+         this.promptSlot.addChild(this.editor);
+@@ -566,8 +569,12 @@ export class Screen {
+ 
+         // The focused component owns the filter text; arrows/enter/escape are
+         // forwarded to whichever SelectList currently holds the filtered rows.
++        let done = false;
+         const host: Component = {
+           handleInput: (data: string) => {
++            // A picker that has already resolved must not react to the same
++            // keystroke twice (or to a key repeat arriving right after close).
++            if (done) return;
+             if (matchesKey(data, Key.backspace)) {
+               if (query.length === 0) return;
+               query = query.slice(0, -1);
+@@ -580,6 +587,19 @@ export class Screen {
+               rebuild();
+               return;
+             }
++            if (matchesKey(data, Key.enter)) {
++              const item = list.getSelectedItem();
++              if (item) {
++                done = true;
++                finish(item.value);
++              }
++              return;
++            }
++            if (matchesKey(data, Key.escape)) {
++              done = true;
++              finish(cancelValue);
++              return;
++            }
+             list.handleInput(data);
+           },
+           invalidate: () => {},
+@@ -602,6 +622,7 @@ export class Screen {
+       }
+ 
+       this.prompting = true;
++      this.editor.dismissAutocomplete();
+       this.promptSlot.clear();
+       this.promptSlot.addChild(new Spacer(1));
+       this.promptSlot.addChild(panel);
+diff --git a/packages/tui/src/app.tsx b/packages/tui/src/app.tsx
+index 9906fcc5df..739197a822 100644
+--- a/packages/tui/src/app.tsx
++++ b/packages/tui/src/app.tsx
+@@ -1169,7 +1169,7 @@ function App() {
+         name: "docs.open",
+         title: "Open docs",
+         run: () => {
+-          openUrl("https://opencode.ai/v2/docs").catch(() => {})
++          openUrl("https://www.loopholeeditor.in/docs").catch(() => {})
+           dialog.clear()
+         },
+         category: "System",
+diff --git a/packages/tui/src/component/dialog-update.tsx b/packages/tui/src/component/dialog-update.tsx
+index a5fce5e391..4a2e613ab7 100644
+--- a/packages/tui/src/component/dialog-update.tsx
++++ b/packages/tui/src/component/dialog-update.tsx
+@@ -142,12 +142,12 @@ export function DialogUpdate(props: {
+             </Match>
+             <Match when={current.type === "installing"}>
+               <Spinner shimmer={theme.text.base}>
+-                {current.type === "installing" ? `Installing OpenCode ${current.version}…` : ""}
++                {current.type === "installing" ? `Installing Loophole ${current.version}…` : ""}
+               </Spinner>
+             </Match>
+             <Match when={current.type === "installed"}>
+               <text fg={theme.text.muted} wrapMode="word">
+-                Update successful! Restart closes OpenCode, then run opencode to use the new version.
++                Update successful! Restart closes Loophole, then run loophole-cli to use the new version.
+               </text>
+             </Match>
+             <Match when={current.type === "current"}>
+diff --git a/packages/tui/src/feature-plugins/system/stats.tsx b/packages/tui/src/feature-plugins/system/stats.tsx
+index 950d322422..8ec9aded3e 100644
+--- a/packages/tui/src/feature-plugins/system/stats.tsx
++++ b/packages/tui/src/feature-plugins/system/stats.tsx
+@@ -62,7 +62,7 @@ export function StatsPoster(props: { stats: SessionStatsInfo }) {
+     <box width={width()} flexDirection="column" alignItems="center" flexShrink={0} gap={compact() ? 1 : 2}>
+       <box width="100%" flexDirection={width() < 44 ? "column" : "row"} justifyContent="space-between">
+         <text fg={theme.text.base} attributes={TextAttributes.BOLD}>
+-          opencode / stats
++          loophole / stats
+         </text>
+         <text fg={theme.text.muted}>{dates()}</text>
+       </box>
+@@ -131,7 +131,7 @@ export function StatsPoster(props: { stats: SessionStatsInfo }) {
+         </For>
+       </box>
+       <box width="100%" flexDirection="row" justifyContent="flex-end">
+-        <text fg={theme.text.base}>opencode.ai</text>
++        <text fg={theme.text.base}>loophole.ai</text>
+       </box>
+     </box>
+   )
+diff --git a/packages/tui/src/util/error.ts b/packages/tui/src/util/error.ts
+index 33dff7be58..43c2d3f611 100644
+--- a/packages/tui/src/util/error.ts
++++ b/packages/tui/src/util/error.ts
+@@ -24,7 +24,7 @@ export function cliErrorMessage(input: unknown): string | undefined {
+     return [
+       `Model not found: ${field(model, "providerID")}/${field(model, "modelID")}`,
+       ...(suggestions.length ? ["Did you mean: " + suggestions.join(", ")] : []),
+-      "Try: `opencode models` to list available models",
++      "Try: `loophole-cli models` to list available models",
+       "Or check your config (opencode.json) provider/model names",
+     ].join("\n")
+   }

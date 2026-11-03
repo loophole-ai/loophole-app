@@ -30,6 +30,7 @@ patches/
   0019-stats-update-palette.patch  /stats usage report, /update, Ctrl+Shift+P command palette
   0020-cli-name-and-search.patch  loophole-cli/lhc install name, Preparing server line, search in pickers
   0021-session-title-version.patch  keep renamed session titles in sync; CLI 1.1.0
+  0022-branding-and-picker.patch  drop the last OpenCode strings; harden the filter pickers
   user/                        optional extra patches, applied after the numbered stack
   series                       legacy list, ignored by the scripts (sorted order wins)
   @ai-sdk%2F...@x.patch         copies of upstream bun patchedDependencies - NEVER applied
@@ -190,6 +191,17 @@ title is tracked in the controller, refreshed by `session.renamed` events (inclu
 the desktop or another client), shown by `/status` and `/debug`, and preferred in the `/sessions`
 picker, so it is not only the welcome box that updates. It also pins the CLI version to `1.1.0` in
 the package metadata and in every CLI/desktop build workflow.
+
+`0022-branding-and-picker.patch` removes the last places where the product still introduced itself as
+OpenCode. The generic and per-model system prompts, the `/changelog` highlights, the web-search
+permission prompt, the model-resolution error, the ChatGPT OAuth agent name, the OAuth callback page
+(now a plain text wordmark), the MCP `add` hint, the update dialog, the stats poster and the
+"model not found" hint all say Loophole. The built-in `opencode` skill is gone, the `report` skill is
+rebranded, and the model-visible tool namespace is now `loophole` (`tools.loophole.session_move`,
+`loophole_list_mcp_resources`, ...). The filterable pickers are also hardened: a resolved picker
+ignores repeated Enter/Escape, Enter confirms the highlighted row explicitly, and any open slash/path
+autocomplete is dismissed before a picker takes focus. Retry status lines now include the provider's
+reason, e.g. `Request failed: <reason> - retrying (attempt 2)...`.
 
 `0005-telemetry-posthog.patch` came from the `telemetry-posthog` / `tui-logo-art` branches.
 Every other custom commit on the local branches (Discord report link, service-port isolation,
