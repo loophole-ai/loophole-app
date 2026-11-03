@@ -34,6 +34,7 @@ patches/
   0023-picker-identity-retry.patch  confirm rows in every picker; Loophole identity; free-router hint
   0024-connect-search.patch  search the /connect provider list
   0025-desktop-inbox-and-close.patch  make Inbox the only desktop layout; close projects
+  0026-tool-cards.patch  framed tool-call cards in the terminal screen
   user/                        optional extra patches, applied after the numbered stack
   series                       legacy list, ignored by the scripts (sorted order wins)
   @ai-sdk%2F...@x.patch         copies of upstream bun patchedDependencies - NEVER applied
@@ -229,6 +230,13 @@ layout even when an older build stored another value. The Projects settings list
 this client has open, and each row's menu plus the project settings header gain a Close action that
 removes the project from this client's lists (the folder and its sessions stay on disk/server);
 closing from the project page returns to the Projects list.
+
+`0026-tool-cards.patch` restyles the transcript after oh-my-pi's terminal UI: every tool call is now a
+rounded framed card (`╭─ ✓ Edit  src/app.ts ─── +12/-3 ─╮` … `╰─ 1.2s · ctrl+o expand ──╯`). The top
+border carries the status glyph, tool name and key argument plus diff statistics (or `failed`), the
+bottom border carries the duration, the expand hint and `esc to interrupt` while running, and the frame
+is accent-coloured while running, neutral on success and red on failure. The shared panel gains
+right-aligned `meta` and left-aligned `footer` border facts, so pickers and approvals keep their look.
 
 `0005-telemetry-posthog.patch` came from the `telemetry-posthog` / `tui-logo-art` branches.
 Every other custom commit on the local branches (Discord report link, service-port isolation,

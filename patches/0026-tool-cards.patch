@@ -1,0 +1,186 @@
+diff --git a/packages/screen/src/components/chrome/panel.ts b/packages/screen/src/components/chrome/panel.ts
+index fdf6b38476..17acfa5e3c 100644
+--- a/packages/screen/src/components/chrome/panel.ts
++++ b/packages/screen/src/components/chrome/panel.ts
+@@ -11,6 +11,10 @@ import { currentTheme, type ColorToken } from '../../theme/index';
+ export interface PanelOptions {
+   /** Optional label in the top border. */
+   readonly title?: string;
++  /** Optional right-aligned fact in the top border (`+12/-3`, `preview`). */
++  readonly meta?: string;
++  /** Optional left-aligned fact in the bottom border (`1.2s`, `ctrl+o expand`). */
++  readonly footer?: string;
+   /** Border colour. Defaults to the focus border. */
+   readonly accent?: ColorToken;
+   /** Spaces between the border and the content. Defaults to 1. */
+@@ -48,11 +52,22 @@ export class PanelComponent implements Component {
+       paint('│');
+ 
+     const title = this.options.title ? ` ${this.options.title} ` : '';
+-    const top = title
+-      ? paint('╭─') +
+-        currentTheme.boldFg(this.options.accent ?? 'borderFocus', title) +
+-        paint(`${'─'.repeat(Math.max(0, width - 3 - visibleWidth(title)))}╮`)
+-      : paint(`╭${'─'.repeat(Math.max(0, width - 2))}╮`);
++    const meta = this.options.meta ? ` ${this.options.meta} ` : '';
++    const titleWidth = visibleWidth(title);
++    const metaWidth = visibleWidth(meta);
++    const showMeta = metaWidth > 0 && width - 4 - titleWidth >= metaWidth + 3;
++    const fittedTitle =
++      titleWidth > Math.max(0, width - 4 - (showMeta ? metaWidth + 3 : 0))
++        ? truncateToWidth(title, Math.max(0, width - 4 - (showMeta ? metaWidth + 3 : 0)), '…')
++        : title;
++    const fittedTitleWidth = visibleWidth(fittedTitle);
++    const topFill = Math.max(0, width - 3 - fittedTitleWidth - (showMeta ? metaWidth : 0));
++    const top =
++      paint('╭─') +
++      (fittedTitle ? currentTheme.boldFg(this.options.accent ?? 'borderFocus', fittedTitle) : '') +
++      paint('─'.repeat(topFill)) +
++      (showMeta ? currentTheme.fg('textMuted', meta) : '') +
++      paint('╮');
+ 
+     const out: string[] = [top];
+     for (let i = 0; i < paddingY; i++) out.push(blank());
+@@ -60,7 +75,16 @@ export class PanelComponent implements Component {
+       for (const line of child.render(inner)) out.push(row(line));
+     }
+     for (let i = 0; i < paddingY; i++) out.push(blank());
+-    out.push(paint(`╰${'─'.repeat(Math.max(0, width - 2))}╯`));
++    const footer = this.options.footer ? ` ${this.options.footer} ` : '';
++    const footerWidth = visibleWidth(footer);
++    const showFooter = footerWidth > 0 && width - 3 >= footerWidth + 2;
++    const bottomFill = Math.max(0, width - 3 - (showFooter ? footerWidth : 0));
++    out.push(
++      paint('╰─') +
++        (showFooter ? currentTheme.fg('textMuted', footer) : '') +
++        paint('─'.repeat(bottomFill)) +
++        paint('╯'),
++    );
+     return out;
+   }
+ }
+diff --git a/packages/screen/src/components/messages/tool-call.ts b/packages/screen/src/components/messages/tool-call.ts
+index 3ab0289106..88c3225ffa 100644
+--- a/packages/screen/src/components/messages/tool-call.ts
++++ b/packages/screen/src/components/messages/tool-call.ts
+@@ -8,14 +8,14 @@
+  * call runs, then it succeeds or fails. Every state change rebuilds the children, which are cheap.
+  */
+ 
+-import { Container, Spacer, Text, type Component } from '@loophole/tui-engine';
++import { Container, Text, type Component } from '@loophole/tui-engine';
+ 
+-import { renderDiffLinesClustered, renderUnifiedDiff } from '../media/diff-preview';
+-import { TruncatedHeaderLine } from './truncated-header-line';
++import { PanelComponent } from '../chrome/panel';
++import { computeDiffLines, renderDiffLinesClustered, renderUnifiedDiff } from '../media/diff-preview';
+ import { outcomeRows } from './tool-renderers/outcome';
+ import { TruncatedOutputComponent } from './tool-renderers/truncated';
+ import { FAILURE_MARK, SUCCESS_MARK } from '../../constant/symbols';
+-import { currentTheme } from '../../theme/index';
++import { currentTheme, type ColorToken } from '../../theme/index';
+ 
+ export type ToolCallState = 'streaming' | 'running' | 'success' | 'error';
+ 
+@@ -206,17 +206,69 @@ export class ToolCallComponent extends Container {
+     const name = this.init.name;
+     const label = LABELS[name] ?? name;
+     const argument = keyArgument(name, this.input, this.init.directory);
+-    this.addChild(
+-      new TruncatedHeaderLine({
+-        head: `${this.bullet()}${currentTheme.boldFg('text', label)}  `,
+-        flex: { text: argument, style: (value) => currentTheme.fg('textDim', value), keep: name === 'bash' || name === 'shell' ? 'head' : 'tail' },
+-        tail: (() => {
+-          const elapsed = this.duration();
+-          return elapsed ? currentTheme.fg('textMuted', `  ${elapsed}`) : '';
+-        })(),
+-      }),
+-    );
+-    for (const row of this.body()) this.addChild(row);
++    const card = new PanelComponent({
++      title: `${this.bullet()}${currentTheme.boldFg('text', label)}  ${currentTheme.fg('textDim', argument)}`,
++      meta: this.meta(),
++      footer: this.footer(),
++      accent: this.border(),
++      paddingX: 1,
++      paddingY: 0,
++    });
++    for (const row of this.body()) card.addChild(row);
++    this.addChild(card);
++  }
++
++  /** Frame colour: running/pending accent, success neutral, failure error. */
++  private border(): ColorToken {
++    if (this.state === 'error') return 'error';
++    if (this.state === 'success') return 'border';
++    return 'primary';
++  }
++
++  /** Right-hand facts in the top border: diff statistics or a failure badge. */
++  private meta(): string {
++    if (this.state === 'error') return currentTheme.fg('error', 'failed');
++    const { added, removed } = this.stats();
++    const parts: string[] = [];
++    if (added > 0) parts.push(currentTheme.fg('success', `+${String(added)}`));
++    if (removed > 0) parts.push(currentTheme.fg('error', `-${String(removed)}`));
++    return parts.join(currentTheme.fg('textMuted', '/'));
++  }
++
++  /** Left-hand facts in the bottom border: duration, expand hint, interrupt hint. */
++  private footer(): string {
++    if (this.state === 'running') return 'esc to interrupt';
++    if (this.state === 'streaming') return '';
++    const parts: string[] = [];
++    const elapsed = this.duration();
++    if (elapsed) parts.push(elapsed);
++    if (this.hidden()) parts.push('ctrl+o expand');
++    return parts.join(' · ');
++  }
++
++  private hidden(): boolean {
++    if (this.expanded) return false;
++    const name = this.init.name;
++    if (name === 'edit' || name === 'write' || name === 'patch' || name === 'apply_patch') return true;
++    return this.output.trim().split('\n').length > 3;
++  }
++
++  private stats(): { added: number; removed: number } {
++    const before = text(this.input.oldString);
++    const after = text(this.input.newString);
++    if (before || after) {
++      let added = 0;
++      let removed = 0;
++      for (const line of computeDiffLines(before, after)) {
++        if (line.kind === 'add') added++;
++        else if (line.kind === 'delete') removed++;
++      }
++      return { added, removed };
++    }
++    if (this.init.name === 'write' && text(this.input.content)) {
++      return { added: text(this.input.content).split('\n').length, removed: 0 };
++    }
++    return diffStats(this.diff);
+   }
+ 
+   private body(): Component[] {
+@@ -249,8 +301,19 @@ export class ToolCallComponent extends Container {
+       lines = [currentTheme.fg('textDim', `${String(total)} lines`)];
+     }
+     if (lines.length === 0) return [];
+-    return [new Text(lines.map((line) => `  ${line}`).join('\n'), 0, 0), new Spacer(0)];
++    return [new Text(lines.join('\n'), 0, 0)];
++  }
++}
++
++function diffStats(diff: string): { added: number; removed: number } {
++  let added = 0;
++  let removed = 0;
++  for (const line of diff.split('\n')) {
++    if (line.startsWith('+++') || line.startsWith('---')) continue;
++    if (line.startsWith('+')) added++;
++    else if (line.startsWith('-')) removed++;
+   }
++  return { added, removed };
+ }
+ 
+ function diffFrom(metadata: Record<string, unknown> | undefined): string {
