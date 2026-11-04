@@ -501,7 +501,7 @@ index 0000000..3423b47
 +	"description": "Loophole terminal screen: components, theme and layout (derived from the MIT-licensed Moonshot AI kimi-code TUI).",
 +	"type": "module",
 +	"private": true,
-+	"license": "AGPL-3.0",
++	"license": "UNLICENSED",
 +	"main": "src/index.ts",
 +	"exports": {
 +		".": {

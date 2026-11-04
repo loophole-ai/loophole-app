@@ -231,7 +231,7 @@ index 8d2f76a4a4..5f82351bd5 100644
    "type": "module",
 -  "license": "MIT",
 -  "homepage": "https://opencode.ai",
-+  "license": "AGPL-3.0",
++  "license": "UNLICENSED",
 +  "homepage": "https://github.com/loophole-ai/loophole-app",
    "author": {
 -    "name": "OpenCode",

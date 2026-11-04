@@ -9,7 +9,7 @@ index f531c30831..e86aca0587 100644
 -  "version": "2.2.0",
 +  "version": "1.1.0",
    "type": "module",
-   "license": "AGPL-3.0",
+   "license": "UNLICENSED",
    "bin": {
 diff --git a/packages/cli/src/screen/controller.ts b/packages/cli/src/screen/controller.ts
 index a129bc142b..e2dc063584 100644

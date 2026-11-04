@@ -10,7 +10,7 @@ diff — they live in `patches/` + `assets/` and can be applied to any upstream 
 upstream/opencode.json   pinned upstream commit ({ref, commit})
 patches/
   0001-rebrand-core.patch      branding, i18n strings, logo refs, service discovery, TUI/App
-  0002-licensing-docs.patch    AGPL-3.0 license, READMEs, NOTICE, stats workflow, CLI licensing
+  0002-licensing-docs.patch    proprietary license, READMEs, NOTICE, stats workflow, CLI licensing
   0003-desktop-channels.patch  desktop update channel, support/issue links, desktop metadata
   0004-desktop-name.patch      desktop product name, About heading, first-launch splash
   0005-telemetry-posthog.patch opt-out aggregate telemetry (LOOPHOLE_TELEMETRY_DISABLE=1)

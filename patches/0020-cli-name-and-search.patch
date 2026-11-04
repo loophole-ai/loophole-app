@@ -1267,7 +1267,7 @@ index e613e73025..f531c30831 100644
 +++ b/packages/cli/package.json
 @@ -5,8 +5,8 @@
    "type": "module",
-   "license": "AGPL-3.0",
+   "license": "UNLICENSED",
    "bin": {
 -    "loophole": "./bin/loophole.cjs",
 -    "loophole2": "./bin/loophole2.cjs"
