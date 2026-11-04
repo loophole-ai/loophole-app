@@ -36,6 +36,7 @@ patches/
   0025-desktop-inbox-and-close.patch  make Inbox the only desktop layout; close projects
   0026-tool-cards.patch  framed tool-call cards in the terminal screen
   0027-shell-mode.patch  run `!` commands locally instead of sending them to the model
+  0028-tool-card-repaint.patch  repaint finished tool cards; local shell says running…
   user/                        optional extra patches, applied after the numbered stack
   series                       legacy list, ignored by the scripts (sorted order wins)
   @ai-sdk%2F...@x.patch         copies of upstream bun patchedDependencies - NEVER applied
@@ -245,6 +246,13 @@ command locally (ComSpec/cmd on Windows, `$SHELL` or `/bin/sh` elsewhere) in the
 instead of sending it to the model. The run appears as a normal Shell tool card with the usual live
 spinner, duration, success/error frame and expandable stdout/stderr, and the composer returns to prompt
 mode after each command.
+
+`0028-tool-card-repaint.patch` makes a finished tool card repaint immediately. The spinner used to be
+the only thing asking the screen for frames, so when a local `!` command (or any tool result) stopped
+it, the terminal kept showing the last running frame until an unrelated key press forced a redraw — the
+command had finished in 40ms but looked stuck on `esc to interrupt`. `setResult` now requests the final
+frame itself, and a locally-run shell card says `running…` while it works instead of promising an Esc
+interrupt it cannot honour.
 
 `0005-telemetry-posthog.patch` came from the `telemetry-posthog` / `tui-logo-art` branches.
 Every other custom commit on the local branches (Discord report link, service-port isolation,
