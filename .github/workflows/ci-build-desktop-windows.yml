@@ -10,14 +10,13 @@ name: CI - Build Desktop - Windows
 # Desktop and CLI versions are separate, exactly like forge's desktop-builder:
 #
 #   * desktop app version -> OPENCODE_VERSION for the app build/package steps.
-#     The app's updater has allowDowngrade = true and reads
-#     loophole-ai/desktop/releases/latest, so this must never be higher than
-#     the published release unless that release is published too. Otherwise
-#     every launch installs the published build over the local one.
+#     The updater only moves forward (allowDowngrade = false), so a test build
+#     can run ahead of the published desktop release without reinstalling the
+#     older published build on launch.
 #   * bundled CLI version -> OPENCODE_VERSION for the CLI build. It is stamped
 #     into the binary and into resources/loophole-cli.version.
 #
-# Both default to the latest published release and can be overridden from the
+# Both default to pinned versions (1.1.0) and can be overridden from the
 # workflow_dispatch inputs. No version lives in the patch stack.
 #
 # The desktop bundles the CLI from packages/cli/dist, and its target names use
@@ -36,7 +35,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Desktop version (empty = latest loophole-ai/desktop release)"
+        description: "Desktop version (empty = 1.1.0)"
         required: false
         default: ""
       cli_version:
@@ -74,16 +73,12 @@ jobs:
 
       - name: Resolve versions
         id: versions
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
         run: |
           desktop="${{ inputs.version }}"
           cli="${{ inputs.cli_version }}"
           if [ -z "$desktop" ]; then
-            desktop=$(curl -fsSL -H "Accept: application/vnd.github+json" \
-              -H "Authorization: Bearer $GITHUB_TOKEN" \
-              https://api.github.com/repos/loophole-ai/desktop/releases/latest \
-              | jq -r '.tag_name // empty' | sed 's/^v//')
+            # Pinned desktop version; bump when cutting a new desktop release.
+            desktop="1.1.0"
           fi
           if [ -z "$cli" ]; then
             # Pinned bundled CLI version; bump when cutting a new CLI.
@@ -100,7 +95,7 @@ jobs:
             echo ""
             echo "| artifact | version | source |"
             echo "|---|---|---|"
-            echo "| desktop app | \`$desktop\` | loophole-ai/desktop latest |"
+            echo "| desktop app | \`$desktop\` | pinned desktop version |"
             echo "| bundled CLI | \`$cli\` | pinned CLI version |"
           } >> "$GITHUB_STEP_SUMMARY"
 

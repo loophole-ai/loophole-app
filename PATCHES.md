@@ -37,6 +37,7 @@ patches/
   0026-tool-cards.patch  framed tool-call cards in the terminal screen
   0027-shell-mode.patch  run `!` commands locally instead of sending them to the model
   0028-tool-card-repaint.patch  repaint finished tool cards; local shell says running…
+  0029-desktop-ship-polish.patch  desktop updater only moves forward; metadata and issue links
   user/                        optional extra patches, applied after the numbered stack
   series                       legacy list, ignored by the scripts (sorted order wins)
   @ai-sdk%2F...@x.patch         copies of upstream bun patchedDependencies - NEVER applied

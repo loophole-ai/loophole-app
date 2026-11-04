@@ -1,0 +1,67 @@
+diff --git a/packages/app/src/shell/commands/desktop-menu.ts b/packages/app/src/shell/commands/desktop-menu.ts
+index b2da5bc..07d3879 100644
+--- a/packages/app/src/shell/commands/desktop-menu.ts
++++ b/packages/app/src/shell/commands/desktop-menu.ts
+@@ -272,19 +272,19 @@ export const DESKTOP_MENU: DesktopMenu[] = [
+     id: "help",
+     labelKey: "desktop.menu.help",
+     items: [
+-      { type: "item", labelKey: "desktop.menu.documentation", href: "https://www.loopholeeditor.in/docs" },
+-      { type: "item", labelKey: "desktop.menu.supportForum", href: "https://discord.gg/JXP3Wgu6Xk" },
++      { type: "item", labelKey: "desktop.menu.documentation", href: "https://www.loopholeeditor.in" },
++      { type: "item", labelKey: "desktop.menu.supportForum", href: "https://github.com/loophole-ai/issues" },
+       { type: "item", labelKey: "desktop.menu.exportLogs", command: "logs.export" },
+       { type: "separator" },
+       {
+         type: "item",
+         labelKey: "desktop.menu.shareFeedback",
+-        href: "https://github.com/loophole-ai/loophole-app/issues/new?template=feature_request.yml",
++        href: "https://github.com/loophole-ai/issues",
+       },
+       {
+         type: "item",
+         labelKey: "desktop.menu.reportBug",
+-        href: "https://github.com/loophole-ai/loophole-app/issues/new?template=bug_report.yml",
++        href: "https://github.com/loophole-ai/issues",
+       },
+     ],
+   },
+diff --git a/packages/desktop/script/copy-metainfo.ts b/packages/desktop/script/copy-metainfo.ts
+index 71a9333..00f7e9e 100644
+--- a/packages/desktop/script/copy-metainfo.ts
++++ b/packages/desktop/script/copy-metainfo.ts
+@@ -8,7 +8,7 @@ const appId = channel === "prod" ? "ai.loophole.desktop" : `ai.loophole.desktop.
+ 
+ const productName = channel === "prod" ? "Loophole" : `Loophole ${channel.charAt(0).toUpperCase() + channel.slice(1)}`
+ 
+-const summary = `Open source AI coding agent${channel !== "prod" ? ` (${channel})` : ""}`
++const summary = `AI coding agent${channel !== "prod" ? ` (${channel})` : ""}`
+ 
+ const xml = `<?xml version="1.0" encoding="UTF-8"?>
+ <component type="desktop-application">
+@@ -26,7 +26,7 @@ const xml = `<?xml version="1.0" encoding="UTF-8"?>
+ 
+   <description>
+     <p>
+-      Loophole Desktop is an open source agent that helps you write and run code with any AI model. It is a fork of OpenCode.
++      Loophole Desktop is an AI coding agent that helps you write and run code with any AI model.
+     </p>
+   </description>
+ 
+diff --git a/packages/gui-plugins/src/updater/platform.ts b/packages/gui-plugins/src/updater/platform.ts
+index e562c5a..f599438 100644
+--- a/packages/gui-plugins/src/updater/platform.ts
++++ b/packages/gui-plugins/src/updater/platform.ts
+@@ -25,7 +25,11 @@ export const make = Effect.fn("Updater.platform")(function* (channel: string) {
+   updateClient.channel = "latest"
+   updateClient.requestHeaders = { "User-Agent": userAgent }
+   updateClient.allowPrerelease = false
+-  updateClient.allowDowngrade = true
++  // Loophole release builds are versioned from this fork and prod test builds are built ahead of
++  // the published desktop release. Treating an older published build as an update would stage a
++  // reinstall over the local build on every launch, so prod only ever moves forward. Beta keeps
++  // the upstream downgrade path so it can migrate to a stable release.
++  updateClient.allowDowngrade = channel !== "prod"
+   updateClient.autoDownload = false
+   updateClient.autoInstallOnAppQuit = process.platform === "darwin"
+   yield* Effect.logInfo("auto updater configured", {

@@ -107,15 +107,14 @@ Packages are unsigned test builds: gofile + artifact, never published.
 Desktop and CLI versions are separate, like forge:
 
 - **desktop app**: passed as `OPENCODE_VERSION` to the desktop build and package steps.
-  It must not be higher than `loophole-ai/desktop`'s latest release unless that release is
-  published, because the app's updater has `allowDowngrade = true` and would otherwise
-  reinstall the published build on every launch.
+  The updater only moves forward (`allowDowngrade = false`), so a test build can run ahead of
+  the published desktop release without reinstalling the older published build on launch.
 - **bundled CLI**: passed as `OPENCODE_VERSION` to the CLI build, so the binary and
-  `resources/loophole-cli.version` both carry the published CLI version.
+  `resources/loophole-cli.version` both carry the CLI version.
 
-Both default to the latest GitHub release (`loophole-ai/desktop`, `loophole-ai/cli`) and can
-be overridden with the `workflow_dispatch` inputs `version` / `cli_version`. No version is
-hardcoded in the patch stack; changing one is a CI input change, not a patch change.
+Both default to the pinned versions (`1.1.0`) and can be overridden with the
+`workflow_dispatch` inputs `version` / `cli_version`. No version is hardcoded in the patch
+stack; changing one is a CI input change, not a patch change.
 
 There is no branch-picking workflow, because the repo is always patches-only.
 
