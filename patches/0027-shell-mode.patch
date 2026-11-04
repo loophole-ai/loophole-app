@@ -1,0 +1,124 @@
+diff --git a/packages/cli/src/screen/controller.ts b/packages/cli/src/screen/controller.ts
+index c798a6fdb8..562360357d 100644
+--- a/packages/cli/src/screen/controller.ts
++++ b/packages/cli/src/screen/controller.ts
+@@ -32,6 +32,7 @@ import { activityCalendar } from "@opencode/util/activity-calendar"
+ import {
+   Screen,
+   currentTheme,
++  type ComposerMode,
+   type FormAnswerValue,
+   type FormQuestion,
+   type PermissionDecision,
+@@ -408,7 +409,7 @@ export class ScreenController {
+       directory: options.directory,
+       auto: this.auto,
+       commands: BUILTIN_COMMANDS,
+-      onSubmit: (text) => void this.submit(text),
++      onSubmit: (text, mode) => void this.submit(text, mode),
+       onInterrupt: () => void this.interrupt(),
+       onExit: () => void this.exit(),
+     })
+@@ -484,9 +485,12 @@ export class ScreenController {
+ 
+   // --- input -------------------------------------------------------------------------------------
+ 
+-  private async submit(text: string): Promise<void> {
++  private async submit(text: string, mode: ComposerMode = "prompt"): Promise<void> {
+     const input = text.trim()
+     if (!input) return
++    // `!command` is the composer's local shell mode: run it here instead of
++    // sending it to the model (the editor already stripped the `!`).
++    if (mode === "bash") return await this.runShellCommand(input)
+     if (EXIT_WORDS.includes(input.toLowerCase())) return void (await this.exit())
+     if (input.startsWith("/")) {
+       let name = input.slice(1)
+@@ -502,6 +506,42 @@ export class ScreenController {
+     await this.send(input)
+   }
+ 
++  /** Run one `!` command locally and show it as a Shell card. */
++  private async runShellCommand(command: string): Promise<void> {
++    const card = this.screen.tool(
++      `local-shell-${String(Date.now())}-${Math.random().toString(36).slice(2, 8)}`,
++      "shell",
++    )
++    card.setInput({ command })
++    card.setRunning()
++    const shell =
++      process.platform === "win32"
++        ? [process.env.ComSpec?.trim() || "cmd.exe", "/d", "/s", "/c", command]
++        : [process.env.SHELL?.trim() || "/bin/sh", "-c", command]
++    try {
++      const proc = Bun.spawn(shell, {
++        cwd: this.directory,
++        env: process.env,
++        stdout: "pipe",
++        stderr: "pipe",
++      })
++      // Drain both pipes together: a chatty stderr must not fill its buffer
++      // while we wait for stdout.
++      const [stdout, stderr] = await Promise.all([
++        proc.stdout ? new Response(proc.stdout).text() : Promise.resolve(""),
++        proc.stderr ? new Response(proc.stderr).text() : Promise.resolve(""),
++      ])
++      const code = await proc.exited
++      const output = [stdout, stderr]
++        .map((part) => part.trimEnd())
++        .filter((part) => part.length > 0)
++        .join("\n")
++      card.setResult({ output, isError: code !== 0 })
++    } catch (error) {
++      card.setResult({ output: String(error), isError: true })
++    }
++  }
++
+   private async send(text: string): Promise<void> {
+     if (!this.sessionID) {
+       this.screen.addStatus("There is no session yet. Try /new.", "warning")
+diff --git a/packages/screen/src/index.ts b/packages/screen/src/index.ts
+index feb22539b1..3c8ea70575 100644
+--- a/packages/screen/src/index.ts
++++ b/packages/screen/src/index.ts
+@@ -1,5 +1,6 @@
+ export { Screen } from './screen';
+ export type {
++  ComposerMode,
+   FormAnswerValue,
+   FormQuestion,
+   PermissionChoice,
+diff --git a/packages/screen/src/screen.ts b/packages/screen/src/screen.ts
+index 41f9f56b9f..4b069bba5d 100644
+--- a/packages/screen/src/screen.ts
++++ b/packages/screen/src/screen.ts
+@@ -51,12 +51,14 @@ import { isPrintableChar, printableChar } from './utils/printable-key';
+ 
+ export type PermissionChoice = 'once' | 'always' | 'reject';
+ 
++export type ComposerMode = 'prompt' | 'bash';
++
+ export interface ScreenOptions {
+   readonly directory: string;
+   readonly auto: boolean;
+   readonly commands: readonly SlashCommand[];
+-  /** A line of text (or a slash command) was submitted. */
+-  readonly onSubmit: (text: string) => void;
++  /** A line of text (or a slash command) was submitted, with the composer mode it was typed in. */
++  readonly onSubmit: (text: string, mode: ComposerMode) => void;
+   /** The user asked to stop the running turn (Esc or Ctrl+C while busy). */
+   readonly onInterrupt: () => void;
+   /** The user asked to leave (Ctrl+C twice, Ctrl+D on an empty editor). */
+@@ -906,8 +908,12 @@ export class Screen {
+ 
+   private wireEditor(): void {
+     this.editor.onSubmit = (text) => {
++      // Bash mode is a composer state, not text: capture it before the editor
++      // clears and reset to prompt mode for the next message.
++      const mode = this.editor.inputMode;
+       this.editor.setText('');
+-      this.options.onSubmit(text);
++      this.editor.setInputMode('prompt');
++      this.options.onSubmit(text, mode);
+     };
+     this.editor.onEscape = () => {
+       if (this.busy) this.options.onInterrupt();
