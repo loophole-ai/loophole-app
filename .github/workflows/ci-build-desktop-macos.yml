@@ -152,12 +152,3 @@ jobs:
             echo ""
             cat links.md
           } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload packages artifact (backup)
-        uses: actions/upload-artifact@v4
-        with:
-          name: loophole-desktop-macos-${{ matrix.arch }}
-          path: |
-            opencode/packages/desktop/dist/*.dmg
-            opencode/packages/desktop/dist/*.zip
-          if-no-files-found: error

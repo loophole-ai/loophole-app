@@ -1,5 +1,5 @@
 diff --git a/packages/app/src/shell/commands/desktop-menu.ts b/packages/app/src/shell/commands/desktop-menu.ts
-index d256a42bec..b2da5bc5a9 100644
+index d93a7df..f86b465 100644
 --- a/packages/app/src/shell/commands/desktop-menu.ts
 +++ b/packages/app/src/shell/commands/desktop-menu.ts
 @@ -272,19 +272,19 @@ export const DESKTOP_MENU: DesktopMenu[] = [
@@ -27,7 +27,7 @@ index d256a42bec..b2da5bc5a9 100644
      ],
    },
 diff --git a/packages/desktop/electron-builder.config.ts b/packages/desktop/electron-builder.config.ts
-index 7c090083cb..7d4b55c48b 100644
+index d147662..9066a07 100644
 --- a/packages/desktop/electron-builder.config.ts
 +++ b/packages/desktop/electron-builder.config.ts
 @@ -9,12 +9,9 @@ import { CLI_BINARIES, getCurrentCli, nodePtyPackage } from "./script/utils"
@@ -140,7 +140,7 @@ index 7c090083cb..7d4b55c48b 100644
  
        if ((await stat(version)).size === 0) throw new Error(`Bundled CLI version must be a non-empty file: ${version}`)
  
-@@ -161,8 +181,8 @@ const getBase = (appId: string): Configuration => {
+@@ -173,8 +193,8 @@ const getBase = (appId: string): Configuration => {
        target: ["dmg", "zip"],
      },
      protocols: {
@@ -151,7 +151,7 @@ index 7c090083cb..7d4b55c48b 100644
      },
      win: {
        icon: `resources/icons/icon.ico`,
-@@ -206,17 +226,9 @@ export function getConfig() {
+@@ -218,17 +238,9 @@ export function getConfig() {
        return {
          ...base,
          appId,
@@ -172,7 +172,7 @@ index 7c090083cb..7d4b55c48b 100644
        }
      }
  
-@@ -224,18 +236,15 @@ export function getConfig() {
+@@ -236,18 +248,15 @@ export function getConfig() {
        return {
          ...base,
          appId,
@@ -196,7 +196,7 @@ index 7c090083cb..7d4b55c48b 100644
        }
      }
  
-@@ -243,15 +252,15 @@ export function getConfig() {
+@@ -255,8 +264,8 @@ export function getConfig() {
        return {
          ...base,
          appId,
@@ -204,6 +204,11 @@ index 7c090083cb..7d4b55c48b 100644
 -        protocols: { name: "OpenCode", schemes: ["opencode"] },
 +        productName: "Loophole Desktop",
 +        protocols: { name: "Loophole", schemes: ["loophole"] },
+         // An Icon Composer package compiles to Assets.car, which macOS 26 and later draw the app icon from
+         // (Dock, Finder, system dialogs and the system icon styles). Older macOS keeps using the ICNS.
+         mac: { ...base.mac, icon: "resources/icons/icon.icon" },
+@@ -264,11 +273,11 @@ export function getConfig() {
+         dmg: { icon: "resources/icons/icon.icns" },
          publish: {
            provider: "generic",
 -          url: "https://opencode.ai/update/api/latest/desktop/opencode/",
@@ -218,7 +223,7 @@ index 7c090083cb..7d4b55c48b 100644
      }
    }
 diff --git a/packages/desktop/package.json b/packages/desktop/package.json
-index 8d2f76a4a4..5f82351bd5 100644
+index 0ff5675..9b9ad4e 100644
 --- a/packages/desktop/package.json
 +++ b/packages/desktop/package.json
 @@ -1,13 +1,13 @@
@@ -226,7 +231,7 @@ index 8d2f76a4a4..5f82351bd5 100644
 -  "name": "@opencode/desktop",
 +  "name": "@loophole-ai/desktop",
    "private": true,
--  "version": "2.2.0",
+-  "version": "2.2.5",
 +  "version": "0.0.0",
    "type": "module",
 -  "license": "MIT",

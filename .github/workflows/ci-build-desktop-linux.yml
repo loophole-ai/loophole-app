@@ -139,13 +139,3 @@ jobs:
             echo ""
             cat links.md
           } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload packages artifact (backup)
-        uses: actions/upload-artifact@v4
-        with:
-          name: loophole-desktop-linux-x64
-          path: |
-            opencode/packages/desktop/dist/*.AppImage
-            opencode/packages/desktop/dist/*.deb
-            opencode/packages/desktop/dist/*.rpm
-          if-no-files-found: error

@@ -1,5 +1,5 @@
 diff --git a/packages/app/src/runtime/i18n/am.ts b/packages/app/src/runtime/i18n/am.ts
-index 900130c480..55df6159e3 100644
+index 04bdb43..8e9ad8e 100644
 --- a/packages/app/src/runtime/i18n/am.ts
 +++ b/packages/app/src/runtime/i18n/am.ts
 @@ -665,7 +665,7 @@ export const dict = {
@@ -12,7 +12,7 @@ index 900130c480..55df6159e3 100644
    "settings.timeline.title": "የጊዜ መስመር",
    "settings.timeline.detail": "የጊዜ መስመር ዝርዝር",
 diff --git a/packages/app/src/runtime/i18n/ar.ts b/packages/app/src/runtime/i18n/ar.ts
-index cc9e2b86da..a4507d90a0 100644
+index 28c56f3..b07398a 100644
 --- a/packages/app/src/runtime/i18n/ar.ts
 +++ b/packages/app/src/runtime/i18n/ar.ts
 @@ -729,7 +729,7 @@ export const dict = {
@@ -25,7 +25,7 @@ index cc9e2b86da..a4507d90a0 100644
    "settings.timeline.title": "المخطط الزمني",
    "settings.timeline.detail": "تفاصيل المخطط الزمني",
 diff --git a/packages/app/src/runtime/i18n/az.ts b/packages/app/src/runtime/i18n/az.ts
-index 591326392d..3c98ee5041 100644
+index 35e1dab..923283d 100644
 --- a/packages/app/src/runtime/i18n/az.ts
 +++ b/packages/app/src/runtime/i18n/az.ts
 @@ -684,7 +684,7 @@ export const dict = {
@@ -38,7 +38,7 @@ index 591326392d..3c98ee5041 100644
    "settings.timeline.title": "Zaman xətti",
    "settings.timeline.detail": "Zaman xəttinin təfərrüatı",
 diff --git a/packages/app/src/runtime/i18n/bg.ts b/packages/app/src/runtime/i18n/bg.ts
-index c817f800a6..0cdf0f9d35 100644
+index b3bee3d..99232fa 100644
 --- a/packages/app/src/runtime/i18n/bg.ts
 +++ b/packages/app/src/runtime/i18n/bg.ts
 @@ -683,7 +683,7 @@ export const dict = {
@@ -51,7 +51,7 @@ index c817f800a6..0cdf0f9d35 100644
    "settings.timeline.title": "Хронология",
    "settings.timeline.detail": "Подробности за времевата линия",
 diff --git a/packages/app/src/runtime/i18n/bn.ts b/packages/app/src/runtime/i18n/bn.ts
-index f00daf41e0..ab6d09325b 100644
+index 9d4b7b3..3872604 100644
 --- a/packages/app/src/runtime/i18n/bn.ts
 +++ b/packages/app/src/runtime/i18n/bn.ts
 @@ -682,7 +682,7 @@ export const dict = {
@@ -64,10 +64,10 @@ index f00daf41e0..ab6d09325b 100644
    "settings.timeline.title": "টাইমলাইন",
    "settings.timeline.detail": "টাইমলাইনের বিস্তারিত",
 diff --git a/packages/app/src/runtime/i18n/br.ts b/packages/app/src/runtime/i18n/br.ts
-index 26c927ebe3..21798cfe4b 100644
+index 21a3736..4f4c2bb 100644
 --- a/packages/app/src/runtime/i18n/br.ts
 +++ b/packages/app/src/runtime/i18n/br.ts
-@@ -157,7 +157,7 @@ export const dict = {
+@@ -158,7 +158,7 @@ export const dict = {
    "settings.about.trademark": "Loophole Ã© uma marca registrada da Anomaly Innovations, Inc.",
    "settings.about.typeset": "Composto em Inter e IBM Plex Mono",
    "settings.about.tagline": "A IA nÃ£o consegue criar um Ã³timo software sem vocÃª",
@@ -77,7 +77,7 @@ index 26c927ebe3..21798cfe4b 100644
    "settings.timeline.title": "Linha do tempo",
    "settings.timeline.detail": "Detalhamento da linha do tempo",
 diff --git a/packages/app/src/runtime/i18n/bs.ts b/packages/app/src/runtime/i18n/bs.ts
-index b26d18b509..b84578fccd 100644
+index c359991..8a52e2a 100644
 --- a/packages/app/src/runtime/i18n/bs.ts
 +++ b/packages/app/src/runtime/i18n/bs.ts
 @@ -746,7 +746,7 @@ export const dict = {
@@ -90,7 +90,7 @@ index b26d18b509..b84578fccd 100644
    "settings.timeline.title": "Vremenska linija",
    "settings.timeline.detail": "Detalji vremenske linije",
 diff --git a/packages/app/src/runtime/i18n/ca.ts b/packages/app/src/runtime/i18n/ca.ts
-index 08906c75ca..c2dab94f38 100644
+index 3abfb0a..0ae3ec5 100644
 --- a/packages/app/src/runtime/i18n/ca.ts
 +++ b/packages/app/src/runtime/i18n/ca.ts
 @@ -686,7 +686,7 @@ export const dict = {
@@ -103,7 +103,7 @@ index 08906c75ca..c2dab94f38 100644
    "settings.timeline.title": "Cronologia",
    "settings.timeline.detail": "Detall de la cronologia",
 diff --git a/packages/app/src/runtime/i18n/cs.ts b/packages/app/src/runtime/i18n/cs.ts
-index 9e9b1fafc3..7b817ff548 100644
+index 8b72775..c92bcc2 100644
 --- a/packages/app/src/runtime/i18n/cs.ts
 +++ b/packages/app/src/runtime/i18n/cs.ts
 @@ -688,7 +688,7 @@ export const dict = {
@@ -116,10 +116,10 @@ index 9e9b1fafc3..7b817ff548 100644
    "settings.timeline.title": "Časová osa",
    "settings.timeline.detail": "Detail časové osy",
 diff --git a/packages/app/src/runtime/i18n/da.ts b/packages/app/src/runtime/i18n/da.ts
-index faf9647963..8051dfcf0c 100644
+index 3b0743c..fd57f9e 100644
 --- a/packages/app/src/runtime/i18n/da.ts
 +++ b/packages/app/src/runtime/i18n/da.ts
-@@ -146,7 +146,7 @@ export const dict = {
+@@ -147,7 +147,7 @@ export const dict = {
    "settings.about.trademark": "Loophole er et registreret varemærke tilhørende Anomaly Innovations, Inc.",
    "settings.about.typeset": "Sat med Inter og IBM Plex Mono",
    "settings.about.tagline": "AI kan ikke bygge fantastisk software uden dig",
@@ -129,10 +129,10 @@ index faf9647963..8051dfcf0c 100644
    "settings.timeline.title": "Tidslinje",
    "settings.timeline.detail": "Tidslinjedetaljer",
 diff --git a/packages/app/src/runtime/i18n/de.ts b/packages/app/src/runtime/i18n/de.ts
-index 2029e18b18..be082ce6f7 100644
+index 30cfa16..cae180d 100644
 --- a/packages/app/src/runtime/i18n/de.ts
 +++ b/packages/app/src/runtime/i18n/de.ts
-@@ -159,7 +159,7 @@ export const dict = {
+@@ -160,7 +160,7 @@ export const dict = {
    "settings.about.trademark": "Loophole ist eine eingetragene Marke von Anomaly Innovations, Inc.",
    "settings.about.typeset": "Gesetzt in Inter und IBM Plex Mono",
    "settings.about.tagline": "KI kann ohne Sie keine großartige Software entwickeln",
@@ -142,7 +142,7 @@ index 2029e18b18..be082ce6f7 100644
    "settings.timeline.title": "Timeline",
    "settings.timeline.detail": "Timeline-Detailgrad",
 diff --git a/packages/app/src/runtime/i18n/dv.ts b/packages/app/src/runtime/i18n/dv.ts
-index a524d37d31..4a88810ccf 100644
+index 42799f1..fd67850 100644
 --- a/packages/app/src/runtime/i18n/dv.ts
 +++ b/packages/app/src/runtime/i18n/dv.ts
 @@ -695,7 +695,7 @@ export const dict = {
@@ -155,7 +155,7 @@ index a524d37d31..4a88810ccf 100644
    "settings.timeline.title": "ޓައިމްލައިން",
    "settings.timeline.detail": "ޓައިމްލައިންގެ ތަފްޞީލް",
 diff --git a/packages/app/src/runtime/i18n/dz.ts b/packages/app/src/runtime/i18n/dz.ts
-index f7d951a53f..be5a36ada9 100644
+index 5d3334a..2aae2c0 100644
 --- a/packages/app/src/runtime/i18n/dz.ts
 +++ b/packages/app/src/runtime/i18n/dz.ts
 @@ -689,7 +689,7 @@ export const dict = {
@@ -168,7 +168,7 @@ index f7d951a53f..be5a36ada9 100644
    "settings.timeline.title": "དུས་ཚོད།",
    "settings.timeline.detail": "དུས་ཚོད་ཐིག་རྒྱས་པ།",
 diff --git a/packages/app/src/runtime/i18n/el.ts b/packages/app/src/runtime/i18n/el.ts
-index 0a52def0f2..5136de0795 100644
+index c335216..591cc83 100644
 --- a/packages/app/src/runtime/i18n/el.ts
 +++ b/packages/app/src/runtime/i18n/el.ts
 @@ -687,7 +687,7 @@ export const dict = {
@@ -181,10 +181,10 @@ index 0a52def0f2..5136de0795 100644
    "settings.timeline.title": "Χρονολόγιο",
    "settings.timeline.detail": "Λεπτομέρειες χρονολογίου",
 diff --git a/packages/app/src/runtime/i18n/en.ts b/packages/app/src/runtime/i18n/en.ts
-index c7c3bdc08e..8fa132ebcc 100644
+index b9246d2..c4e7055 100644
 --- a/packages/app/src/runtime/i18n/en.ts
 +++ b/packages/app/src/runtime/i18n/en.ts
-@@ -814,7 +814,7 @@ export const dict = {
+@@ -897,7 +897,7 @@ export const dict = {
    "settings.about.notices.crates.count.other": "{{count}} crates",
    "settings.about.notices.crates.appliesTo": "Applies to {{names}}",
    "settings.about.tagline": "AI can’t build great software, without you",
@@ -194,10 +194,10 @@ index c7c3bdc08e..8fa132ebcc 100644
    "settings.appearance.description": "Customize theme and fonts",
    "settings.appearance.row.tabs.title": "Tabs",
 diff --git a/packages/app/src/runtime/i18n/es.ts b/packages/app/src/runtime/i18n/es.ts
-index e39f81e52d..e35309e255 100644
+index 44a8727..d5dfea1 100644
 --- a/packages/app/src/runtime/i18n/es.ts
 +++ b/packages/app/src/runtime/i18n/es.ts
-@@ -159,7 +159,7 @@ export const dict = {
+@@ -160,7 +160,7 @@ export const dict = {
    "settings.about.trademark": "Loophole es una marca registrada de Anomaly Innovations, Inc.",
    "settings.about.typeset": "Compuesto con Inter e IBM Plex Mono",
    "settings.about.tagline": "La IA no puede crear software excelente sin ti",
@@ -207,7 +207,7 @@ index e39f81e52d..e35309e255 100644
    "settings.timeline.title": "CronologÃ­a",
    "settings.timeline.detail": "Detalle de la cronologÃ­a",
 diff --git a/packages/app/src/runtime/i18n/et.ts b/packages/app/src/runtime/i18n/et.ts
-index f9c6a9316d..363103bc21 100644
+index 4e5e958..8329398 100644
 --- a/packages/app/src/runtime/i18n/et.ts
 +++ b/packages/app/src/runtime/i18n/et.ts
 @@ -673,7 +673,7 @@ export const dict = {
@@ -220,7 +220,7 @@ index f9c6a9316d..363103bc21 100644
    "settings.timeline.title": "Ajaskaala",
    "settings.timeline.detail": "Ajaskaala üksikasjad",
 diff --git a/packages/app/src/runtime/i18n/fa.ts b/packages/app/src/runtime/i18n/fa.ts
-index 1710bf19f4..1d9fc3e465 100644
+index 110ded9..f46d40a 100644
 --- a/packages/app/src/runtime/i18n/fa.ts
 +++ b/packages/app/src/runtime/i18n/fa.ts
 @@ -691,7 +691,7 @@ export const dict = {
@@ -233,10 +233,10 @@ index 1710bf19f4..1d9fc3e465 100644
    "settings.timeline.title": "خط زمانی",
    "settings.timeline.detail": "جزئیات خط زمانی",
 diff --git a/packages/app/src/runtime/i18n/fi.ts b/packages/app/src/runtime/i18n/fi.ts
-index 9014a3a167..388a45fe14 100644
+index 2930ea1..83dd6dd 100644
 --- a/packages/app/src/runtime/i18n/fi.ts
 +++ b/packages/app/src/runtime/i18n/fi.ts
-@@ -144,7 +144,7 @@ export const dict = {
+@@ -145,7 +145,7 @@ export const dict = {
    "settings.about.trademark": "Loophole on Anomaly Innovations, Inc:n rekisteröity tavaramerkki.",
    "settings.about.typeset": "Kirjasinlajit Inter ja IBM Plex Mono",
    "settings.about.tagline": "Tekoäly ei voi rakentaa erinomaista ohjelmistoa ilman sinua",
@@ -246,7 +246,7 @@ index 9014a3a167..388a45fe14 100644
    "settings.timeline.title": "Aikajana",
    "settings.timeline.detail": "Aikajanan tarkkuus",
 diff --git a/packages/app/src/runtime/i18n/fo.ts b/packages/app/src/runtime/i18n/fo.ts
-index e94d0fb4b3..8d189df9b4 100644
+index 5d9fd44..24646e4 100644
 --- a/packages/app/src/runtime/i18n/fo.ts
 +++ b/packages/app/src/runtime/i18n/fo.ts
 @@ -677,7 +677,7 @@ export const dict = {
@@ -259,20 +259,20 @@ index e94d0fb4b3..8d189df9b4 100644
    "settings.timeline.title": "Tíðarlinja",
    "settings.timeline.detail": "Smálutir á tíðarlinju",
 diff --git a/packages/app/src/runtime/i18n/fr.ts b/packages/app/src/runtime/i18n/fr.ts
-index 404231840a..7819b15159 100644
+index 4d911d4..1b86a7c 100644
 --- a/packages/app/src/runtime/i18n/fr.ts
 +++ b/packages/app/src/runtime/i18n/fr.ts
-@@ -160,7 +160,7 @@ export const dict = {
-   "settings.about.trademark": "Loophole est une marque dÃ©posÃ©e dâ€™Anomaly Innovations, Inc.",
-   "settings.about.typeset": "ComposÃ© en Inter et IBM Plex Mono",
-   "settings.about.tagline": "Lâ€™IA ne peut pas crÃ©er dâ€™excellents logiciels sans vous",
--  "settings.about.copyright": "Â© Anomaly Innovations, Inc.",
+@@ -161,7 +161,7 @@ export const dict = {
+   "settings.about.trademark": "OpenCode est une marque déposée d’Anomaly Innovations, Inc.",
+   "settings.about.typeset": "Composé en Inter et IBM Plex Mono",
+   "settings.about.tagline": "L’IA ne peut pas créer d’excellents logiciels sans vous",
+-  "settings.about.copyright": "© Anomaly Innovations, Inc.",
 +  "settings.about.copyright": "© Loophole AI",
    "project.settings.title": "Modifier le projet",
    "settings.timeline.title": "Chronologie",
-   "settings.timeline.detail": "Niveau de dÃ©tail de la chronologie",
+   "settings.timeline.detail": "Niveau de détail de la chronologie",
 diff --git a/packages/app/src/runtime/i18n/he.ts b/packages/app/src/runtime/i18n/he.ts
-index f1e801d3bb..20cf3c93e7 100644
+index b2fecba..534fda1 100644
 --- a/packages/app/src/runtime/i18n/he.ts
 +++ b/packages/app/src/runtime/i18n/he.ts
 @@ -691,7 +691,7 @@ export const dict = {
@@ -285,7 +285,7 @@ index f1e801d3bb..20cf3c93e7 100644
    "settings.timeline.title": "ציר זמן",
    "settings.timeline.detail": "פירוט ציר הזמן",
 diff --git a/packages/app/src/runtime/i18n/hi.ts b/packages/app/src/runtime/i18n/hi.ts
-index 9d9b68d324..687d047927 100644
+index 3f4769a..17a76b1 100644
 --- a/packages/app/src/runtime/i18n/hi.ts
 +++ b/packages/app/src/runtime/i18n/hi.ts
 @@ -682,7 +682,7 @@ export const dict = {
@@ -298,7 +298,7 @@ index 9d9b68d324..687d047927 100644
    "settings.timeline.title": "टाइमलाइन",
    "settings.timeline.detail": "टाइमलाइन विवरण",
 diff --git a/packages/app/src/runtime/i18n/hr.ts b/packages/app/src/runtime/i18n/hr.ts
-index aa881d8cc3..bd00fa7ea5 100644
+index ff8f52f..be9390d 100644
 --- a/packages/app/src/runtime/i18n/hr.ts
 +++ b/packages/app/src/runtime/i18n/hr.ts
 @@ -690,7 +690,7 @@ export const dict = {
@@ -311,7 +311,7 @@ index aa881d8cc3..bd00fa7ea5 100644
    "settings.timeline.title": "Vremenska linija",
    "settings.timeline.detail": "Detalj vremenske trake",
 diff --git a/packages/app/src/runtime/i18n/hu.ts b/packages/app/src/runtime/i18n/hu.ts
-index 434b432c41..238a17df13 100644
+index 898c1c0..4e6f452 100644
 --- a/packages/app/src/runtime/i18n/hu.ts
 +++ b/packages/app/src/runtime/i18n/hu.ts
 @@ -687,7 +687,7 @@ export const dict = {
@@ -324,7 +324,7 @@ index 434b432c41..238a17df13 100644
    "settings.timeline.title": "Idővonal",
    "settings.timeline.detail": "Idővonal részletei",
 diff --git a/packages/app/src/runtime/i18n/hy.ts b/packages/app/src/runtime/i18n/hy.ts
-index 2d35f6cd8f..31fbba2671 100644
+index c21a644..3fe1cd8 100644
 --- a/packages/app/src/runtime/i18n/hy.ts
 +++ b/packages/app/src/runtime/i18n/hy.ts
 @@ -678,7 +678,7 @@ export const dict = {
@@ -337,7 +337,7 @@ index 2d35f6cd8f..31fbba2671 100644
    "settings.timeline.title": "Ժամանակագիծ",
    "settings.timeline.detail": "Ժամանակագծի մանրամասներ",
 diff --git a/packages/app/src/runtime/i18n/id.ts b/packages/app/src/runtime/i18n/id.ts
-index 6165a314e7..5deae24529 100644
+index 6dc4171..488d0c7 100644
 --- a/packages/app/src/runtime/i18n/id.ts
 +++ b/packages/app/src/runtime/i18n/id.ts
 @@ -750,7 +750,7 @@ export const dict = {
@@ -350,7 +350,7 @@ index 6165a314e7..5deae24529 100644
    "settings.timeline.title": "Garis Waktu",
    "settings.timeline.detail": "Detail garis waktu",
 diff --git a/packages/app/src/runtime/i18n/is.ts b/packages/app/src/runtime/i18n/is.ts
-index 6947fa31db..d2780b68ba 100644
+index bd81bde..f97b31f 100644
 --- a/packages/app/src/runtime/i18n/is.ts
 +++ b/packages/app/src/runtime/i18n/is.ts
 @@ -680,7 +680,7 @@ export const dict = {
@@ -363,10 +363,10 @@ index 6947fa31db..d2780b68ba 100644
    "settings.timeline.title": "Tímalína",
    "settings.timeline.detail": "Upplýsingar tímalínu",
 diff --git a/packages/app/src/runtime/i18n/it.ts b/packages/app/src/runtime/i18n/it.ts
-index d72b56853b..a348a4d57f 100644
+index a13ec33..018ac05 100644
 --- a/packages/app/src/runtime/i18n/it.ts
 +++ b/packages/app/src/runtime/i18n/it.ts
-@@ -158,7 +158,7 @@ export const dict = {
+@@ -159,7 +159,7 @@ export const dict = {
    "settings.about.trademark": "Loophole è un marchio registrato di Anomaly Innovations, Inc.",
    "settings.about.typeset": "Composto in Inter e IBM Plex Mono",
    "settings.about.tagline": "L’IA non può creare software eccellente senza di te",
@@ -376,7 +376,7 @@ index d72b56853b..a348a4d57f 100644
    "settings.timeline.title": "Sequenza temporale",
    "settings.timeline.detail": "Dettaglio della sequenza temporale",
 diff --git a/packages/app/src/runtime/i18n/ja.ts b/packages/app/src/runtime/i18n/ja.ts
-index da553bf1d3..be57dc1625 100644
+index b085fb1..3bb9a27 100644
 --- a/packages/app/src/runtime/i18n/ja.ts
 +++ b/packages/app/src/runtime/i18n/ja.ts
 @@ -693,7 +693,7 @@ export const dict = {
@@ -389,7 +389,7 @@ index da553bf1d3..be57dc1625 100644
    "settings.timeline.title": "タイムライン",
    "settings.timeline.detail": "タイムラインの詳細",
 diff --git a/packages/app/src/runtime/i18n/ka.ts b/packages/app/src/runtime/i18n/ka.ts
-index 3639df2ee3..7b8387b1f1 100644
+index 1899ed6..f221a92 100644
 --- a/packages/app/src/runtime/i18n/ka.ts
 +++ b/packages/app/src/runtime/i18n/ka.ts
 @@ -677,7 +677,7 @@ export const dict = {
@@ -402,7 +402,7 @@ index 3639df2ee3..7b8387b1f1 100644
    "settings.timeline.title": "დროის ხაზი",
    "settings.timeline.detail": "დროის ხაზის დეტალები",
 diff --git a/packages/app/src/runtime/i18n/km.ts b/packages/app/src/runtime/i18n/km.ts
-index b1e8b7b160..4be7bb01bd 100644
+index 5ab7d65..02c8fc5 100644
 --- a/packages/app/src/runtime/i18n/km.ts
 +++ b/packages/app/src/runtime/i18n/km.ts
 @@ -678,7 +678,7 @@ export const dict = {
@@ -415,7 +415,7 @@ index b1e8b7b160..4be7bb01bd 100644
    "settings.timeline.title": "បន្ទាត់ពេលវេលា",
    "settings.timeline.detail": "ព័ត៌មានលម្អិតអំពីពេលវេលា",
 diff --git a/packages/app/src/runtime/i18n/ko.ts b/packages/app/src/runtime/i18n/ko.ts
-index 25c4434230..afbf48991c 100644
+index 5d57d36..dd87c4d 100644
 --- a/packages/app/src/runtime/i18n/ko.ts
 +++ b/packages/app/src/runtime/i18n/ko.ts
 @@ -692,7 +692,7 @@ export const dict = {
@@ -428,7 +428,7 @@ index 25c4434230..afbf48991c 100644
    "settings.timeline.title": "타임라인",
    "settings.timeline.detail": "타임라인 세부정보",
 diff --git a/packages/app/src/runtime/i18n/lo.ts b/packages/app/src/runtime/i18n/lo.ts
-index f19efa2216..617d879570 100644
+index ae21a32..d7c9ad2 100644
 --- a/packages/app/src/runtime/i18n/lo.ts
 +++ b/packages/app/src/runtime/i18n/lo.ts
 @@ -678,7 +678,7 @@ export const dict = {
@@ -441,7 +441,7 @@ index f19efa2216..617d879570 100644
    "settings.timeline.title": "ທາມລາຍ",
    "settings.timeline.detail": "ລາຍລະອຽດທາມລາຍ",
 diff --git a/packages/app/src/runtime/i18n/lt.ts b/packages/app/src/runtime/i18n/lt.ts
-index a381653038..6c2af7a641 100644
+index fc85f57..557259d 100644
 --- a/packages/app/src/runtime/i18n/lt.ts
 +++ b/packages/app/src/runtime/i18n/lt.ts
 @@ -694,7 +694,7 @@ export const dict = {
@@ -454,7 +454,7 @@ index a381653038..6c2af7a641 100644
    "settings.timeline.title": "Laiko juosta",
    "settings.timeline.detail": "Laiko juostos informacija",
 diff --git a/packages/app/src/runtime/i18n/lv.ts b/packages/app/src/runtime/i18n/lv.ts
-index f5f08a3d55..1be64e10cb 100644
+index ea203d0..487bd62 100644
 --- a/packages/app/src/runtime/i18n/lv.ts
 +++ b/packages/app/src/runtime/i18n/lv.ts
 @@ -684,7 +684,7 @@ export const dict = {
@@ -467,7 +467,7 @@ index f5f08a3d55..1be64e10cb 100644
    "settings.timeline.title": "Laika skala",
    "settings.timeline.detail": "Laika skalas informācija",
 diff --git a/packages/app/src/runtime/i18n/mk.ts b/packages/app/src/runtime/i18n/mk.ts
-index e9243095b4..df69d707e9 100644
+index 1fcf226..431c73c 100644
 --- a/packages/app/src/runtime/i18n/mk.ts
 +++ b/packages/app/src/runtime/i18n/mk.ts
 @@ -680,7 +680,7 @@ export const dict = {
@@ -480,7 +480,7 @@ index e9243095b4..df69d707e9 100644
    "settings.timeline.title": "Времеплов",
    "settings.timeline.detail": "Детали за временската линија",
 diff --git a/packages/app/src/runtime/i18n/mn.ts b/packages/app/src/runtime/i18n/mn.ts
-index 6ff11bc9b0..a453c810c7 100644
+index ad9554f..42ecf04 100644
 --- a/packages/app/src/runtime/i18n/mn.ts
 +++ b/packages/app/src/runtime/i18n/mn.ts
 @@ -682,7 +682,7 @@ export const dict = {
@@ -493,7 +493,7 @@ index 6ff11bc9b0..a453c810c7 100644
    "settings.timeline.title": "Цагийн шугам",
    "settings.timeline.detail": "Цагийн шугамын дэлгэрэнгүй",
 diff --git a/packages/app/src/runtime/i18n/ms.ts b/packages/app/src/runtime/i18n/ms.ts
-index b54b65b3b7..f9e55ee01b 100644
+index 1a65a6f..f8e58e5 100644
 --- a/packages/app/src/runtime/i18n/ms.ts
 +++ b/packages/app/src/runtime/i18n/ms.ts
 @@ -682,7 +682,7 @@ export const dict = {
@@ -506,7 +506,7 @@ index b54b65b3b7..f9e55ee01b 100644
    "settings.timeline.title": "Garis masa",
    "settings.timeline.detail": "Perincian garis masa",
 diff --git a/packages/app/src/runtime/i18n/my.ts b/packages/app/src/runtime/i18n/my.ts
-index 879ef23d78..1030a2bff9 100644
+index bec9971..2771b5b 100644
 --- a/packages/app/src/runtime/i18n/my.ts
 +++ b/packages/app/src/runtime/i18n/my.ts
 @@ -689,7 +689,7 @@ export const dict = {
@@ -519,7 +519,7 @@ index 879ef23d78..1030a2bff9 100644
    "settings.timeline.title": "အချိန်ဇယား",
    "settings.timeline.detail": "အချိန်ဇယားအသေးစိတ်",
 diff --git a/packages/app/src/runtime/i18n/ne.ts b/packages/app/src/runtime/i18n/ne.ts
-index 65f395006c..2e831afd40 100644
+index f36f1f7..ae1a7df 100644
 --- a/packages/app/src/runtime/i18n/ne.ts
 +++ b/packages/app/src/runtime/i18n/ne.ts
 @@ -681,7 +681,7 @@ export const dict = {
@@ -532,10 +532,10 @@ index 65f395006c..2e831afd40 100644
    "settings.timeline.title": "समयरेखा",
    "settings.timeline.detail": "समयरेखा विवरण",
 diff --git a/packages/app/src/runtime/i18n/nl.ts b/packages/app/src/runtime/i18n/nl.ts
-index a5f374e7bc..2692d835fb 100644
+index b3a277f..c2e5f24 100644
 --- a/packages/app/src/runtime/i18n/nl.ts
 +++ b/packages/app/src/runtime/i18n/nl.ts
-@@ -153,7 +153,7 @@ export const dict = {
+@@ -154,7 +154,7 @@ export const dict = {
    "settings.about.trademark": "Loophole is een geregistreerd handelsmerk van Anomaly Innovations, Inc.",
    "settings.about.typeset": "Opgemaakt in Inter en IBM Plex Mono",
    "settings.about.tagline": "AI kan geen geweldige software bouwen zonder jou",
@@ -545,10 +545,10 @@ index a5f374e7bc..2692d835fb 100644
    "settings.timeline.title": "Tijdlijn",
    "settings.timeline.detail": "Tijdlijndetails",
 diff --git a/packages/app/src/runtime/i18n/no.ts b/packages/app/src/runtime/i18n/no.ts
-index f5407af65f..4482159f9d 100644
+index 0f32ee8..2a2ed9c 100644
 --- a/packages/app/src/runtime/i18n/no.ts
 +++ b/packages/app/src/runtime/i18n/no.ts
-@@ -148,7 +148,7 @@ export const dict = {
+@@ -149,7 +149,7 @@ export const dict = {
    "settings.about.trademark": "Loophole er et registrert varemerke for Anomaly Innovations, Inc.",
    "settings.about.typeset": "Satt med Inter og IBM Plex Mono",
    "settings.about.tagline": "KI kan ikke bygge fantastisk programvare uten deg",
@@ -558,7 +558,7 @@ index f5407af65f..4482159f9d 100644
    "settings.timeline.title": "Tidslinje",
    "settings.timeline.detail": "Tidslinjedetaljer",
 diff --git a/packages/app/src/runtime/i18n/pa.ts b/packages/app/src/runtime/i18n/pa.ts
-index b8016868d9..cfdb1ac85f 100644
+index 387bb92..da71ab0 100644
 --- a/packages/app/src/runtime/i18n/pa.ts
 +++ b/packages/app/src/runtime/i18n/pa.ts
 @@ -690,7 +690,7 @@ export const dict = {
@@ -571,7 +571,7 @@ index b8016868d9..cfdb1ac85f 100644
    "settings.timeline.title": "ٹائم لائن",
    "settings.timeline.detail": "ٹائم لائن دی تفصیل",
 diff --git a/packages/app/src/runtime/i18n/pl.ts b/packages/app/src/runtime/i18n/pl.ts
-index 9861e3bac9..91ae2cc2a1 100644
+index a5d50bd..193c2bb 100644
 --- a/packages/app/src/runtime/i18n/pl.ts
 +++ b/packages/app/src/runtime/i18n/pl.ts
 @@ -701,7 +701,7 @@ export const dict = {
@@ -584,7 +584,7 @@ index 9861e3bac9..91ae2cc2a1 100644
    "settings.timeline.title": "Oś czasu",
    "settings.timeline.detail": "Szczegóły osi czasu",
 diff --git a/packages/app/src/runtime/i18n/ro.ts b/packages/app/src/runtime/i18n/ro.ts
-index e341b612e0..f3620c52c8 100644
+index 3a8e73d..ba7e4c3 100644
 --- a/packages/app/src/runtime/i18n/ro.ts
 +++ b/packages/app/src/runtime/i18n/ro.ts
 @@ -684,7 +684,7 @@ export const dict = {
@@ -597,7 +597,7 @@ index e341b612e0..f3620c52c8 100644
    "settings.timeline.title": "Cronologie",
    "settings.timeline.detail": "Detalii cronologie",
 diff --git a/packages/app/src/runtime/i18n/ru.ts b/packages/app/src/runtime/i18n/ru.ts
-index 10dce9424a..9529066e95 100644
+index bcfa4f3..1e3ce01 100644
 --- a/packages/app/src/runtime/i18n/ru.ts
 +++ b/packages/app/src/runtime/i18n/ru.ts
 @@ -755,7 +755,7 @@ export const dict = {
@@ -610,7 +610,7 @@ index 10dce9424a..9529066e95 100644
    "settings.timeline.title": "Хронология",
    "settings.timeline.detail": "Подробности временной шкалы",
 diff --git a/packages/app/src/runtime/i18n/si.ts b/packages/app/src/runtime/i18n/si.ts
-index ed6e2dbe91..ca649e83e0 100644
+index 9f4d943..60ea3a4 100644
 --- a/packages/app/src/runtime/i18n/si.ts
 +++ b/packages/app/src/runtime/i18n/si.ts
 @@ -677,7 +677,7 @@ export const dict = {
@@ -623,7 +623,7 @@ index ed6e2dbe91..ca649e83e0 100644
    "settings.timeline.title": "කාලරේඛාව",
    "settings.timeline.detail": "කාලරේඛා විස්තර",
 diff --git a/packages/app/src/runtime/i18n/sk.ts b/packages/app/src/runtime/i18n/sk.ts
-index a351638485..5eb608657e 100644
+index a510fbc..ceb963e 100644
 --- a/packages/app/src/runtime/i18n/sk.ts
 +++ b/packages/app/src/runtime/i18n/sk.ts
 @@ -704,7 +704,7 @@ export const dict = {
@@ -636,7 +636,7 @@ index a351638485..5eb608657e 100644
    "settings.timeline.title": "Časová os",
    "settings.timeline.detail": "Detail časovej osi",
 diff --git a/packages/app/src/runtime/i18n/sl.ts b/packages/app/src/runtime/i18n/sl.ts
-index 0553f031f3..3a411b64e7 100644
+index 393c805..a5569dc 100644
 --- a/packages/app/src/runtime/i18n/sl.ts
 +++ b/packages/app/src/runtime/i18n/sl.ts
 @@ -703,7 +703,7 @@ export const dict = {
@@ -649,7 +649,7 @@ index 0553f031f3..3a411b64e7 100644
    "settings.timeline.title": "Časovnica",
    "settings.timeline.detail": "Podrobnosti o časovnici",
 diff --git a/packages/app/src/runtime/i18n/sq.ts b/packages/app/src/runtime/i18n/sq.ts
-index e205f159fb..2d217555a6 100644
+index 70e6bf0..b9edaa6 100644
 --- a/packages/app/src/runtime/i18n/sq.ts
 +++ b/packages/app/src/runtime/i18n/sq.ts
 @@ -678,7 +678,7 @@ export const dict = {
@@ -662,7 +662,7 @@ index e205f159fb..2d217555a6 100644
    "settings.timeline.title": "Afati kohor",
    "settings.timeline.detail": "Detajet e afatit kohor",
 diff --git a/packages/app/src/runtime/i18n/sr.ts b/packages/app/src/runtime/i18n/sr.ts
-index 0544b099c0..b1debe0b2f 100644
+index 9afbeec..466c9c7 100644
 --- a/packages/app/src/runtime/i18n/sr.ts
 +++ b/packages/app/src/runtime/i18n/sr.ts
 @@ -691,7 +691,7 @@ export const dict = {
@@ -675,10 +675,10 @@ index 0544b099c0..b1debe0b2f 100644
    "settings.timeline.title": "Временска линија",
    "settings.timeline.detail": "Детаљи временске линије",
 diff --git a/packages/app/src/runtime/i18n/sv.ts b/packages/app/src/runtime/i18n/sv.ts
-index f63794341d..e537bb60b6 100644
+index a98b581..1218220 100644
 --- a/packages/app/src/runtime/i18n/sv.ts
 +++ b/packages/app/src/runtime/i18n/sv.ts
-@@ -148,7 +148,7 @@ export const dict = {
+@@ -149,7 +149,7 @@ export const dict = {
    "settings.about.trademark": "Loophole Ã¤r ett registrerat varumÃ¤rke som tillhÃ¶r Anomaly Innovations, Inc.",
    "settings.about.typeset": "Satt med Inter och IBM Plex Mono",
    "settings.about.tagline": "AI kan inte bygga fantastisk programvara utan dig",
@@ -688,7 +688,7 @@ index f63794341d..e537bb60b6 100644
    "settings.timeline.title": "Tidslinje",
    "settings.timeline.detail": "Tidslinjedetaljer",
 diff --git a/packages/app/src/runtime/i18n/tg.ts b/packages/app/src/runtime/i18n/tg.ts
-index 3c669a7b56..970f742c4c 100644
+index ef45a34..ba29d99 100644
 --- a/packages/app/src/runtime/i18n/tg.ts
 +++ b/packages/app/src/runtime/i18n/tg.ts
 @@ -681,7 +681,7 @@ export const dict = {
@@ -701,7 +701,7 @@ index 3c669a7b56..970f742c4c 100644
    "settings.timeline.title": "Ҷадвали вақт",
    "settings.timeline.detail": "Тафсилоти ҷадвали вақт",
 diff --git a/packages/app/src/runtime/i18n/th.ts b/packages/app/src/runtime/i18n/th.ts
-index 6128ab68b7..73aae96854 100644
+index dbf1a5d..ec3a6ec 100644
 --- a/packages/app/src/runtime/i18n/th.ts
 +++ b/packages/app/src/runtime/i18n/th.ts
 @@ -741,7 +741,7 @@ export const dict = {
@@ -714,7 +714,7 @@ index 6128ab68b7..73aae96854 100644
    "settings.timeline.title": "ไทม์ไลน์",
    "settings.timeline.detail": "รายละเอียดไทม์ไลน์",
 diff --git a/packages/app/src/runtime/i18n/tk.ts b/packages/app/src/runtime/i18n/tk.ts
-index 064c3a6783..50c685bac6 100644
+index b39c4d4..47b4478 100644
 --- a/packages/app/src/runtime/i18n/tk.ts
 +++ b/packages/app/src/runtime/i18n/tk.ts
 @@ -676,7 +676,7 @@ export const dict = {
@@ -727,7 +727,7 @@ index 064c3a6783..50c685bac6 100644
    "settings.timeline.title": "Wagt çyzgysy",
    "settings.timeline.detail": "Wagt çyzgysynyň jikme-jigi",
 diff --git a/packages/app/src/runtime/i18n/tr.ts b/packages/app/src/runtime/i18n/tr.ts
-index d586ac312e..1a191ccb5e 100644
+index c42b185..b823b5d 100644
 --- a/packages/app/src/runtime/i18n/tr.ts
 +++ b/packages/app/src/runtime/i18n/tr.ts
 @@ -755,7 +755,7 @@ export const dict = {
@@ -740,7 +740,7 @@ index d586ac312e..1a191ccb5e 100644
    "settings.timeline.title": "Zaman çizelgesi",
    "settings.timeline.detail": "Zaman çizelgesi ayrıntısı",
 diff --git a/packages/app/src/runtime/i18n/uk.ts b/packages/app/src/runtime/i18n/uk.ts
-index b58b113ec5..e13297a78e 100644
+index 4dcffae..9f0762d 100644
 --- a/packages/app/src/runtime/i18n/uk.ts
 +++ b/packages/app/src/runtime/i18n/uk.ts
 @@ -771,7 +771,7 @@ export const dict = {
@@ -753,7 +753,7 @@ index b58b113ec5..e13297a78e 100644
    "settings.timeline.title": "Хронологія",
    "settings.timeline.detail": "Деталі часової шкали",
 diff --git a/packages/app/src/runtime/i18n/ur.ts b/packages/app/src/runtime/i18n/ur.ts
-index 09c05b058c..c14f51643f 100644
+index d312bee..1df56c9 100644
 --- a/packages/app/src/runtime/i18n/ur.ts
 +++ b/packages/app/src/runtime/i18n/ur.ts
 @@ -690,7 +690,7 @@ export const dict = {
@@ -766,7 +766,7 @@ index 09c05b058c..c14f51643f 100644
    "settings.timeline.title": "ٹائم لائن",
    "settings.timeline.detail": "ٹائم لائن کی تفصیل",
 diff --git a/packages/app/src/runtime/i18n/uz.ts b/packages/app/src/runtime/i18n/uz.ts
-index b56d7ef2d6..fdbe956767 100644
+index 49413dc..5d9ee00 100644
 --- a/packages/app/src/runtime/i18n/uz.ts
 +++ b/packages/app/src/runtime/i18n/uz.ts
 @@ -682,7 +682,7 @@ export const dict = {
@@ -779,7 +779,7 @@ index b56d7ef2d6..fdbe956767 100644
    "settings.timeline.title": "Vaqt jadvali",
    "settings.timeline.detail": "Vaqt jadvali tafsilotlari",
 diff --git a/packages/app/src/runtime/i18n/vi.ts b/packages/app/src/runtime/i18n/vi.ts
-index 8743911503..f7f32808a0 100644
+index 6608f99..a8c033f 100644
 --- a/packages/app/src/runtime/i18n/vi.ts
 +++ b/packages/app/src/runtime/i18n/vi.ts
 @@ -688,7 +688,7 @@ export const dict = {
@@ -792,7 +792,7 @@ index 8743911503..f7f32808a0 100644
    "settings.timeline.title": "Dòng thời gian",
    "settings.timeline.detail": "Chi tiết dòng thời gian",
 diff --git a/packages/app/src/runtime/i18n/zh.ts b/packages/app/src/runtime/i18n/zh.ts
-index a9ea9a8f94..8519345af9 100644
+index f4abe44..2b73926 100644
 --- a/packages/app/src/runtime/i18n/zh.ts
 +++ b/packages/app/src/runtime/i18n/zh.ts
 @@ -739,7 +739,7 @@ export const dict = {
@@ -805,7 +805,7 @@ index a9ea9a8f94..8519345af9 100644
    "settings.timeline.title": "时间表",
    "settings.timeline.detail": "时间轴详细信息",
 diff --git a/packages/app/src/runtime/i18n/zht.ts b/packages/app/src/runtime/i18n/zht.ts
-index ec7904f6e3..1b876f73d7 100644
+index b7e2bb7..10e57fa 100644
 --- a/packages/app/src/runtime/i18n/zht.ts
 +++ b/packages/app/src/runtime/i18n/zht.ts
 @@ -731,7 +731,7 @@ export const dict = {
@@ -817,161 +817,11 @@ index ec7904f6e3..1b876f73d7 100644
    "project.settings.title": "編輯專案",
    "settings.timeline.title": "時間軸",
    "settings.timeline.detail": "時間軸詳細資訊",
-diff --git a/packages/app/src/settings/about/about.tsx b/packages/app/src/settings/about/about.tsx
-index be70b069d9..09c9bc29bc 100644
---- a/packages/app/src/settings/about/about.tsx
-+++ b/packages/app/src/settings/about/about.tsx
-@@ -1,60 +1,18 @@
--import { createResource } from "solid-js"
- import { useDialog } from "@opencode/ui/context/dialog"
-+import { Logo } from "@opencode/ui/logo"
- import { useLanguage } from "@/runtime/i18n/language"
- import { usePlatform } from "@/runtime/platform/platform"
- import { ExternalLink } from "@/runtime/platform/external-link"
- import { showToast } from "@/shell/notifications/toast"
--import legal from "./legal.svg"
--import anomalyBrush from "./anomaly-brush.svg"
--import { FALLBACK_OTHER_CONTRIBUTORS, loadOtherContributorCount } from "./contributors"
- 
--const writers = [
--  "thdxr",
--  "adamdotdev",
--  "rekram1-node",
--  "kitlangton",
--  "iamdavidhill",
--  "jayair",
--  "fwang",
--  "brendonovich",
--  "nexxeln",
--  "hona",
--  "kommander",
--  "jlongster",
--  "vimtor",
--  "r44vcorp",
--  "simonklee",
--  "arvsrn",
--] as const
-+const website = "https://www.loopholeeditor.in"
-+const repository = "https://github.com/loophole-ai/loophole-app"
- 
--const illustrators = ["usrnk1", "ludvigrask_", "arvsrn", "iamdavidhill"] as const
--
--export function SettingsAbout(props: { active: boolean }) {
-+export function SettingsAbout(_props: { active: boolean }) {
-   const language = useLanguage()
-   const platform = usePlatform()
-   const dialog = useDialog()
- 
--  const [otherContributors] = createResource(
--    () => props.active || undefined,
--    () => loadOtherContributorCount(platform.fetch ?? fetch),
--    { initialValue: FALLBACK_OTHER_CONTRIBUTORS },
--  )
--
--  const credit = (name: string) => (
--    <bdi dir="ltr">
--      <ExternalLink href={profile(name)}>{name}</ExternalLink>
--    </bdi>
--  )
--
--  const writerCredits = () => [
--    ...writers.map(credit),
--    <ExternalLink href="https://github.com/anomalyco/opencode/graphs/contributors">
--      {language.plural("settings.about.otherContributor", otherContributors.latest, {
--        count: otherContributors.latest,
--      })}
--    </ExternalLink>,
--  ]
--
-   const showNotices = async () => {
-     // The license texts load only when someone reads them.
-     const loaded = await import("./notices/dialog").catch(() => undefined)
-@@ -70,7 +28,9 @@ export function SettingsAbout(props: { active: boolean }) {
- 
-   return (
-     <div class="settings-about-content">
-+      <Logo class="settings-about-logo" />
-       <div class="settings-about-intro">
-+        <h2 class="settings-about-name">Loophole Desktop</h2>
-         <p>
-           {language.t("settings.about.version", {
-             version: platform.version ?? language.t("settings.about.devVersion"),
-@@ -78,54 +38,25 @@ export function SettingsAbout(props: { active: boolean }) {
-         </p>
-         <p>{language.t("settings.about.license")}</p>
-       </div>
--
--      <h2 class="settings-about-name">Loophole Desktop</h2>
--
--      <div class="settings-about-credits">
--        <p>{language.rich("settings.about.writtenByNames", { names: language.list(writerCredits()) })}</p>
--        <p>
--          {language.rich("settings.about.illustratedByNames", {
--            names: language.list(illustrators.map(credit)),
--          })}
--        </p>
--      </div>
--
--      <div class="settings-about-publication">
--        <p>{language.t("settings.about.firstPublished")}</p>
--        <p>{language.t("settings.about.firstIllustrated")}</p>
--      </div>
--
--      <p class="settings-about-faint">
--        <ExternalLink href="https://www.loopholeeditor.in">
-+      <p class="settings-about-description">{language.t("settings.about.description")}</p>
-+      <div class="settings-about-links">
-+        <ExternalLink href={website}>
-           <bdi dir="ltr">{language.t("settings.about.website")}</bdi>
-         </ExternalLink>
--      </p>
--
--      <div class="settings-about-details">
--        <p>{language.t("settings.about.description")}</p>
--        <p>{language.t("settings.about.trademark")}</p>
--        <p>{language.t("settings.about.typeset")}</p>
--        <p>
--          <button type="button" class="settings-about-link" onClick={() => void showNotices()}>
--            {language.t("settings.about.notices.title")}
--          </button>
--        </p>
--      </div>
--
--      <p>{language.t("settings.about.tagline")}</p>
--      <img class="settings-about-legal" src={legal} alt="" />
--      <div class="settings-about-copyright">
--        <p>{language.t("settings.about.copyright")}</p>
--        <img class="settings-about-anomaly-brush" src={anomalyBrush} alt="" />
-+        <span class="settings-about-separator" aria-hidden="true">
-+          ·
-+        </span>
-+        <ExternalLink href={repository}>
-+          <bdi dir="ltr">GitHub</bdi>
-+        </ExternalLink>
-+        <span class="settings-about-separator" aria-hidden="true">
-+          ·
-+        </span>
-+        <button type="button" class="settings-about-link" onClick={() => void showNotices()}>
-+          {language.t("settings.about.notices.title")}
-+        </button>
-       </div>
-+      <p class="settings-about-copyright">{language.t("settings.about.copyright")}</p>
-     </div>
-   )
- }
--
--function profile(name: string) {
--  if (name === "r44vcorp") return "https://github.com/R44VC0RP"
--
--  if (name === "ludvigrask_") return "https://x.com/ludvigrask_"
--
--  return `https://github.com/${name}`
--}
 diff --git a/packages/app/src/settings/settings.css b/packages/app/src/settings/settings.css
-index dcb47ac6a0..e98ead69b2 100644
+index 98add10..18f3512 100644
 --- a/packages/app/src/settings/settings.css
 +++ b/packages/app/src/settings/settings.css
-@@ -205,7 +205,7 @@
+@@ -262,7 +262,7 @@
    min-height: 462px;
    flex-direction: column;
    align-items: center;
@@ -980,38 +830,7 @@ index dcb47ac6a0..e98ead69b2 100644
    gap: 24px;
    padding-block: 80px calc(80px + var(--settings-bottom-inset, 0px));
    color: var(--v2-text-text-muted);
-@@ -220,22 +220,17 @@
-   margin: 0;
- }
- 
--.settings-about-intro,
--.settings-about-credits,
--.settings-about-publication,
--.settings-about-details {
--  display: flex;
--  flex-direction: column;
-+.settings-about-logo {
-+  width: 240px;
-+  height: auto;
-+  color: var(--v2-text-text-base);
- }
- 
- .settings-about-intro {
--  gap: 14px;
--}
--
--.settings-about-credits,
--.settings-about-publication,
--.settings-about-details {
--  gap: 16px;
-+  display: flex;
-+  flex-direction: column;
-+  align-items: center;
-+  gap: 8px;
- }
- 
- .settings-about-name {
-@@ -248,30 +243,27 @@
+@@ -354,30 +354,27 @@
    letter-spacing: -0.02em;
  }
  

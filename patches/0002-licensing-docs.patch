@@ -1,5 +1,5 @@
 diff --git a/CONTRIBUTING.md b/CONTRIBUTING.md
-index 1795a8eab0..5a18867abe 100644
+index 1795a8e..5a18867 100644
 --- a/CONTRIBUTING.md
 +++ b/CONTRIBUTING.md
 @@ -1,4 +1,4 @@
@@ -58,49 +58,37 @@ index 1795a8eab0..5a18867abe 100644
  
  Automated checks flag missing templates, placeholder text, AI-generated walls of text, and missing meaningful content. You have two hours to correct a flagged issue before it closes automatically. Ask a maintainer if an issue was flagged incorrectly.
 diff --git a/LICENSE b/LICENSE
-index 6439474bee..be3f7b28e5 100644
+index 6439474..d16ebe8 100644
 --- a/LICENSE
 +++ b/LICENSE
-@@ -1,21 +1,26 @@
+@@ -1,16 +1,13 @@
 -MIT License
--
++Loophole Proprietary License
+ 
 -Copyright (c) 2025 opencode
--
++Copyright (c) 2026 Loophole AI. All rights reserved.
+ 
 -Permission is hereby granted, free of charge, to any person obtaining a copy
 -of this software and associated documentation files (the "Software"), to deal
 -in the Software without restriction, including without limitation the rights
 -to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 -copies of the Software, and to permit persons to whom the Software is
 -furnished to do so, subject to the following conditions:
--
--The above copyright notice and this permission notice shall be included in all
--copies or substantial portions of the Software.
--
--THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
--IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
--FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
--AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
--LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
--OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
--SOFTWARE.
-+Loophole Proprietary License
-+
-+Copyright (c) 2026 Loophole AI. All rights reserved.
-+
 +This software, including its source code, documentation, build scripts, and
 +all associated files (the "Software"), is proprietary and confidential.
-+
+ 
+-The above copyright notice and this permission notice shall be included in all
+-copies or substantial portions of the Software.
 +No part of the Software may be copied, modified, merged, published,
 +distributed, sublicensed, sold, or used in any form, in whole or in part,
 +without the prior written permission of Loophole AI.
-+
-+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-+SOFTWARE.
+ 
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+@@ -19,3 +16,11 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
 +
 +Third-party components
 +
@@ -111,7 +99,7 @@ index 6439474bee..be3f7b28e5 100644
 +described in those files.
 diff --git a/LICENSE-opencode.md b/LICENSE-opencode.md
 new file mode 100644
-index 0000000000..6439474bee
+index 0000000..6439474
 --- /dev/null
 +++ b/LICENSE-opencode.md
 @@ -0,0 +1,21 @@
@@ -138,7 +126,7 @@ index 0000000000..6439474bee
 +SOFTWARE.
 diff --git a/NOTICE.md b/NOTICE.md
 new file mode 100644
-index 0000000000..dfaa2114c3
+index 0000000..fabd49f
 --- /dev/null
 +++ b/NOTICE.md
 @@ -0,0 +1,19 @@
@@ -164,7 +152,7 @@ index 0000000000..dfaa2114c3
 \ No newline at end of file
 diff --git a/README.ar.md b/README.ar.md
 deleted file mode 100644
-index 79b79db0bb..0000000000
+index 79b79db..0000000
 --- a/README.ar.md
 +++ /dev/null
 @@ -1,114 +0,0 @@
@@ -284,7 +272,7 @@ index 79b79db0bb..0000000000
 -**انضم الى مجتمعنا** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
 diff --git a/README.bn.md b/README.bn.md
 deleted file mode 100644
-index f684723d14..0000000000
+index f684723..0000000
 --- a/README.bn.md
 +++ /dev/null
 @@ -1,114 +0,0 @@
@@ -404,7 +392,7 @@ index f684723d14..0000000000
 -**আমাদের কমিউনিটিতে যুক্ত হোন** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
 diff --git a/README.br.md b/README.br.md
 deleted file mode 100644
-index dd0ad403b7..0000000000
+index dd0ad40..0000000
 --- a/README.br.md
 +++ /dev/null
 @@ -1,114 +0,0 @@
@@ -524,7 +512,7 @@ index dd0ad403b7..0000000000
 -**Junte-se à nossa comunidade** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
 diff --git a/README.bs.md b/README.bs.md
 deleted file mode 100644
-index a5bc0324a9..0000000000
+index a5bc032..0000000
 --- a/README.bs.md
 +++ /dev/null
 @@ -1,114 +0,0 @@
@@ -644,7 +632,7 @@ index a5bc0324a9..0000000000
 -**Pridruži se našoj zajednici** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
 diff --git a/README.da.md b/README.da.md
 deleted file mode 100644
-index a4596c025c..0000000000
+index a4596c0..0000000
 --- a/README.da.md
 +++ /dev/null
 @@ -1,114 +0,0 @@
@@ -764,7 +752,7 @@ index a4596c025c..0000000000
 -**Bliv en del af vores community** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
 diff --git a/README.de.md b/README.de.md
 deleted file mode 100644
-index 042c2b4281..0000000000
+index 042c2b4..0000000
 --- a/README.de.md
 +++ /dev/null
 @@ -1,114 +0,0 @@
@@ -884,7 +872,7 @@ index 042c2b4281..0000000000
 -**Tritt unserer Community bei** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
 diff --git a/README.es.md b/README.es.md
 deleted file mode 100644
-index 129619b7a0..0000000000
+index 129619b..0000000
 --- a/README.es.md
 +++ /dev/null
 @@ -1,114 +0,0 @@
@@ -1004,7 +992,7 @@ index 129619b7a0..0000000000
 -**Únete a nuestra comunidad** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
 diff --git a/README.fr.md b/README.fr.md
 deleted file mode 100644
-index cab6c14b15..0000000000
+index cab6c14..0000000
 --- a/README.fr.md
 +++ /dev/null
 @@ -1,114 +0,0 @@
@@ -1124,7 +1112,7 @@ index cab6c14b15..0000000000
 -**Rejoignez notre communauté** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
 diff --git a/README.gr.md b/README.gr.md
 deleted file mode 100644
-index 4eb428ba74..0000000000
+index 4eb428b..0000000
 --- a/README.gr.md
 +++ /dev/null
 @@ -1,114 +0,0 @@
@@ -1244,7 +1232,7 @@ index 4eb428ba74..0000000000
 -**Γίνε μέλος της κοινότητάς μας** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
 diff --git a/README.it.md b/README.it.md
 deleted file mode 100644
-index 6d34ba6429..0000000000
+index 6d34ba6..0000000
 --- a/README.it.md
 +++ /dev/null
 @@ -1,114 +0,0 @@
@@ -1364,7 +1352,7 @@ index 6d34ba6429..0000000000
 -**Unisciti alla nostra community** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
 diff --git a/README.ja.md b/README.ja.md
 deleted file mode 100644
-index 751fc8714c..0000000000
+index 751fc87..0000000
 --- a/README.ja.md
 +++ /dev/null
 @@ -1,114 +0,0 @@
@@ -1484,7 +1472,7 @@ index 751fc8714c..0000000000
 -**コミュニティに参加** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
 diff --git a/README.ko.md b/README.ko.md
 deleted file mode 100644
-index 0d69b9eed6..0000000000
+index 0d69b9e..0000000
 --- a/README.ko.md
 +++ /dev/null
 @@ -1,114 +0,0 @@
@@ -1603,7 +1591,7 @@ index 0d69b9eed6..0000000000
 -
 -**커뮤니티에 참여하기** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
 diff --git a/README.md b/README.md
-index 60adea0e39..d997264f7e 100644
+index 60adea0..926ebec 100644
 --- a/README.md
 +++ b/README.md
 @@ -1,90 +1,45 @@
@@ -1746,7 +1734,7 @@ index 60adea0e39..d997264f7e 100644
 +or its authors.
 diff --git a/README.no.md b/README.no.md
 deleted file mode 100644
-index 68b557df3b..0000000000
+index 68b557d..0000000
 --- a/README.no.md
 +++ /dev/null
 @@ -1,114 +0,0 @@
@@ -1866,7 +1854,7 @@ index 68b557df3b..0000000000
 -**Bli med i fellesskapet** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
 diff --git a/README.pl.md b/README.pl.md
 deleted file mode 100644
-index 0618af87d6..0000000000
+index 0618af8..0000000
 --- a/README.pl.md
 +++ /dev/null
 @@ -1,114 +0,0 @@
@@ -1986,7 +1974,7 @@ index 0618af87d6..0000000000
 -**Dołącz do naszej społeczności** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
 diff --git a/README.ru.md b/README.ru.md
 deleted file mode 100644
-index e369c7f47d..0000000000
+index e369c7f..0000000
 --- a/README.ru.md
 +++ /dev/null
 @@ -1,114 +0,0 @@
@@ -2106,7 +2094,7 @@ index e369c7f47d..0000000000
 -**Присоединяйтесь к нашему сообществу** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
 diff --git a/README.th.md b/README.th.md
 deleted file mode 100644
-index f1d7a6f356..0000000000
+index f1d7a6f..0000000
 --- a/README.th.md
 +++ /dev/null
 @@ -1,114 +0,0 @@
@@ -2226,7 +2214,7 @@ index f1d7a6f356..0000000000
 -**ร่วมชุมชนของเรา** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
 diff --git a/README.tr.md b/README.tr.md
 deleted file mode 100644
-index e009219bac..0000000000
+index e009219..0000000
 --- a/README.tr.md
 +++ /dev/null
 @@ -1,114 +0,0 @@
@@ -2346,7 +2334,7 @@ index e009219bac..0000000000
 -**Topluluğumuza katılın** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
 diff --git a/README.uk.md b/README.uk.md
 deleted file mode 100644
-index 6b38e51242..0000000000
+index 6b38e51..0000000
 --- a/README.uk.md
 +++ /dev/null
 @@ -1,115 +0,0 @@
@@ -2467,7 +2455,7 @@ index 6b38e51242..0000000000
 -**Приєднуйтеся до нашої спільноти** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
 diff --git a/README.vi.md b/README.vi.md
 deleted file mode 100644
-index d25173ac00..0000000000
+index d25173a..0000000
 --- a/README.vi.md
 +++ /dev/null
 @@ -1,114 +0,0 @@
@@ -2587,7 +2575,7 @@ index d25173ac00..0000000000
 -**Tham gia cộng đồng của chúng tôi** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
 diff --git a/README.zh.md b/README.zh.md
 deleted file mode 100644
-index 2f364601e4..0000000000
+index 2f36460..0000000
 --- a/README.zh.md
 +++ /dev/null
 @@ -1,113 +0,0 @@
@@ -2706,7 +2694,7 @@ index 2f364601e4..0000000000
 -**加入我们的社区** [飞书](https://applink.feishu.cn/client/chat/chatter/add_by_link?link_token=52ao9352-5623-4fa0-b7dd-3407c392c1af&qr_code=true) | [X.com](https://x.com/opencode)
 diff --git a/README.zht.md b/README.zht.md
 deleted file mode 100644
-index be90cb3cba..0000000000
+index be90cb3..0000000
 --- a/README.zht.md
 +++ /dev/null
 @@ -1,113 +0,0 @@
@@ -2824,7 +2812,7 @@ index be90cb3cba..0000000000
 -
 -**加入我們的社群** [飞书](https://applink.feishu.cn/client/chat/chatter/add_by_link?link_token=52ao9352-5623-4fa0-b7dd-3407c392c1af&qr_code=true) | [X.com](https://x.com/opencode)
 diff --git a/SECURITY.md b/SECURITY.md
-index e7e59f4a27..e79bab9be0 100644
+index e7e59f4..e79bab9 100644
 --- a/SECURITY.md
 +++ b/SECURITY.md
 @@ -10,13 +10,13 @@ submit one that will be an automatic ban from the project.
@@ -2881,7 +2869,7 @@ index e7e59f4a27..e79bab9be0 100644
 -If you do not receive an acknowledgement of your report within 6 business days, you may send an email to security@anoma.ly
 +If you do not receive an acknowledgement of your report within 6 business days, you may send a follow-up email to security@loophole.ai.
 diff --git a/packages/cli/package.json b/packages/cli/package.json
-index 04816573da..512e2baf59 100644
+index ecc5abf..b084cc3 100644
 --- a/packages/cli/package.json
 +++ b/packages/cli/package.json
 @@ -1,12 +1,12 @@
@@ -2889,7 +2877,7 @@ index 04816573da..512e2baf59 100644
    "$schema": "https://json.schemastore.org/package.json",
 -  "name": "@opencode/cli",
 +  "name": "@loophole-ai/cli",
-   "version": "2.2.0",
+   "version": "2.2.5",
    "type": "module",
 -  "license": "MIT",
 +  "license": "UNLICENSED",
@@ -2902,7 +2890,7 @@ index 04816573da..512e2baf59 100644
    "files": [
      "bin"
 diff --git a/packages/cli/script/build.ts b/packages/cli/script/build.ts
-index ee39d67a24..7e394e0948 100755
+index a9ae9e6..965cd5c 100755
 --- a/packages/cli/script/build.ts
 +++ b/packages/cli/script/build.ts
 @@ -17,7 +17,7 @@ import { NativeArch } from "../../../script/native-arch"
@@ -2923,7 +2911,7 @@ index ee39d67a24..7e394e0948 100755
        loader: "js",
      }))
    },
-@@ -185,7 +185,7 @@ export default { path: file, version: ${JSON.stringify(opencodePty.version)}, sh
+@@ -198,7 +198,7 @@ export default { path: file, version: ${JSON.stringify(opencodePty.version)}, sh
        outfile: path.join(outdir, name, "bin", binary),
        execArgv: [
          "--smol",
@@ -2932,7 +2920,7 @@ index ee39d67a24..7e394e0948 100755
          "--use-system-ca",
          "--no-warnings",
          "--",
-@@ -194,7 +194,7 @@ export default { path: file, version: ${JSON.stringify(opencodePty.version)}, sh
+@@ -207,7 +207,7 @@ export default { path: file, version: ${JSON.stringify(opencodePty.version)}, sh
      },
      define: {
        OPENCODE_VERSION: `'${Script.version}'`,
@@ -2941,7 +2929,7 @@ index ee39d67a24..7e394e0948 100755
        OPENCODE_CHANNEL: `'${Script.channel}'`,
        OPENCODE_ARTIFACT: `'cli'`,
        ...(highlights ? { OPENCODE_RELEASE_HIGHLIGHTS: JSON.stringify(highlights) } : {}),
-@@ -216,10 +216,10 @@ export default { path: file, version: ${JSON.stringify(opencodePty.version)}, sh
+@@ -229,10 +229,10 @@ export default { path: file, version: ${JSON.stringify(opencodePty.version)}, sh
      path.join(outdir, name, "package.json"),
      JSON.stringify(
        {

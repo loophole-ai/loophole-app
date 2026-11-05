@@ -1,5 +1,5 @@
 diff --git a/NOTICE.md b/NOTICE.md
-index 86d7e0a..64f4387 100644
+index fe1afcf..414ef1c 100644
 --- a/NOTICE.md
 +++ b/NOTICE.md
 @@ -48,3 +48,26 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
@@ -59,7 +59,7 @@ index 6a6a8bb..6cfffec 100644
      // (Drive mode) still honor the flags.
      if (!drive && !usePi && (input.auto || input.yolo || input.dangerouslySkipPermissions)) {
 diff --git a/packages/cli/src/commands/handlers/run.ts b/packages/cli/src/commands/handlers/run.ts
-index 032a23a..99ca0eb 100644
+index dc5ec1f..fa7375a 100644
 --- a/packages/cli/src/commands/handlers/run.ts
 +++ b/packages/cli/src/commands/handlers/run.ts
 @@ -2,6 +2,7 @@ import { Effect, Option } from "effect"
@@ -70,21 +70,24 @@ index 032a23a..99ca0eb 100644
  
  export default Runtime.handler(Commands.commands.run, (input) =>
    Effect.gen(function* () {
-@@ -13,9 +14,15 @@ export default Runtime.handler(Commands.commands.run, (input) =>
+@@ -13,14 +14,17 @@ export default Runtime.handler(Commands.commands.run, (input) =>
      )
      if (!server) return
  
--    // Use the pi-tui screen for plain terminal runs. Attached files still go through the
--    // non-interactive path, because the interactive UI cannot attach them yet.
--    const useInteractive = input.format === "default" && process.stdin.isTTY && input.file.length === 0
+-    // Use the pi-tui screen for plain terminal runs. Attached files, worktrees and archived
+-    // runs still go through the non-interactive path, which owns those options.
 +    // Use the Loophole screen for plain terminal runs. Attached files still go through the
 +    // non-interactive path, because the interactive UI cannot attach them yet, and so does
 +    // LOOPHOLE_TUI=mini (see run/ui-mode.ts).
-+    const useInteractive =
-+      input.format === "default" &&
+     const useInteractive =
+       input.format === "default" &&
+-      process.stdin.isTTY &&
 +      process.stdin.isTTY === true &&
 +      process.stdout.isTTY === true &&
-+      input.file.length === 0 &&
+       input.file.length === 0 &&
+       input.worktree === undefined &&
+-      input.archived === undefined
++      input.archived === undefined &&
 +      uiMode() !== "mini"
  
      if (useInteractive) {

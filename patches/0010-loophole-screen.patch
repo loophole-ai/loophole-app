@@ -1,5 +1,5 @@
 diff --git a/packages/cli/package.json b/packages/cli/package.json
-index 9b0bd17..e613e73 100644
+index 3672fa1..40c9adb 100644
 --- a/packages/cli/package.json
 +++ b/packages/cli/package.json
 @@ -31,6 +31,8 @@
@@ -9,8 +9,8 @@ index 9b0bd17..e613e73 100644
 +    "@loophole/screen": "workspace:*",
 +    "@loophole/tui-engine": "workspace:*",
      "@loophole/tui-pi": "workspace:*",
-     "@opencode-ai/pty": "0.3.1",
      "@opencode/client": "workspace:*",
+     "@opencode/plugin": "workspace:*",
 diff --git a/packages/cli/src/run/interactive.ts b/packages/cli/src/run/interactive.ts
 index 4708f4c..5b09793 100644
 --- a/packages/cli/src/run/interactive.ts
@@ -490,7 +490,7 @@ index 0000000..cbe4b87
 +}
 diff --git a/packages/screen/package.json b/packages/screen/package.json
 new file mode 100644
-index 0000000..3423b47
+index 0000000..6882bbf
 --- /dev/null
 +++ b/packages/screen/package.json
 @@ -0,0 +1,30 @@

@@ -104,10 +104,3 @@ jobs:
             echo ""
             echo "**Download:** $LINK"
           } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload CLI binary artifact (backup)
-        uses: actions/upload-artifact@v4
-        with:
-          name: loophole-cli-macos-${{ matrix.arch }}
-          path: opencode/packages/cli/dist/${{ matrix.dist }}/bin/loophole-cli
-          if-no-files-found: error

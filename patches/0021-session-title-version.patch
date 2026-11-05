@@ -1,18 +1,18 @@
 diff --git a/packages/cli/package.json b/packages/cli/package.json
-index f531c30831..e86aca0587 100644
+index 29946b5..389fe5a 100644
 --- a/packages/cli/package.json
 +++ b/packages/cli/package.json
 @@ -1,7 +1,7 @@
  {
    "$schema": "https://json.schemastore.org/package.json",
    "name": "@loophole-ai/cli",
--  "version": "2.2.0",
+-  "version": "2.2.5",
 +  "version": "1.1.0",
    "type": "module",
    "license": "UNLICENSED",
    "bin": {
 diff --git a/packages/cli/src/screen/controller.ts b/packages/cli/src/screen/controller.ts
-index a129bc142b..e2dc063584 100644
+index a129bc1..e2dc063 100644
 --- a/packages/cli/src/screen/controller.ts
 +++ b/packages/cli/src/screen/controller.ts
 @@ -365,6 +365,8 @@ export class ScreenController {
@@ -102,7 +102,7 @@ index a129bc142b..e2dc063584 100644
  
      switch (event.type) {
 diff --git a/packages/script/src/index.ts b/packages/script/src/index.ts
-index 133644883d..c75f8abedb 100644
+index 1336448..c75f8ab 100644
 --- a/packages/script/src/index.ts
 +++ b/packages/script/src/index.ts
 @@ -19,7 +19,7 @@ if (!semver.satisfies(process.versions.bun, expectedBunVersionRange)) {

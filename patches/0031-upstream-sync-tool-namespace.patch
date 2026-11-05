@@ -1,0 +1,65 @@
+diff --git a/packages/core/test/artifact.test.ts b/packages/core/test/artifact.test.ts
+index 5cbc5a4b..f9133c77 100644
+--- a/packages/core/test/artifact.test.ts
++++ b/packages/core/test/artifact.test.ts
+@@ -60,7 +60,7 @@ const callCodeMode = (registry: Tool.Interface, sessionID: Session.ID, name: str
+       type: "tool-call",
+       id: `call-${name}`,
+       name: "execute",
+-      input: { code: `return await tools.opencode.${name}(${JSON.stringify(input)})` },
++      input: { code: `return await tools.loophole.${name}(${JSON.stringify(input)})` },
+     },
+   }).pipe(
+     Effect.map((result) => {
+diff --git a/packages/core/test/schedule.test.ts b/packages/core/test/schedule.test.ts
+index b23ea4b3..4b3faac5 100644
+--- a/packages/core/test/schedule.test.ts
++++ b/packages/core/test/schedule.test.ts
+@@ -1429,7 +1429,7 @@ describe("Schedule", () => {
+         expect(yield* bad("return await tools.slack.dangerous_edit({})")).toMatchObject({
+           reason: "Tool slack.dangerous_edit cannot be used inside a schedule check",
+         })
+-        expect(yield* bad("return await tools.opencode.schedule_create({})")).toMatchObject({
++        expect(yield* bad("return await tools.loophole.schedule_create({})")).toMatchObject({
+           reason: "Tool opencode.schedule_create cannot be used inside a schedule check",
+         })
+ 
+diff --git a/packages/core/test/tool-image-generate.test.ts b/packages/core/test/tool-image-generate.test.ts
+index ddc16f83..a24ecd0a 100644
+--- a/packages/core/test/tool-image-generate.test.ts
++++ b/packages/core/test/tool-image-generate.test.ts
+@@ -487,7 +487,7 @@ describe("experimental_image_generate", () => {
+             type: "tool-call",
+             id: `models-${JSON.stringify(input)}`,
+             name: "execute",
+-            input: { code: `return await tools.opencode.models(${JSON.stringify(input)})` },
++            input: { code: `return await tools.loophole.models(${JSON.stringify(input)})` },
+           },
+         }).pipe(
+           Effect.map((result) =>
+diff --git a/packages/core/test/tool-schedule.test.ts b/packages/core/test/tool-schedule.test.ts
+index f14dc53b..b081c5c3 100644
+--- a/packages/core/test/tool-schedule.test.ts
++++ b/packages/core/test/tool-schedule.test.ts
+@@ -114,7 +114,7 @@ const call = (registry: Tool.Interface, name: string, input: unknown, session =
+       type: "tool-call",
+       id: `call-${name}`,
+       name: "execute",
+-      input: { code: `return await tools.opencode.${name}(${JSON.stringify(input)})` },
++      input: { code: `return await tools.loophole.${name}(${JSON.stringify(input)})` },
+     },
+   })
+ const run = (registry: Tool.Interface, name: string, input: unknown, session = sessionID) =>
+diff --git a/packages/server/test/schedule.test.ts b/packages/server/test/schedule.test.ts
+index f17b24bc..90840c53 100644
+--- a/packages/server/test/schedule.test.ts
++++ b/packages/server/test/schedule.test.ts
+@@ -127,7 +127,7 @@ it.live("manages schedules through the experimental API when enabled and honors
+       // Code Mode until check works end-to-end with no allow field, and { run, code } together is 400.
+       const codeMatched = await api.experimental.schedule.create({
+         sessionID: session.id,
+-        until: { code: 'return { wake: true, message: "models=" + (await tools.opencode.models({})).total }' },
++        until: { code: 'return { wake: true, message: "models=" + (await tools.loophole.models({})).total }' },
+         prompt: "models checked",
+       })
+       expect(codeMatched).toMatchObject({

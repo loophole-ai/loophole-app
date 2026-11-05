@@ -1,216 +1,155 @@
 diff --git a/packages/app/src/settings/general/general.tsx b/packages/app/src/settings/general/general.tsx
-index 7d35c90983..124807536d 100644
+index e5b72a2..1194d24 100644
 --- a/packages/app/src/settings/general/general.tsx
 +++ b/packages/app/src/settings/general/general.tsx
 @@ -18,7 +18,6 @@ import { SettingsList } from "@/settings/list"
  import { SettingsRow } from "@/settings/row"
  import { createShellOptions } from "./behavior"
- import type { ShellSettingsController } from "./controllers"
+ import { createOptimisticSetting, type ShellSettingsController } from "./controllers"
 -import { InterfaceModeSetting } from "./interface-mode"
  import "@/settings/settings.css"
  
  const AutoApprovePermissionsSetting: Component = () => {
-@@ -252,7 +251,6 @@ export const SettingsGeneral: Component = () => {
-   const GeneralSection = () => (
+@@ -255,7 +254,6 @@ export const SettingsGeneral: Component = () => {
      <div class="settings-section">
        <h3 class="settings-section-title">{language.t("settings.general.section.general")}</h3>
--      <InterfaceModeSetting />
        <SettingsList>
+-        <InterfaceModeSetting />
          <LanguageSetting />
  
+         <WorkspaceDestinationSetting />
 diff --git a/packages/app/src/settings/general/interface-mode.css b/packages/app/src/settings/general/interface-mode.css
 deleted file mode 100644
-index e78230a9a8..0000000000
+index b2516d8..0000000
 --- a/packages/app/src/settings/general/interface-mode.css
 +++ /dev/null
-@@ -1,259 +0,0 @@
+@@ -1,189 +0,0 @@
 -[data-component="interface-mode"] {
--  display: grid;
--  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+-  display: flex;
 -  gap: 12px;
 -  min-width: 0;
 -  margin: 0;
 -  padding: 0;
 -  border: 0;
--
--  [data-slot="interface-mode-option"] {
--    position: relative;
--    display: flex;
--    min-width: 0;
--    flex-direction: column;
--    gap: 12px;
--    padding: 12px;
--    border-radius: 8px;
--    background-color: var(--v2-background-bg-layer-01);
--    box-shadow: inset 0 0 0 0.5px var(--v2-border-border-muted);
--    cursor: pointer;
--    transition: box-shadow 120ms ease;
--
--    &:hover {
--      box-shadow: inset 0 0 0 1px var(--v2-border-border-strong);
--    }
--
--    &[data-checked] {
--      box-shadow: inset 0 0 0 1.5px var(--v2-border-border-focus);
--    }
--
--    &:has(input:focus-visible) {
--      outline: 2px solid var(--v2-border-border-focus);
--      outline-offset: 2px;
--    }
--
--    input {
--      position: absolute;
--      inset: 0;
--      margin: 0;
--      opacity: 0;
--      pointer-events: none;
--    }
--  }
--
--  [data-slot="interface-mode-copy"] {
--    display: flex;
--    flex-direction: column;
--    gap: 4px;
--    padding-inline: 2px;
--  }
--
--  [data-slot="interface-mode-title"] {
--    display: flex;
--    align-items: center;
--    gap: 8px;
--    font-size: 13px;
--    font-weight: 530;
--    line-height: var(--line-height-compact);
--    letter-spacing: -0.04px;
--    color: var(--v2-text-text-base);
--  }
--
--  [data-slot="interface-mode-radio"] {
--    flex-shrink: 0;
--    box-sizing: border-box;
--    width: 14px;
--    height: 14px;
--    border: 1px solid var(--v2-border-border-strong);
--    border-radius: 50%;
--    transition: border 120ms ease;
--  }
--
--  [data-checked] [data-slot="interface-mode-radio"] {
--    border: 4px solid var(--v2-background-bg-accent);
--  }
--
--  [data-slot="interface-mode-badge"] {
--    padding: 0 5px;
--    border-radius: 4px;
--    font-size: 11px;
--    font-weight: 500;
--    line-height: var(--line-height-compact);
--    color: var(--v2-text-text-muted);
--    background-color: var(--v2-background-bg-layer-03);
--  }
--
--  [data-slot="interface-mode-description"] {
--    padding-inline-start: 22px;
--    font-size: 13px;
--    font-weight: 440;
--    line-height: var(--line-height-base);
--    color: var(--v2-text-text-muted);
--  }
 -}
 -
--[data-slot="interface-mode-preview"] {
+-[data-slot="interface-mode-option"] {
 -  --preview-fill: var(--v2-background-bg-layer-02);
 -  --preview-ink: var(--v2-background-bg-layer-03);
 -  --preview-ink-strong: var(--v2-background-bg-layer-04);
+-  position: relative;
 -  display: flex;
--  flex-direction: column;
 -  overflow: hidden;
--  aspect-ratio: 16 / 9;
+-  /* A fixed size keeps the row from resizing when the chosen layout changes the panel width. */
+-  width: 120px;
+-  min-width: 0;
+-  flex-direction: column;
+-  box-sizing: border-box;
 -  border: 1px solid var(--v2-border-border-base);
--  border-radius: 6px;
--  background-color: var(--v2-background-bg-base);
+-  border-radius: 8px;
+-  background-color: var(--v2-background-bg-layer-02);
+-  cursor: pointer;
+-  transition:
+-    border-color 120ms ease,
+-    box-shadow 120ms ease;
 -
--  span,
--  i {
+-  &:hover {
+-    border-color: var(--v2-border-border-strong);
+-  }
+-
+-  &[data-checked] {
+-    --preview-ink-strong: color-mix(in srgb, var(--v2-background-bg-accent) 70%, transparent);
+-    border-color: var(--v2-border-border-focus);
+-    box-shadow: inset 0 0 0 1px var(--v2-border-border-focus);
+-  }
+-
+-  &:has(input:focus-visible) {
+-    outline: 2px solid var(--v2-border-border-focus);
+-    outline-offset: 2px;
+-  }
+-
+-  input {
+-    position: absolute;
+-    inset: 0;
+-    margin: 0;
+-    opacity: 0;
+-    pointer-events: none;
+-  }
+-
+-  :where(span, i) {
 -    display: block;
 -    flex-shrink: 0;
 -  }
+-}
 -
--  [data-slot="preview-body"] {
--    display: flex;
--    min-height: 0;
--    min-width: 0;
--    flex: 1;
+-[data-slot="interface-mode-sketch"] {
+-  display: flex;
+-  overflow: hidden;
+-  height: 52px;
+-  margin: 10px 10px 0;
+-  border: 0.5px solid var(--v2-border-border-base);
+-  border-bottom: 0;
+-  border-radius: 4px 4px 0 0;
+-  background-color: var(--v2-background-bg-base);
+-
+-  &[data-mode="top"] {
+-    flex-direction: column;
 -  }
 -
--  [data-slot="preview-line"] {
--    height: 3px;
--    border-radius: 1.5px;
--    background-color: var(--preview-ink);
--  }
--
--  [data-slot="preview-tab"] {
--    display: flex;
--    align-items: center;
--    gap: 4px;
--    padding: 3px;
--    border-radius: 2px;
--
--    &[data-active] {
--      background-color: var(--preview-fill);
--    }
--
--    i {
--      width: 5px;
--      height: 5px;
--      border-radius: 1px;
--      background-color: var(--preview-ink-strong);
--    }
--
--    span {
--      height: 3px;
--      border-radius: 1.5px;
--      background-color: var(--preview-ink);
--    }
--  }
--
--  [data-slot="preview-tabs"] {
+-  [data-slot="preview-strip"] {
 -    display: flex;
 -    gap: 3px;
--    padding: 4px 6px;
+-    padding: 4px 5px;
 -    border-bottom: 0.5px solid var(--v2-border-border-base);
 -    background-color: var(--v2-overlay-simple-overlay-pressed);
 -
 -    [data-slot="preview-tab"] {
--      width: 22%;
+-      width: 18px;
 -    }
 -  }
 -
 -  [data-slot="preview-rail"] {
 -    display: flex;
--    width: 24%;
+-    width: 28px;
 -    flex-direction: column;
--    gap: 3px;
--    padding: 6px 4px;
+-    gap: 4px;
+-    padding: 6px 5px;
 -    border-inline-end: 0.5px solid var(--v2-border-border-base);
 -    background-color: var(--v2-overlay-simple-overlay-pressed);
 -  }
 -
--  [data-slot="preview-rail-heading"] {
--    width: 30%;
--    height: 3px;
--    margin: 4px 3px 1px;
--    border-radius: 1.5px;
--    background-color: var(--preview-ink-strong);
--    opacity: 0.6;
+-  [data-slot="preview-tab"] {
+-    height: 5px;
+-    border-radius: 2px;
+-    background-color: color-mix(in srgb, var(--preview-ink-strong) 45%, transparent);
 -
--    &:first-child {
--      margin-top: 0;
+-    &[data-active] {
+-      background-color: var(--preview-ink-strong);
 -    }
 -  }
 -
--  [data-slot="preview-tab"] i[data-status] {
+-  &[data-mode="inbox"] [data-slot="preview-tab"] {
+-    display: flex;
+-    align-items: center;
+-    gap: 2px;
+-    background-color: transparent;
+-
+-    &::after {
+-      content: "";
+-      height: 3px;
+-      flex: 1;
+-      border-radius: 1.5px;
+-      background-color: color-mix(in srgb, var(--preview-ink-strong) 45%, transparent);
+-    }
+-
+-    &[data-active]::after {
+-      background-color: var(--preview-ink-strong);
+-    }
+-  }
+-
+-  i[data-status] {
+-    width: 4px;
+-    height: 4px;
 -    border-radius: 50%;
 -
 -    &[data-status="approval"] {
@@ -226,72 +165,64 @@ index e78230a9a8..0000000000
 -    }
 -  }
 -
--  [data-slot="preview-main"] {
+-  [data-slot="preview-page"] {
 -    display: flex;
 -    min-width: 0;
+-    min-height: 0;
 -    flex: 1;
 -    flex-direction: column;
 -    gap: 4px;
--    padding: 6px 8px;
+-    padding: 6px;
 -  }
 -
--  [data-slot="preview-toolbar"] {
--    display: flex;
--    justify-content: flex-end;
--    gap: 3px;
--    margin-bottom: 3px;
+-  [data-slot="preview-line"] {
+-    width: 80%;
+-    height: 3px;
+-    border-radius: 1.5px;
+-    background-color: var(--preview-ink);
 -
--    i {
--      width: 6px;
--      height: 6px;
--      border-radius: 1.5px;
--      background-color: var(--preview-ink-strong);
+-    & + [data-slot="preview-line"] {
+-      width: 56%;
 -    }
 -  }
 -
 -  [data-slot="preview-composer"] {
--    display: flex;
--    align-items: center;
--    justify-content: flex-end;
--    gap: 3px;
--    height: 12px;
+-    height: 8px;
 -    margin-top: auto;
--    padding-inline: 3px;
--    border-radius: 5px;
+-    border-radius: 3px;
 -    background-color: var(--preview-fill);
 -    box-shadow: inset 0 0 0 0.5px var(--v2-border-border-base);
--
--    i {
--      width: 5px;
--      height: 5px;
--      border-radius: 1px;
--      background-color: var(--preview-ink-strong);
--    }
--  }
--
--  [data-slot="preview-panel"] {
--    display: flex;
--    width: 26%;
--    flex-direction: column;
--    gap: 4px;
--    padding: 8px 6px;
--    border-inline-start: 0.5px solid var(--v2-border-border-base);
--    background-color: var(--v2-overlay-simple-overlay-pressed);
 -  }
 -}
 -
--[data-checked] [data-slot="interface-mode-preview"] {
--  --preview-ink-strong: color-mix(in srgb, var(--v2-background-bg-accent) 70%, transparent);
+-[data-slot="interface-mode-name"] {
+-  padding: 6px 10px;
+-  border-top: 0.5px solid var(--v2-border-border-base);
+-  font-size: 12px;
+-  font-weight: var(--font-weight-medium);
+-  line-height: var(--line-height-compact);
+-  overflow: hidden;
+-  white-space: nowrap;
+-  text-overflow: ellipsis;
+-  color: var(--v2-text-text-muted);
+-  background-color: var(--v2-background-bg-base);
+-  transition: color 120ms ease;
+-
+-  [data-slot="interface-mode-option"]:hover &,
+-  [data-checked] & {
+-    color: var(--v2-text-text-base);
+-  }
 -}
 diff --git a/packages/app/src/settings/general/interface-mode.tsx b/packages/app/src/settings/general/interface-mode.tsx
 deleted file mode 100644
-index 6cba5f6637..0000000000
+index 5d7bf82..0000000
 --- a/packages/app/src/settings/general/interface-mode.tsx
 +++ /dev/null
-@@ -1,173 +0,0 @@
--import { For, Match, Show, Switch, createUniqueId } from "solid-js"
+@@ -1,83 +0,0 @@
+-import { For, Match, Switch, createUniqueId } from "solid-js"
 -import { useLanguage } from "@/runtime/i18n/language"
 -import { type TabLayout, useSettings } from "@/settings/model"
+-import { SettingsRow } from "@/settings/row"
 -import "./interface-mode.css"
 -
 -const modes = [
@@ -306,167 +237,76 @@ index 6cba5f6637..0000000000
 -  const id = createUniqueId()
 -
 -  return (
--    <fieldset data-component="interface-mode" data-action="settings-tab-layout">
--      <legend class="sr-only">{language.t("settings.general.row.interfaceMode.title")}</legend>
--      <For each={modes}>
--        {(mode) => (
--          <label
--            data-slot="interface-mode-option"
--            data-checked={settings.appearance.tabLayout() === mode.layout ? "" : undefined}
--          >
--            <input
--              type="radio"
--              name={id}
--              value={mode.id}
--              checked={settings.appearance.tabLayout() === mode.layout}
--              aria-labelledby={`${id}-${mode.id}-title`}
--              aria-describedby={`${id}-${mode.id}`}
--              onChange={() => settings.appearance.setTabLayout(mode.layout)}
--            />
--            <div data-slot="interface-mode-preview" data-mode={mode.id} aria-hidden="true">
--              <Switch>
--                <Match when={mode.id === "top"}>
--                  <TopTabsPreview />
--                </Match>
--                <Match when={mode.id === "side"}>
--                  <SideTabsPreview />
--                </Match>
--                <Match when={mode.id === "inbox"}>
--                  <InboxPreview />
--                </Match>
--              </Switch>
--            </div>
--            <div data-slot="interface-mode-copy">
--              <span data-slot="interface-mode-title">
--                <span data-slot="interface-mode-radio" />
--                <span id={`${id}-${mode.id}-title`}>{language.t(`settings.general.row.interfaceMode.${mode.id}`)}</span>
--                <Show when={mode.id === "inbox"}>
--                  <span data-slot="interface-mode-badge">
--                    {language.t("settings.general.row.interfaceMode.experimental")}
--                  </span>
--                </Show>
+-    <SettingsRow
+-      title={language.t("settings.general.row.interfaceMode.title")}
+-      description={language.t("settings.general.row.interfaceMode.description")}
+-      align="start"
+-    >
+-      <fieldset data-component="interface-mode" data-action="settings-tab-layout">
+-        <legend class="sr-only">{language.t("settings.general.row.interfaceMode.title")}</legend>
+-        <For each={modes}>
+-          {(mode) => (
+-            <label
+-              data-slot="interface-mode-option"
+-              data-checked={settings.appearance.tabLayout() === mode.layout ? "" : undefined}
+-            >
+-              <input
+-                type="radio"
+-                name={id}
+-                value={mode.id}
+-                checked={settings.appearance.tabLayout() === mode.layout}
+-                onChange={() => settings.appearance.setTabLayout(mode.layout)}
+-              />
+-              <span data-slot="interface-mode-sketch" data-mode={mode.id} aria-hidden="true">
+-                <Switch>
+-                  <Match when={mode.id === "top"}>
+-                    <span data-slot="preview-strip">
+-                      <For each={[0, 1, 2]}>
+-                        {(index) => <span data-slot="preview-tab" data-active={index === 0 ? "" : undefined} />}
+-                      </For>
+-                    </span>
+-                  </Match>
+-                  <Match when={mode.id === "side"}>
+-                    <span data-slot="preview-rail">
+-                      <For each={[0, 1, 2, 3]}>
+-                        {(index) => <span data-slot="preview-tab" data-active={index === 0 ? "" : undefined} />}
+-                      </For>
+-                    </span>
+-                  </Match>
+-                  <Match when={mode.id === "inbox"}>
+-                    <span data-slot="preview-rail">
+-                      <For each={inboxRows}>
+-                        {(status, index) => (
+-                          <span data-slot="preview-tab" data-active={index() === 0 ? "" : undefined}>
+-                            <i data-status={status} />
+-                          </span>
+-                        )}
+-                      </For>
+-                    </span>
+-                  </Match>
+-                </Switch>
+-                <span data-slot="preview-page">
+-                  <span data-slot="preview-line" />
+-                  <span data-slot="preview-line" />
+-                  <span data-slot="preview-composer" />
+-                </span>
 -              </span>
--              <span id={`${id}-${mode.id}`} data-slot="interface-mode-description">
--                {language.t(`settings.general.row.interfaceMode.${mode.id}.description`)}
--              </span>
--            </div>
--          </label>
--        )}
--      </For>
--    </fieldset>
--  )
--}
--
--// The modes differ only in where sessions are listed, so every preview shares one workspace.
--function TopTabsPreview() {
--  return (
--    <>
--      <div data-slot="preview-tabs">
--        <For each={[60, 44, 52]}>
--          {(width, index) => (
--            <span data-slot="preview-tab" data-active={index() === 0 ? "" : undefined}>
--              <i />
--              <span style={{ width: `${width}%` }} />
--            </span>
+-              <span data-slot="interface-mode-name">{language.t(`settings.general.row.interfaceMode.${mode.id}`)}</span>
+-            </label>
 -          )}
 -        </For>
--      </div>
--      <PreviewWorkspace />
--    </>
+-      </fieldset>
+-    </SettingsRow>
 -  )
 -}
 -
--function SideTabsPreview() {
--  return (
--    <div data-slot="preview-body">
--      <div data-slot="preview-rail">
--        <For each={[70, 52, 64, 44, 58, 36]}>
--          {(width, index) => (
--            <span data-slot="preview-tab" data-active={index() === 1 ? "" : undefined}>
--              <i />
--              <span style={{ width: `${width}%` }} />
--            </span>
--          )}
--        </For>
--      </div>
--      <PreviewWorkspace />
--    </div>
--  )
--}
--
--// Mirrors the inbox: sessions that need you, then finished work, then sessions still running.
--const inboxSections = [
--  { rows: [{ width: 68, status: "approval" }] },
--  {
--    rows: [
--      { width: 56, status: "done" },
--      { width: 72, status: "done" },
--    ],
--  },
--  {
--    rows: [
--      { width: 48, status: "working" },
--      { width: 62, status: "working" },
--    ],
--  },
--] as const
--
--function InboxPreview() {
--  return (
--    <div data-slot="preview-body">
--      <div data-slot="preview-rail">
--        <For each={inboxSections}>
--          {(section, sectionIndex) => (
--            <>
--              <span data-slot="preview-rail-heading" />
--              <For each={section.rows}>
--                {(row, index) => (
--                  <span data-slot="preview-tab" data-active={sectionIndex() === 1 && index() === 0 ? "" : undefined}>
--                    <i data-status={row.status} />
--                    <span style={{ width: `${row.width}%` }} />
--                  </span>
--                )}
--              </For>
--            </>
--          )}
--        </For>
--      </div>
--      <PreviewWorkspace />
--    </div>
--  )
--}
--
--function PreviewWorkspace() {
--  return (
--    <div data-slot="preview-body">
--      <div data-slot="preview-main">
--        <div data-slot="preview-toolbar">
--          <i />
--          <i />
--          <i />
--          <i />
--        </div>
--        <For each={[92, 78, 84, 60, 88, 70, 40]}>
--          {(width) => <span data-slot="preview-line" style={{ width: `${width}%` }} />}
--        </For>
--        <span data-slot="preview-composer">
--          <i />
--          <i />
--        </span>
--      </div>
--      <div data-slot="preview-panel">
--        <For each={[80, 64, 72, 50, 68]}>
--          {(width) => <span data-slot="preview-line" style={{ width: `${width}%` }} />}
--        </For>
--      </div>
--    </div>
--  )
--}
+-// Mirrors the inbox: a session that needs you, then finished work, then sessions still running.
+-const inboxRows = ["approval", "done", "working", "working"] as const
 diff --git a/packages/app/src/settings/model.test.ts b/packages/app/src/settings/model.test.ts
-index 02cdbfd7ac..85403fbb00 100644
+index d499712..09c2a46 100644
 --- a/packages/app/src/settings/model.test.ts
 +++ b/packages/app/src/settings/model.test.ts
-@@ -105,7 +105,7 @@ describe("settings schema", () => {
+@@ -107,7 +107,7 @@ describe("settings schema", () => {
          mono: "",
          sans: "",
          terminal: "",
@@ -476,10 +316,10 @@ index 02cdbfd7ac..85403fbb00 100644
        },
        keybinds: {},
 diff --git a/packages/app/src/settings/model.tsx b/packages/app/src/settings/model.tsx
-index 2aca8cea06..30300d83c2 100644
+index 6df3823..c444c29 100644
 --- a/packages/app/src/settings/model.tsx
 +++ b/packages/app/src/settings/model.tsx
-@@ -303,7 +303,7 @@ export const defaultSettings: Settings = {
+@@ -311,7 +311,7 @@ export const defaultSettings: Settings = {
      mobileTitlebarPosition: "top",
      followUpBehavior: "steer",
    },
@@ -488,7 +328,7 @@ index 2aca8cea06..30300d83c2 100644
    keybinds: {},
    permissions: { autoApprove: false, autoApproveProjects: {} },
    workspaces: { defaultDestination: "last-used", lastUsed: {} },
-@@ -444,9 +444,11 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
+@@ -462,9 +462,11 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
          setTerminalFont(value: string) {
            setStore("appearance", "terminal", value.trim() ? value : "")
          },
@@ -504,7 +344,7 @@ index 2aca8cea06..30300d83c2 100644
          sidebarOpen: withFallback(() => store.appearance?.sidebarOpen, true),
          setSidebarOpen(value: boolean) {
 diff --git a/packages/app/src/settings/search-catalog.ts b/packages/app/src/settings/search-catalog.ts
-index c58dd1d67f..71de9109ee 100644
+index 7429fa4..9cc467a 100644
 --- a/packages/app/src/settings/search-catalog.ts
 +++ b/packages/app/src/settings/search-catalog.ts
 @@ -23,12 +23,6 @@ export const clientSettings: Entry<SettingsRootTab>[] = [
@@ -521,7 +361,7 @@ index c58dd1d67f..71de9109ee 100644
      tab: "general",
      label: "settings.workspaces.default.title",
 diff --git a/packages/app/src/settings/search-results.test.ts b/packages/app/src/settings/search-results.test.ts
-index abd1f55f68..b81f35356d 100644
+index 51469e2..196411a 100644
 --- a/packages/app/src/settings/search-results.test.ts
 +++ b/packages/app/src/settings/search-results.test.ts
 @@ -54,7 +54,7 @@ describe("settings search index", () => {
@@ -534,21 +374,21 @@ index abd1f55f68..b81f35356d 100644
      expect(targets({ desktop: true })).toContain("settings-zoom")
      expect(targets({ browser: true })).not.toContain("settings-experimental-browser")
 diff --git a/packages/app/src/settings/workspaces/project-options.tsx b/packages/app/src/settings/workspaces/project-options.tsx
-index 6e38025a79..b77d44ca2c 100644
+index 3f988f0..501bd6a 100644
 --- a/packages/app/src/settings/workspaces/project-options.tsx
 +++ b/packages/app/src/settings/workspaces/project-options.tsx
-@@ -17,6 +17,7 @@ export const ProjectOptions: Component<{
-   onOpenChange?: (open: boolean) => void
+@@ -19,6 +19,7 @@ export const ProjectOptions: Component<{
    onEdit?: () => void
    onRename?: () => void
+   onAdd?: () => void
 +  onClose?: () => void
    class?: string
    size?: "small" | "normal" | "large"
  }> = (props) => {
-@@ -65,6 +66,14 @@ export const ProjectOptions: Component<{
-           <Menu.Item disabled={!hasUnread()} onSelect={clearNotifications}>
-             {language.t("sidebar.project.clearNotifications")}
-           </Menu.Item>
+@@ -74,6 +75,14 @@ export const ProjectOptions: Component<{
+               {language.t("sidebar.project.clearNotifications")}
+             </Menu.Item>
+           </Show>
 +          <Show when={props.onClose} keyed>
 +            {(close) => (
 +              <>
@@ -561,23 +401,23 @@ index 6e38025a79..b77d44ca2c 100644
        </Menu.Portal>
      </Menu>
 diff --git a/packages/app/src/settings/workspaces/project-row.tsx b/packages/app/src/settings/workspaces/project-row.tsx
-index e53d586048..5c7caea0f5 100644
+index f644740..fe50ad4 100644
 --- a/packages/app/src/settings/workspaces/project-row.tsx
 +++ b/packages/app/src/settings/workspaces/project-row.tsx
-@@ -147,6 +147,11 @@ export function SettingsProjectRow(props: {
-             onOpenChange={(open) => setStore("menu", open)}
+@@ -113,6 +113,11 @@ export function SettingsProjectRow(props: {
              onEdit={() => props.onOpen(props.project)}
-             onRename={openEditor}
+             onRename={() => rename.start(displayName(props.project))}
+             onAdd={props.onAdd}
 +            onClose={() => {
 +              // Closing removes the project from this client's lists; the folder and
 +              // its sessions stay on disk/server.
-+              global.ensureServerCtx(props.server).projects.hide(props.project)
++              context.projects.hide(props.project)
 +            }}
            />
          </Show>
        </div>
 diff --git a/packages/app/src/settings/workspaces/project.tsx b/packages/app/src/settings/workspaces/project.tsx
-index 8a16dc55f3..e2adef1100 100644
+index 958c33b..baca982 100644
 --- a/packages/app/src/settings/workspaces/project.tsx
 +++ b/packages/app/src/settings/workspaces/project.tsx
 @@ -13,7 +13,8 @@ import { useLanguage } from "@/runtime/i18n/language"
@@ -616,16 +456,3 @@ index 8a16dc55f3..e2adef1100 100644
          </div>
        </div>
  
-diff --git a/packages/app/src/settings/workspaces/projects.tsx b/packages/app/src/settings/workspaces/projects.tsx
-index 8935345f1e..c5adde5c15 100644
---- a/packages/app/src/settings/workspaces/projects.tsx
-+++ b/packages/app/src/settings/workspaces/projects.tsx
-@@ -28,7 +28,7 @@ export const SettingsProjects: Component<{
-   const pickDirectory = useDirectoryPicker()
-   const [store, setStore] = createStore({ filter: "" })
-   const context = createMemo(() => global.ensureServerCtx(props.server))
--  const projects = createMemo(() => context().projects.list())
-+  const projects = createMemo(() => context().projects.used())
-   const searchable = createMemo(() => projects().length > 7)
- 
-   const filtered = createMemo(() => {

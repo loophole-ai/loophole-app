@@ -1,5 +1,5 @@
 diff --git a/NOTICE.md b/NOTICE.md
-index dfaa211..86d7e0a 100644
+index fabd49f..fe1afcf 100644
 --- a/NOTICE.md
 +++ b/NOTICE.md
 @@ -16,4 +16,35 @@ under a proprietary license.
@@ -41,7 +41,7 @@ index dfaa211..86d7e0a 100644
 +OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 +SOFTWARE.
 diff --git a/packages/cli/package.json b/packages/cli/package.json
-index 512e2ba..9b0bd17 100644
+index b084cc3..3672fa1 100644
 --- a/packages/cli/package.json
 +++ b/packages/cli/package.json
 @@ -31,6 +31,7 @@
@@ -49,37 +49,26 @@ index 512e2ba..9b0bd17 100644
      "@clack/prompts": "1.0.0-alpha.1",
      "@effect/platform-node": "catalog:",
 +    "@loophole/tui-pi": "workspace:*",
-     "@opencode-ai/pty": "0.3.1",
      "@opencode/client": "workspace:*",
      "@opencode/plugin": "workspace:*",
+     "@opencode/pty": "0.4.0",
 diff --git a/packages/cli/src/commands/handlers/run.ts b/packages/cli/src/commands/handlers/run.ts
-index 535dc90..032a23a 100644
+index 91f22df..dc5ec1f 100644
 --- a/packages/cli/src/commands/handlers/run.ts
 +++ b/packages/cli/src/commands/handlers/run.ts
-@@ -12,21 +12,47 @@ export default Runtime.handler(Commands.commands.run, (input) =>
+@@ -12,6 +12,38 @@ export default Runtime.handler(Commands.commands.run, (input) =>
        Effect.catch((error) => Effect.sync(() => reportRunError(input, error.message))),
      )
      if (!server) return
--    yield* Effect.promise(() =>
--      runNonInteractive({
--        server,
--        message: [...input.message, ...(separator === -1 ? [] : process.argv.slice(separator + 1))],
--        continue: input.continue,
--        session: Option.getOrUndefined(input.session),
--        fork: input.fork,
--        model: Option.getOrUndefined(input.model),
--        agent: Option.getOrUndefined(input.agent),
--        format: input.format,
--        file: [...input.file],
--        title: Option.getOrUndefined(input.title),
--        thinking: input.thinking,
--        auto: input.auto || input.yolo || input.dangerouslySkipPermissions,
--      }),
--    )
 +
-+    // Use the pi-tui screen for plain terminal runs. Attached files still go through the
-+    // non-interactive path, because the interactive UI cannot attach them yet.
-+    const useInteractive = input.format === "default" && process.stdin.isTTY && input.file.length === 0
++    // Use the pi-tui screen for plain terminal runs. Attached files, worktrees and archived
++    // runs still go through the non-interactive path, which owns those options.
++    const useInteractive =
++      input.format === "default" &&
++      process.stdin.isTTY &&
++      input.file.length === 0 &&
++      input.worktree === undefined &&
++      input.archived === undefined
 +
 +    if (useInteractive) {
 +      // Loaded lazily so non-interactive runs never evaluate the pi-tui engine.
@@ -87,7 +76,7 @@ index 535dc90..032a23a 100644
 +      yield* Effect.promise(() =>
 +        runInteractive({
 +          server,
-+          message: [...input.message, ...(separator === -1 ? [] : process.argv.slice(separator + 1))],
++          message: [...input.message],
 +          continue: input.continue,
 +          session: Option.getOrUndefined(input.session),
 +          fork: input.fork,
@@ -100,26 +89,12 @@ index 535dc90..032a23a 100644
 +          auto: input.auto || input.yolo || input.dangerouslySkipPermissions,
 +        }),
 +      )
-+    } else {
-+      yield* Effect.promise(() =>
-+        runNonInteractive({
-+          server,
-+          message: [...input.message, ...(separator === -1 ? [] : process.argv.slice(separator + 1))],
-+          continue: input.continue,
-+          session: Option.getOrUndefined(input.session),
-+          fork: input.fork,
-+          model: Option.getOrUndefined(input.model),
-+          agent: Option.getOrUndefined(input.agent),
-+          format: input.format,
-+          file: [...input.file],
-+          title: Option.getOrUndefined(input.title),
-+          thinking: input.thinking,
-+          auto: input.auto || input.yolo || input.dangerouslySkipPermissions,
-+        }),
-+      )
++      return
 +    }
-   }),
- )
++
+     yield* Effect.promise(() =>
+       runNonInteractive({
+         server,
 diff --git a/packages/cli/src/run/interactive.ts b/packages/cli/src/run/interactive.ts
 new file mode 100644
 index 0000000..4708f4c

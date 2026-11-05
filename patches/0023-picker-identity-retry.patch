@@ -1,8 +1,8 @@
 diff --git a/packages/ai/src/provider-error.ts b/packages/ai/src/provider-error.ts
-index 1822eede06..a3150da8fd 100644
+index c993b5d..f0c0af3 100644
 --- a/packages/ai/src/provider-error.ts
 +++ b/packages/ai/src/provider-error.ts
-@@ -190,6 +190,10 @@ const SERVER_ERROR_TEXT =
+@@ -154,6 +154,10 @@ const SERVER_ERROR_TEXT =
  
  const Message = Schema.String.check(Schema.isPattern(/\S/))
  
@@ -13,7 +13,7 @@ index 1822eede06..a3150da8fd 100644
  const messageAt = <Fields extends Schema.Struct.Fields>(
    fields: Fields,
    message: (body: Schema.Struct<Fields>["Type"]) => string,
-@@ -206,6 +210,11 @@ const messageAt = <Fields extends Schema.Struct.Fields>(
+@@ -170,6 +174,11 @@ const messageAt = <Fields extends Schema.Struct.Fields>(
  const decodeMessage = Schema.decodeUnknownOption(
    Schema.fromJsonString(
      Schema.Union([
@@ -26,10 +26,10 @@ index 1822eede06..a3150da8fd 100644
        messageAt({ error: Message }, (body) => body.error),
        messageAt({ message: Message }, (body) => body.message),
 diff --git a/packages/ai/test/provider-error.test.ts b/packages/ai/test/provider-error.test.ts
-index 6b266533cc..c7800c134e 100644
+index 9f25e0c..3b468a7 100644
 --- a/packages/ai/test/provider-error.test.ts
 +++ b/packages/ai/test/provider-error.test.ts
-@@ -57,6 +57,25 @@ describe("provider error classification", () => {
+@@ -59,6 +59,25 @@ describe("provider error classification", () => {
      expect(messages.some(isContextOverflow)).toBe(false)
    })
  
@@ -56,7 +56,7 @@ index 6b266533cc..c7800c134e 100644
      expect(
        [
 diff --git a/packages/cli/src/screen/controller.ts b/packages/cli/src/screen/controller.ts
-index 1d1d60bc4a..f06e3e6596 100644
+index 1d1d60b..f06e3e6 100644
 --- a/packages/cli/src/screen/controller.ts
 +++ b/packages/cli/src/screen/controller.ts
 @@ -1908,28 +1908,37 @@ export class ScreenController {
@@ -131,10 +131,10 @@ index 1d1d60bc4a..f06e3e6596 100644
          )
        }
 diff --git a/packages/core/src/aisdk.ts b/packages/core/src/aisdk.ts
-index d90beb9ec0..97fc2e03be 100644
+index d0899dd..b966372 100644
 --- a/packages/core/src/aisdk.ts
 +++ b/packages/core/src/aisdk.ts
-@@ -1021,6 +1021,9 @@ function errorBody(value: unknown) {
+@@ -1020,6 +1020,9 @@ function errorBody(value: unknown) {
  const ProviderErrorDetail = Schema.Struct({
    message: Schema.optionalKey(Schema.String),
    code: Schema.optionalKey(Schema.Union([Schema.String, Schema.Finite])),
@@ -144,7 +144,7 @@ index d90beb9ec0..97fc2e03be 100644
  })
  const ProviderErrorBody = Schema.Struct({
    ...ProviderErrorDetail.fields,
-@@ -1043,16 +1046,31 @@ function unknownErrorMessage(error: unknown) {
+@@ -1042,16 +1045,31 @@ function unknownErrorMessage(error: unknown) {
    return message.trim() === "" ? "Provider request failed" : message
  }
  
@@ -176,9 +176,9 @@ index d90beb9ec0..97fc2e03be 100644
 +  )
  }
  
- export const node = makeLocationNode({ service: Service, layer: locationLayer, deps: [] })
+ export const node = makeLocationNode({ service: Service, layer: locationLayer, deps: [httpFetch] })
 diff --git a/packages/core/src/plugin/identity.ts b/packages/core/src/plugin/identity.ts
-index e6e301607f..dad1d969c1 100644
+index e6e3016..dad1d96 100644
 --- a/packages/core/src/plugin/identity.ts
 +++ b/packages/core/src/plugin/identity.ts
 @@ -9,8 +9,12 @@ import { OptimizePlugin } from "./optimize.js"
@@ -197,7 +197,7 @@ index e6e301607f..dad1d969c1 100644
      `- Model ID: ${model.ref.id}`,
    ].join("\n")
 diff --git a/packages/core/src/plugin/system-prompt/gpt-astra.txt b/packages/core/src/plugin/system-prompt/gpt-astra.txt
-index 42e8c513fd..cf928d106d 100644
+index 42e8c51..cf928d1 100644
 --- a/packages/core/src/plugin/system-prompt/gpt-astra.txt
 +++ b/packages/core/src/plugin/system-prompt/gpt-astra.txt
 @@ -1,4 +1,4 @@
@@ -207,7 +207,7 @@ index 42e8c513fd..cf928d106d 100644
  # Harness
  - Responses are rendered as GitHub-flavored Markdown.
 diff --git a/packages/core/src/plugin/system-prompt/gpt.txt b/packages/core/src/plugin/system-prompt/gpt.txt
-index 2b32bd4330..2cfd45ef53 100644
+index 2b32bd4..2cfd45e 100644
 --- a/packages/core/src/plugin/system-prompt/gpt.txt
 +++ b/packages/core/src/plugin/system-prompt/gpt.txt
 @@ -1,4 +1,4 @@
@@ -217,7 +217,7 @@ index 2b32bd4330..2cfd45ef53 100644
  # Harness
  - Responses are rendered as GitHub-flavored Markdown.
 diff --git a/packages/core/src/plugin/system-prompt/kimi.txt b/packages/core/src/plugin/system-prompt/kimi.txt
-index 2a447784fb..d7ae3e39b8 100644
+index 2a44778..d7ae3e3 100644
 --- a/packages/core/src/plugin/system-prompt/kimi.txt
 +++ b/packages/core/src/plugin/system-prompt/kimi.txt
 @@ -1,4 +1,4 @@
@@ -227,7 +227,7 @@ index 2a447784fb..d7ae3e39b8 100644
  Your primary goal is to help users with software engineering tasks by taking action — use the tools available to you to make real changes on the user's system. You should also answer questions when asked. Always adhere strictly to the following system instructions and the user's requirements.
  
 diff --git a/packages/core/src/plugin/system-prompt/meta.txt b/packages/core/src/plugin/system-prompt/meta.txt
-index e2e78f2ca1..09c156b36e 100644
+index e2e78f2..09c156b 100644
 --- a/packages/core/src/plugin/system-prompt/meta.txt
 +++ b/packages/core/src/plugin/system-prompt/meta.txt
 @@ -1,4 +1,4 @@
@@ -237,7 +237,7 @@ index e2e78f2ca1..09c156b36e 100644
  Use the instructions below and the tools available to assist the user.
  
 diff --git a/packages/core/src/plugin/system-prompt/trinity.txt b/packages/core/src/plugin/system-prompt/trinity.txt
-index e8496d8b35..e531bf712b 100644
+index e8496d8..e531bf7 100644
 --- a/packages/core/src/plugin/system-prompt/trinity.txt
 +++ b/packages/core/src/plugin/system-prompt/trinity.txt
 @@ -1,4 +1,4 @@
@@ -247,7 +247,7 @@ index e8496d8b35..e531bf712b 100644
  # Tone and style
  You should be concise, direct, and to the point. When you run a non-trivial shell command, you should explain what the command does and why you are running it, to make sure the user understands what you are doing (this is especially important when you are running a command that will make changes to the user's system).
 diff --git a/packages/core/src/session/runner/prompt/system.txt b/packages/core/src/session/runner/prompt/system.txt
-index bcd859a5e8..79add2337b 100644
+index bcd859a..79add23 100644
 --- a/packages/core/src/session/runner/prompt/system.txt
 +++ b/packages/core/src/session/runner/prompt/system.txt
 @@ -1,4 +1,4 @@
@@ -257,7 +257,7 @@ index bcd859a5e8..79add2337b 100644
  # Harness
  - Responses are rendered as GitHub-flavored Markdown.
 diff --git a/packages/core/test/fixtures/recordings/session-runner/openai-chat-streams-text.json b/packages/core/test/fixtures/recordings/session-runner/openai-chat-streams-text.json
-index 9c8baae120..c1a376260f 100644
+index 9c8baae..c1a3762 100644
 --- a/packages/core/test/fixtures/recordings/session-runner/openai-chat-streams-text.json
 +++ b/packages/core/test/fixtures/recordings/session-runner/openai-chat-streams-text.json
 @@ -13,7 +13,7 @@
@@ -270,7 +270,7 @@ index 9c8baae120..c1a376260f 100644
        "response": {
          "status": 200,
 diff --git a/packages/core/test/plugin/identity.test.ts b/packages/core/test/plugin/identity.test.ts
-index b5b97f3233..94eab70230 100644
+index 4809071..540ed8f 100644
 --- a/packages/core/test/plugin/identity.test.ts
 +++ b/packages/core/test/plugin/identity.test.ts
 @@ -21,11 +21,19 @@ test("formats the model identity part", () => {
@@ -297,10 +297,10 @@ index b5b97f3233..94eab70230 100644
  const context = (id: string): SessionHooks["context"] => ({
    sessionID: Session.ID.make("ses_model_identity"),
 diff --git a/packages/core/test/session-runner.test.ts b/packages/core/test/session-runner.test.ts
-index 3ccc251819..98c74c5b9b 100644
+index edffb0b..d09aa59 100644
 --- a/packages/core/test/session-runner.test.ts
 +++ b/packages/core/test/session-runner.test.ts
-@@ -123,8 +123,15 @@ const testModel = (id: string, limit: ModelLimit = defaultModelLimit) => {
+@@ -126,8 +126,15 @@ const testModel = (id: string, limit: ModelLimit = defaultModelLimit) => {
  }
  const model = testModel("fake-model")
  const defaultSystem = SessionSystemPrompt.make([])
@@ -318,7 +318,7 @@ index 3ccc251819..98c74c5b9b 100644
  const replacementIdentity = identity("fake", "replacement")
  const gptIdentity = identity("openai", "gpt-5")
 diff --git a/packages/screen/src/screen.ts b/packages/screen/src/screen.ts
-index f5d068470b..41f9f56b9f 100644
+index f5d0684..41f9f56 100644
 --- a/packages/screen/src/screen.ts
 +++ b/packages/screen/src/screen.ts
 @@ -552,29 +552,49 @@ export class Screen {

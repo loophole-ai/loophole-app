@@ -39,6 +39,7 @@ patches/
   0028-tool-card-repaint.patch  repaint finished tool cards; local shell says running…
   0029-desktop-ship-polish.patch  desktop updater only moves forward; metadata and issue links
   0030-desktop-menu-brand.patch  Windows app menu heading says Loophole instead of OpenCode
+  0031-upstream-sync-tool-namespace.patch  newer upstream tests follow the Loophole tool namespace
   user/                        optional extra patches, applied after the numbered stack
   series                       legacy list, ignored by the scripts (sorted order wins)
   @ai-sdk%2F...@x.patch         copies of upstream bun patchedDependencies - NEVER applied

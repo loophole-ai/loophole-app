@@ -93,10 +93,3 @@ jobs:
             echo ""
             echo "**Download:** $LINK"
           } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload CLI exe artifact (backup)
-        uses: actions/upload-artifact@v4
-        with:
-          name: loophole-cli-windows-exe
-          path: opencode/packages/cli/dist/cli-windows-x64-baseline/bin/loophole-cli.exe
-          if-no-files-found: error
