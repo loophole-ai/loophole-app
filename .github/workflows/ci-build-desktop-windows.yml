@@ -39,7 +39,7 @@ on:
         required: false
         default: ""
       cli_version:
-        description: "Bundled CLI version (empty = 1.1.0)"
+        description: "Bundled CLI version (empty = 1.1.1)"
         required: false
         default: ""
 
@@ -83,7 +83,7 @@ jobs:
           fi
           if [ -z "$cli" ]; then
             # Pinned bundled CLI version; bump when cutting a new CLI.
-            cli="1.1.0"
+            cli="1.1.1"
           fi
           if [ -z "$desktop" ] || [ -z "$cli" ]; then
             echo "::error::could not resolve versions (desktop='$desktop' cli='$cli')"
@@ -122,19 +122,28 @@ jobs:
           OPENCODE_VERSION: ${{ steps.versions.outputs.desktop }}
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
-      - name: Upload installer to gofile
+      - name: Package portable zip
         run: |
           cd opencode/packages/desktop/dist
-          EXE=$(find . -maxdepth 1 -name "*.exe" | head -n 1)
-          ls -la "$EXE"
+          DIR=$(find . -maxdepth 1 -type d -name "*unpacked*" | head -n 1)
+          if [ -z "$DIR" ]; then echo "::error::no unpacked app directory"; exit 1; fi
+          rm -f loophole-desktop-windows-x64.zip
+          ( cd "$DIR" && 7z a -tzip ../loophole-desktop-windows-x64.zip ./* > /dev/null )
+          ls -lh loophole-desktop-windows-x64.zip
+
+      - name: Upload portable zip to gofile
+        run: |
+          cd opencode/packages/desktop/dist
+          ZIP=loophole-desktop-windows-x64.zip
+          ls -la "$ZIP"
           SERVER=$(curl -s https://api.gofile.io/servers | jq -r '.data.servers[0].name')
           echo "gofile server: $SERVER"
-          RESP=$(curl -s -F "file=@$EXE;filename=loophole-desktop-windows-x64.exe" "https://$SERVER.gofile.io/contents/uploadfile")
+          RESP=$(curl -s -F "file=@$ZIP;filename=$ZIP" "https://$SERVER.gofile.io/contents/uploadfile")
           echo "$RESP" | jq .
           LINK=$(echo "$RESP" | jq -r '.data.downloadPage // empty')
           if [ -z "$LINK" ]; then echo "## gofile upload failed" >> "$GITHUB_STEP_SUMMARY"; exit 1; fi
           {
-            echo "## Loophole Desktop (windows x64, unsigned installer)"
+            echo "## Loophole Desktop (windows x64, unsigned portable zip)"
             echo ""
             echo "Version: \`${{ steps.versions.outputs.desktop }}\` (bundled CLI \`${{ steps.versions.outputs.cli }}\`)"
             echo ""
