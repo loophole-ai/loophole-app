@@ -1,0 +1,13 @@
+diff --git a/packages/app/src/shell/titlebar/windows-menu.tsx b/packages/app/src/shell/titlebar/windows-menu.tsx
+index c5325b2..c6118cd 100644
+--- a/packages/app/src/shell/titlebar/windows-menu.tsx
++++ b/packages/app/src/shell/titlebar/windows-menu.tsx
+@@ -124,7 +124,7 @@ export function WindowsAppMenu(props: {
+       <Menu.Portal>
+         <Menu.Content class="desktop-app-menu">
+           <Menu.Group>
+-            <Menu.GroupLabel class="desktop-app-menu-heading">OpenCode</Menu.GroupLabel>
++            <Menu.GroupLabel class="desktop-app-menu-heading">Loophole</Menu.GroupLabel>
+             <For each={DESKTOP_MENU.filter((menu) => desktopMenuVisible(menu, "windows"))}>
+               {(menu) => (
+                 <DesktopMenuSubmenu label={language.t(menu.labelKey)}>
