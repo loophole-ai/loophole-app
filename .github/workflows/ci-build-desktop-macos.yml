@@ -39,7 +39,8 @@ on:
         required: false
         default: ""
 
-permissions: {}
+permissions:
+  contents: read
 
 env:
   APP_NAME: Loophole
