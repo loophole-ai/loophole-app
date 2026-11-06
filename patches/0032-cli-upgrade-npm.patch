@@ -1,0 +1,116 @@
+diff --git a/packages/cli/src/services/updater.ts b/packages/cli/src/services/updater.ts
+index b0993b8..b171d8b 100644
+--- a/packages/cli/src/services/updater.ts
++++ b/packages/cli/src/services/updater.ts
+@@ -142,7 +142,6 @@ const make = Effect.gen(function* () {
+   const appProcess = yield* AppProcess.Service
+   const flock = yield* EffectFlock.Service
+   const installedVersion = yield* Ref.make(OPENCODE_VERSION)
+-  const channel = OPENCODE_CHANNEL.replace(/[^a-zA-Z0-9._-]/g, "-")
+   const executable = yield* fs.realPath(process.execPath).pipe(Effect.orElseSucceed(() => process.execPath))
+   const installedPackage = yield* Effect.gen(function* () {
+     const directory = path.dirname(path.dirname(executable))
+@@ -155,7 +154,7 @@ const make = Effect.gen(function* () {
+       return manifest.name
+   }).pipe(Effect.orElseSucceed(() => undefined))
+   // Homebrew formulae published for this fork.
+-  const installedFormula = ["loophole", "loophole-beta"].find((name) =>
++  const installedFormula = ["loophole-cli", "loophole-cli-beta", "loophole", "loophole-beta"].find((name) =>
+     executable.includes(`${path.sep}Cellar${path.sep}${name}${path.sep}`),
+   )
+   // WinGet extracts portable packages into a directory named after the package identifier.
+@@ -273,19 +272,13 @@ const make = Effect.gen(function* () {
+   }
+ 
+   const release = Effect.fnUntraced(function* (method?: Method) {
+-    const distribution = method === "brew" ? "homebrew" : "npm"
+-    // Homebrew Core builds its formula on its own schedule, so the tap release does not describe it.
+-    const core = method === "brew" && installedFormula === "loophole"
++    // Every Loophole distribution ships from npm, so the registry is the update
++    // source. Homebrew installs the same tarballs through loophole-ai/homebrew-tap.
+     const response = yield* Effect.tryPromise({
+       try: (signal) =>
+-        fetch(
+-          core
+-            ? "https://formulae.brew.sh/api/formula/loophole.json"
+-            : `https://github.com/loophole-ai/loophole-app/releases/latest/download?channel=${encodeURIComponent(channel)}&artifact=${encodeURIComponent(OPENCODE_ARTIFACT)}&distribution=${encodeURIComponent(distribution)}&current=${encodeURIComponent(OPENCODE_VERSION)}`,
+-          {
+-            signal: AbortSignal.any([signal, AbortSignal.timeout(10_000)]),
+-          },
+-        ),
++        fetch("https://registry.npmjs.org/@loophole-ai/cli/latest", {
++          signal: AbortSignal.any([signal, AbortSignal.timeout(10_000)]),
++        }),
+       catch: (cause) =>
+         new UpgradeError(
+           {
+@@ -304,22 +297,19 @@ const make = Effect.gen(function* () {
+           retry: "Try again in a few minutes.",
+         }),
+       )
+-    const data: { version?: string; metadata?: { package?: string }; versions?: { stable?: string } } =
+-      yield* Effect.tryPromise({
+-        try: () => response.json(),
+-        catch: (cause) =>
+-          new UpgradeError(
+-            {
+-              title: "Could not read the Loophole update information",
+-              detail: errorDetail(cause),
+-              retry: "Try again in a few minutes.",
+-            },
+-            { cause },
+-          ),
+-      })
+-    const version = core ? data.versions?.stable : data.version
+-    const packageName = core ? "loophole" : data.metadata?.package
+-    if (!version || !packageName)
++    const data: { version?: string } = yield* Effect.tryPromise({
++      try: () => response.json(),
++      catch: (cause) =>
++        new UpgradeError(
++          {
++            title: "Could not read the Loophole update information",
++            detail: errorDetail(cause),
++            retry: "Try again in a few minutes.",
++          },
++          { cause },
++        ),
++    })
++    if (!data.version)
+       return yield* Effect.fail(
+         new UpgradeError({
+           title: "Could not read the Loophole update information",
+@@ -327,7 +317,7 @@ const make = Effect.gen(function* () {
+           retry: "Try again in a few minutes.",
+         }),
+       )
+-    return { package: packageName, version }
++    return { package: method === "brew" ? "loophole-cli" : "@loophole-ai/cli", version: data.version }
+   })
+ 
+   // WinGet moderates every submission, so only its own index knows which release it can install.
+@@ -425,12 +415,7 @@ const make = Effect.gen(function* () {
+   const upgrade = Effect.fnUntraced(function* (method: Method, input: string) {
+     if (!parseReleaseVersion(input)) return yield* Effect.fail(new Error(`Invalid version: ${input}`))
+     const version = input.trim().replace(/^v/, "")
+-    const packageName =
+-      method === "winget"
+-        ? wingetPackage
+-        : method === "brew" && installedFormula === "loophole"
+-          ? "loophole"
+-          : (yield* release(method)).package
++    const packageName = method === "winget" ? wingetPackage : (yield* release(method)).package
+     const target = `${packageName}@${version}`
+     if (installedPackage && packageName !== installedPackage && (method === "pnpm" || method === "yarn")) {
+       return yield* Effect.fail(new Error(`Reinstall ${target} with ${method} to migrate from ${installedPackage}.`))
+@@ -480,8 +465,8 @@ const make = Effect.gen(function* () {
+           const installer = path.join(directory, "install")
+           yield* runUpgrade({
+             method,
+-            command: ["curl", "-fsSL", "-o", installer, "https://raw.githubusercontent.com/loophole-ai/loophole-app/main/script/install.ts"],
+-            displayCommand: ["curl", "-fsSL", "https://raw.githubusercontent.com/loophole-ai/loophole-app/main/script/install.ts"],
++            command: ["curl", "-fsSL", "-o", installer, "https://github.com/loophole-ai/cli/releases/latest/download/install.sh"],
++            displayCommand: ["curl", "-fsSL", "https://github.com/loophole-ai/cli/releases/latest/download/install.sh"],
+             title: "Could not download the Loophole installer",
+             retry: "Check your network, then run loophole-cli upgrade again.",
+           })

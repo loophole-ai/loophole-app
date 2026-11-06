@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "CLI version (empty = 1.1.1)"
+        description: "CLI version (empty = 1.1.2)"
         required: false
         default: ""
 
@@ -63,7 +63,7 @@ jobs:
           version="${{ inputs.version }}"
           if [ -z "$version" ]; then
             # Pinned CLI version for this build; bump when cutting a new CLI.
-            version="1.1.1"
+            version="1.1.2"
           fi
           if [ -z "$version" ]; then
             echo "::error::could not resolve the latest CLI release"
