@@ -42,6 +42,7 @@ patches/
   0031-upstream-sync-tool-namespace.patch  newer upstream tests follow the Loophole tool namespace
   0032-cli-upgrade-npm.patch  resolve CLI updates from the npm registry; fix the curl installer URL
   0033-user-facing-paths.patch  user-facing config/log file and directory names say loophole
+  0034-desktop-wordmark-polish.patch  hide the OpenCode ghost behind the desktop wordmark; dull it and show the desktop version
   user/                        optional extra patches, applied after the numbered stack
   series                       legacy list, ignored by the scripts (sorted order wins)
   @ai-sdk%2F...@x.patch         copies of upstream bun patchedDependencies - NEVER applied
