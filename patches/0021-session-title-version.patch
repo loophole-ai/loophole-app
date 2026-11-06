@@ -7,7 +7,7 @@ index 29946b5..389fe5a 100644
    "$schema": "https://json.schemastore.org/package.json",
    "name": "@loophole-ai/cli",
 -  "version": "2.2.5",
-+  "version": "1.1.2",
++  "version": "1.1.3",
    "type": "module",
    "license": "UNLICENSED",
    "bin": {
@@ -110,7 +110,7 @@ index 1336448..c75f8ab 100644
  // Fallback version for local builds only. Release workflows pass OPENCODE_VERSION (or
  // LOOPHOLE_VERSION), which takes priority, so no release version lives in a patch.
 -const LOOPHOLE_PREVIEW_VERSION = "0.0.0"
-+const LOOPHOLE_PREVIEW_VERSION = "1.1.2"
++const LOOPHOLE_PREVIEW_VERSION = "1.1.3"
  
  const env = {
    OPENCODE_CHANNEL: process.env["OPENCODE_CHANNEL"],

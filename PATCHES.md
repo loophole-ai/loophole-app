@@ -1,4 +1,4 @@
-﻿# Patch System
+# Patch System
 
 Loophole is maintained as a set of **patches on top of upstream opencode** (the same model
 as VSCodium on top of VS Code). Loophole-specific changes never live as a long-lived fork
@@ -29,7 +29,7 @@ patches/
   0018-screen-polish.patch     narrow wordmark, provider-first models, model persistence, live rename
   0019-stats-update-palette.patch  /stats usage report, /update, Ctrl+Shift+P command palette
   0020-cli-name-and-search.patch  loophole-cli/lhc install name, Preparing server line, search in pickers
-  0021-session-title-version.patch  keep renamed session titles in sync; CLI 1.1.2
+  0021-session-title-version.patch  keep renamed session titles in sync; CLI 1.1.3
   0022-branding-and-picker.patch  drop the last OpenCode strings; harden the filter pickers
   0023-picker-identity-retry.patch  confirm rows in every picker; Loophole identity; free-router hint
   0024-connect-search.patch  search the /connect provider list
@@ -41,6 +41,7 @@ patches/
   0030-desktop-menu-brand.patch  Windows app menu heading says Loophole instead of OpenCode
   0031-upstream-sync-tool-namespace.patch  newer upstream tests follow the Loophole tool namespace
   0032-cli-upgrade-npm.patch  resolve CLI updates from the npm registry; fix the curl installer URL
+  0033-user-facing-paths.patch  user-facing config/log file and directory names say loophole
   user/                        optional extra patches, applied after the numbered stack
   series                       legacy list, ignored by the scripts (sorted order wins)
   @ai-sdk%2F...@x.patch         copies of upstream bun patchedDependencies - NEVER applied
