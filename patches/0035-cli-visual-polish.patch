@@ -1,0 +1,64 @@
+diff --git a/packages/screen/src/components/messages/tool-call.ts b/packages/screen/src/components/messages/tool-call.ts
+index c32248dc..3a5e1e37 100644
+--- a/packages/screen/src/components/messages/tool-call.ts
++++ b/packages/screen/src/components/messages/tool-call.ts
+@@ -202,12 +202,7 @@ export class ToolCallComponent extends Container {
+   /** Elapsed time for finished calls, shown next to the key argument. */
+   private duration(): string {
+     if (this.state === 'streaming' || this.state === 'running') return '';
+-    const elapsed = Math.max(0, (this.finishedAt ?? Date.now()) - this.startedAt);
+-    if (elapsed < 1_000) return `${String(elapsed)}ms`;
+-    const seconds = elapsed / 1_000;
+-    if (seconds < 60) return `${seconds.toFixed(1)}s`;
+-    const minutes = Math.floor(seconds / 60);
+-    return `${String(minutes)}m ${String(Math.round(seconds % 60))}s`;
++    return formatElapsed(Math.max(0, (this.finishedAt ?? Date.now()) - this.startedAt));
+   }
+ 
+   private rebuild(): void {
+@@ -234,9 +229,14 @@ export class ToolCallComponent extends Container {
+     return 'primary';
+   }
+ 
+-  /** Right-hand facts in the top border: diff statistics or a failure badge. */
++  /** Right-hand facts in the top border: diff statistics, a failure badge, or a result count. */
+   private meta(): string {
+     if (this.state === 'error') return currentTheme.fg('error', 'failed');
++    // Search cards get a ranked-results count, omp-style, instead of a diff stat.
++    if (this.state === 'success' && (this.init.name === 'websearch' || this.init.name === 'codesearch')) {
++      const urls = new Set(this.output.match(/https?:\/\/[^\s)]+/g) ?? []);
++      if (urls.size > 0) return currentTheme.fg('textDim', `${String(urls.size)} results`);
++    }
+     const { added, removed } = this.stats();
+     const parts: string[] = [];
+     if (added > 0) parts.push(currentTheme.fg('success', `+${String(added)}`));
+@@ -244,9 +244,12 @@ export class ToolCallComponent extends Container {
+     return parts.join(currentTheme.fg('textMuted', '/'));
+   }
+ 
+-  /** Left-hand facts in the bottom border: duration, expand hint, interrupt hint. */
++  /** Left-hand facts in the bottom border: live elapsed time, duration, expand hint, interrupt hint. */
+   private footer(): string {
+-    if (this.state === 'running') return this.init.local ? 'running…' : 'esc to interrupt';
++    if (this.state === 'running') {
++      const elapsed = formatElapsed(Date.now() - this.startedAt);
++      return this.init.local ? `${elapsed} · running…` : `${elapsed} · esc to interrupt`;
++    }
+     if (this.state === 'streaming') return '';
+     const parts: string[] = [];
+     const elapsed = this.duration();
+@@ -314,6 +317,14 @@ export class ToolCallComponent extends Container {
+   }
+ }
+ 
++function formatElapsed(ms: number): string {
++  if (ms < 1_000) return `${String(ms)}ms`;
++  const seconds = ms / 1_000;
++  if (seconds < 60) return `${seconds.toFixed(1)}s`;
++  const minutes = Math.floor(seconds / 60);
++  return `${String(minutes)}m ${String(Math.round(seconds % 60))}s`;
++}
++
+ function diffStats(diff: string): { added: number; removed: number } {
+   let added = 0;
+   let removed = 0;
