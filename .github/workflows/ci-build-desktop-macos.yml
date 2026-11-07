@@ -35,7 +35,7 @@ on:
         required: false
         default: ""
       cli_version:
-        description: "Bundled CLI version (empty = 1.1.3)"
+        description: "Bundled CLI version (empty = 1.1.4)"
         required: false
         default: ""
 
@@ -91,7 +91,7 @@ jobs:
           fi
           if [ -z "$cli" ]; then
             # Pinned bundled CLI version; bump when cutting a new CLI.
-            cli="1.1.3"
+            cli="1.1.4"
           fi
           if [ -z "$desktop" ] || [ -z "$cli" ]; then
             echo "::error::could not resolve versions (desktop='$desktop' cli='$cli')"

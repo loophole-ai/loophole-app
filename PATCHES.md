@@ -29,7 +29,7 @@ patches/
   0018-screen-polish.patch     narrow wordmark, provider-first models, model persistence, live rename
   0019-stats-update-palette.patch  /stats usage report, /update, Ctrl+Shift+P command palette
   0020-cli-name-and-search.patch  loophole-cli/lhc install name, Preparing server line, search in pickers
-  0021-session-title-version.patch  keep renamed session titles in sync; CLI 1.1.3
+  0021-session-title-version.patch  keep renamed session titles in sync; CLI 1.1.4
   0022-branding-and-picker.patch  drop the last OpenCode strings; harden the filter pickers
   0023-picker-identity-retry.patch  confirm rows in every picker; Loophole identity; free-router hint
   0024-connect-search.patch  search the /connect provider list
@@ -202,7 +202,7 @@ weekday rows and uses a five-step glyph gradient, so the whole year reads as one
 `0021-session-title-version.patch` keeps a renamed session's title in sync everywhere. The active
 title is tracked in the controller, refreshed by `session.renamed` events (including renames from
 the desktop or another client), shown by `/status` and `/debug`, and preferred in the `/sessions`
-picker, so it is not only the welcome box that updates. It also pins the CLI version to `1.1.0` in
+picker, so it is not only the welcome box that updates. It also pins the CLI version to `1.1.4` in
 the package metadata and in every CLI/desktop build workflow.
 
 `0022-branding-and-picker.patch` removes the last places where the product still introduced itself as
