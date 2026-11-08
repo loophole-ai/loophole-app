@@ -1,5 +1,5 @@
 diff --git a/packages/app/src/new-session/wordmark.tsx b/packages/app/src/new-session/wordmark.tsx
-index 067bcda53..14c5f233c 100644
+index 067bcda53..0bd5fc1c6 100644
 --- a/packages/app/src/new-session/wordmark.tsx
 +++ b/packages/app/src/new-session/wordmark.tsx
 @@ -1,6 +1,7 @@
@@ -106,8 +106,8 @@ index 067bcda53..14c5f233c 100644
 +            lodger's, and blink in place with the same fold. */}
 +        <g ref={lEyes} style={{ opacity: 0 }}>
 +          <g ref={lBlink} data-slot="lodger-blink">
-+            <rect x="7.5" y="11" width="3" height="4" rx="0.7" fill="var(--v2-background-bg-base)" />
-+            <rect x="13.5" y="11" width="3" height="4" rx="0.7" fill="var(--v2-background-bg-base)" />
++            <rect x="24.5" y="8" width="3" height="4" rx="0.7" fill="var(--v2-background-bg-base)" />
++            <rect x="30.5" y="8" width="3" height="4" rx="0.7" fill="var(--v2-background-bg-base)" />
 +          </g>
 +        </g>
        </svg>
@@ -140,8 +140,8 @@ index 067bcda53..14c5f233c 100644
      c.lookX = Math.round(((dx / d) * reach) / 0.08) * 0.08
      c.lookY = Math.round(((dy / d) * reach * 0.6) / 0.08) * 0.08
 +    // The "l" pair gazes from its own anchor at the top of the first stem.
-+    const lx = pointer.x - 12
-+    const ly = pointer.y - 12
++    const lx = pointer.x - 29
++    const ly = pointer.y - 10
 +    const ld = Math.hypot(lx, ly) || 1
 +    const lreach = Math.min(1, ld / 15)
 +
@@ -185,7 +185,7 @@ index 067bcda53..14c5f233c 100644
      toUnits(event)
 -    c.near = clamp01((24 - Math.hypot(pointer.x - HOLE.x, pointer.y - HOLE.y)) / 14)
 +    const near = clamp01((24 - Math.hypot(pointer.x - HOLE.x, pointer.y - HOLE.y)) / 14)
-+    const lNear = clamp01((24 - Math.hypot(pointer.x - 12, pointer.y - 12)) / 14)
++    const lNear = clamp01((24 - Math.hypot(pointer.x - 29, pointer.y - 10)) / 14)
 +    if (near !== c.near) c.near = near
 +    if (lNear !== c.lEyes) c.lEyes = lNear
      const s = state()
