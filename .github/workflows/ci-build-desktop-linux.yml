@@ -7,7 +7,7 @@ name: CI - Build Desktop - Linux
 # (AppImage + deb + rpm), with an explicit desktop version. See
 # ci-build-desktop-windows.yml for the version handling.
 #
-# Desktop and CLI versions are separate and default to pinned versions (1.1.0);
+# Desktop and CLI versions are separate and default to pinned versions (1.1.7);
 # both can be overridden from the workflow_dispatch inputs.
 #
 # The desktop bundles the CLI from packages/cli/dist, and its target names use
@@ -26,7 +26,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Desktop version (empty = 1.1.0)"
+        description: "Desktop version (empty = 1.1.7)"
         required: false
         default: ""
       cli_version:
@@ -70,7 +70,7 @@ jobs:
           cli="${{ inputs.cli_version }}"
           if [ -z "$desktop" ]; then
             # Pinned desktop version; bump when cutting a new desktop release.
-            desktop="1.1.0"
+            desktop="1.1.7"
           fi
           if [ -z "$cli" ]; then
             # Pinned bundled CLI version; bump when cutting a new CLI.
