@@ -1,0 +1,69 @@
+diff --git a/packages/app/src/session/timeline/message-timeline.tsx b/packages/app/src/session/timeline/message-timeline.tsx
+index 60a224088..11e7372fc 100644
+--- a/packages/app/src/session/timeline/message-timeline.tsx
++++ b/packages/app/src/session/timeline/message-timeline.tsx
+@@ -251,32 +251,39 @@ function MessageTimelineView(
+ 
+   const title = props.title.view
+ 
+-  command.register(() =>
+-    props.active === false || props.hideHeader
+-      ? []
+-      : [
+-          {
+-            id: "session.rename",
+-            category: language.t("command.category.session"),
+-            title: language.t("command.session.rename"),
+-            keybind: "ctrl+r",
+-            disabled: !sessionID() || !!parentID() || title().editing,
+-            skip: (event) => pluginScoped(event.target),
+-            onSelect: props.title.edit,
+-          },
+-          {
+-            id: "session.delete",
+-            category: language.t("command.category.session"),
+-            title: language.t("command.session.delete"),
+-            disabled: !sessionID() || !!parentID(),
+-            onSelect: () => {
+-              const id = sessionID()
+-
+-              if (id) props.action.showDelete(id)
++  command.register(() => {
++    if (props.active === false) return []
++
++    return [
++      // The header is hidden on narrow layouts, but Delete stays registered so /delete works in every session.
++      ...(props.hideHeader
++        ? []
++        : [
++            {
++              id: "session.rename",
++              category: language.t("command.category.session"),
++              title: language.t("command.session.rename"),
++              keybind: "ctrl+r",
++              disabled: !sessionID() || !!parentID() || title().editing,
++              skip: (event) => pluginScoped(event.target),
++              onSelect: props.title.edit,
+             },
+-          },
+-        ],
+-  )
++          ]),
++      {
++        id: "session.delete",
++        category: language.t("command.category.session"),
++        title: language.t("command.session.delete"),
++        slash: "delete",
++        slashArguments: true,
++        disabled: !sessionID(),
++        onSelect: () => {
++          const id = sessionID()
++
++          if (id) props.action.showDelete(id)
++        },
++      },
++    ]
++  })
+ 
+   const settings = useSettings()
+ 

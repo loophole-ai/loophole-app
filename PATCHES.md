@@ -44,6 +44,7 @@ patches/
   0033-user-facing-paths.patch  user-facing config/log file and directory names say loophole
   0034-desktop-wordmark-polish.patch  hide the OpenCode ghost behind the desktop wordmark; dull it and show the desktop version
   0035-cli-visual-polish.patch  live elapsed time on running cards; ranked-result count on search cards
+  0036-session-delete-command.patch  /delete deletes any session, including child sessions and narrow layouts
   user/                        optional extra patches, applied after the numbered stack
   series                       legacy list, ignored by the scripts (sorted order wins)
   @ai-sdk%2F...@x.patch         copies of upstream bun patchedDependencies - NEVER applied
