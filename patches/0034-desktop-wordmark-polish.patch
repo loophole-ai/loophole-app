@@ -1,5 +1,5 @@
 diff --git a/packages/app/src/new-session/wordmark.tsx b/packages/app/src/new-session/wordmark.tsx
-index 067bcda5..71869dc4 100644
+index 067bcda53..14c5f233c 100644
 --- a/packages/app/src/new-session/wordmark.tsx
 +++ b/packages/app/src/new-session/wordmark.tsx
 @@ -1,6 +1,7 @@
@@ -10,7 +10,16 @@ index 067bcda5..71869dc4 100644
  import { PinSound } from "./pin-sound"
  import {
    LODGER_POP,
-@@ -161,13 +162,16 @@ export function NewSessionWordmark(props: {
+@@ -145,6 +146,8 @@ type Parts = {
+   body: SVGRectElement
+   eyes: SVGGElement
+   blink: SVGGElement
++  lEyes: SVGGElement
++  lBlink: SVGGElement
+ }
+ 
+ /**
+@@ -161,13 +164,16 @@ export function NewSessionWordmark(props: {
  }) {
    // Read once: the lodger stays mounted after handing over to the pin board, and can be dragged back into the hole.
    const lodger = selectWordmarkLodger(props.state())
@@ -28,7 +37,7 @@ index 067bcda5..71869dc4 100644
      >
        <div
          ref={(el) => {
-@@ -186,6 +190,16 @@ export function NewSessionWordmark(props: {
+@@ -186,14 +192,25 @@ export function NewSessionWordmark(props: {
              play={!!props.play}
            />
          </Show>
@@ -45,7 +54,33 @@ index 067bcda5..71869dc4 100644
        </div>
      </div>
    )
-@@ -237,7 +251,9 @@ function WordmarkLodger(props: {
+ }
+ 
+ /**
+- * Eyes peek out of the "e" when the pointer comes near. Dragging them pulls the lodger and a single corner pin
+- * out on a stretchy neck; pull far enough and that pin triggers an elastic 3D pull-wave across the wordmark.
++ * Eyes peek out of the "e" when the pointer comes near, and the "l" opens its own pair so the word reads
++ * "l'oophole". Dragging the lodger's eye pulls out a single corner pin on a stretchy neck; pull far enough
++ * and that pin triggers an elastic 3D pull-wave across the wordmark.
+  * Dragging the lodger back into the "e" hole reels all the pins back into the flat wordmark.
+  */
+ function WordmarkLodger(props: {
+@@ -214,11 +231,13 @@ function WordmarkLodger(props: {
+   let body!: SVGRectElement
+   let eyes!: SVGGElement
+   let blink!: SVGGElement
++  let lEyes!: SVGGElement
++  let lBlink!: SVGGElement
+   const letters: SVGGElement[] = []
+ 
+   onMount(() => {
+     const lodger = mountLodger(
+-      { box: props.box, stage, svg, flat, notch, letters, grip, neck, pin, critter, body, eyes, blink },
++      { box: props.box, stage, svg, flat, notch, letters, grip, neck, pin, critter, body, eyes, blink, lEyes, lBlink },
+       props.sound,
+       props.state,
+       props.onEvent,
+@@ -237,7 +256,9 @@ function WordmarkLodger(props: {
            <For each={LETTERS}>
              {(item, i) => (
                <g ref={(el) => (letters[i()] = el)}>
@@ -56,3 +91,123 @@ index 067bcda5..71869dc4 100644
                    <path d={item.weak} fill="var(--icon-weak-base)" />
                    <path d={item.stem} fill={item.fill} />
                  </g>
+@@ -283,11 +304,19 @@ function WordmarkLodger(props: {
+           />
+           <g ref={eyes} style={{ opacity: 0 }}>
+             <g ref={blink} data-slot="lodger-blink">
+-              <rect x="-3.5" y="-7.3" width="2" height="2.6" rx="0.5" fill="var(--lodger-eye)" />
+-              <rect x="1.5" y="-7.3" width="2" height="2.6" rx="0.5" fill="var(--lodger-eye)" />
++              <rect x="-5" y="-8.2" width="3" height="4" rx="0.7" fill="var(--lodger-eye)" />
++              <rect x="2" y="-8.2" width="3" height="4" rx="0.7" fill="var(--lodger-eye)" />
+             </g>
+           </g>
+         </g>
++        {/* The "l" gets eyes too, so the word opens like "l'oophole". They follow the pointer like the
++            lodger's, and blink in place with the same fold. */}
++        <g ref={lEyes} style={{ opacity: 0 }}>
++          <g ref={lBlink} data-slot="lodger-blink">
++            <rect x="7.5" y="11" width="3" height="4" rx="0.7" fill="var(--v2-background-bg-base)" />
++            <rect x="13.5" y="11" width="3" height="4" rx="0.7" fill="var(--v2-background-bg-base)" />
++          </g>
++        </g>
+       </svg>
+       <div
+         ref={grip}
+@@ -331,9 +360,12 @@ function mountLodger(
+     body: 0,
+     neck: 0,
+     eyes: 0,
++    lEyes: 0,
+     near: 0,
+     lookX: 0,
+     lookY: 0,
++    lookLX: 0,
++    lookLY: 0,
+     wide: 1,
+     squint: 1,
+     notch: 0,
+@@ -912,6 +944,8 @@ function mountLodger(
+     if (!pointer.inside) {
+       c.lookX = 0
+       c.lookY = 0
++      c.lookLX = 0
++      c.lookLY = 0
+ 
+       return
+     }
+@@ -923,6 +957,14 @@ function mountLodger(
+     // Gaze snaps to 0.08 units (about 0.2 px), so far-off pointer moves that would not move the eyes skip the frame.
+     c.lookX = Math.round(((dx / d) * reach) / 0.08) * 0.08
+     c.lookY = Math.round(((dy / d) * reach * 0.6) / 0.08) * 0.08
++    // The "l" pair gazes from its own anchor at the top of the first stem.
++    const lx = pointer.x - 12
++    const ly = pointer.y - 12
++    const ld = Math.hypot(lx, ly) || 1
++    const lreach = Math.min(1, ld / 15)
++
++    c.lookLX = Math.round(((lx / ld) * lreach) / 0.08) * 0.08
++    c.lookLY = Math.round(((ly / ld) * lreach * 0.6) / 0.08) * 0.08
+   }
+ 
+   const impact = (amp: number) => {
+@@ -949,6 +991,10 @@ function mountLodger(
+       duration: 160,
+       easing: "ease-in-out",
+     })
++    parts.lBlink.animate([{ transform: "scaleY(1)" }, { transform: "scaleY(0.1)" }, { transform: "scaleY(1)" }], {
++      duration: 160,
++      easing: "ease-in-out",
++    })
+   }
+ 
+   // Blinks are only scheduled while the eyes are showing, so the hidden lodger holds no timers.
+@@ -1009,11 +1055,17 @@ function mountLodger(
+       `${Math.round(c.ball * 100) / 100}`,
+     )
+     put("eyes", opacity(parts.eyes), `${c.eyes}`)
++    put("leyes", opacity(parts.lEyes), `${c.lEyes}`)
+     put(
+       "look",
+       attr(parts.eyes, "transform"),
+       `translate(${c.lookX} ${c.lookY - 6}) scale(${c.wide} ${c.wide * c.squint}) translate(0 6)`,
+     )
++    put(
++      "llook",
++      attr(parts.lEyes, "transform"),
++      `translate(${c.lookLX} ${c.lookLY})`,
++    )
+     put("neck", opacity(parts.neck), `${c.neck}`)
+ 
+     if (c.neck) {
+@@ -1057,16 +1109,21 @@ function mountLodger(
+   // Pointer moves only schedule a frame when the lodger visibly changes; far from the "e" they do nothing.
+   const onMove = (event: PointerEvent) => {
+     toUnits(event)
+-    c.near = clamp01((24 - Math.hypot(pointer.x - HOLE.x, pointer.y - HOLE.y)) / 14)
++    const near = clamp01((24 - Math.hypot(pointer.x - HOLE.x, pointer.y - HOLE.y)) / 14)
++    const lNear = clamp01((24 - Math.hypot(pointer.x - 12, pointer.y - 12)) / 14)
++    if (near !== c.near) c.near = near
++    if (lNear !== c.lEyes) c.lEyes = lNear
+     const s = state()
+ 
+     if (!selectWordmarkCanInteract(s)) return
+ 
+     if (s.status === "hidden") {
+       const eyes = c.near * 0.55
++      const lEyes = c.lEyes * 0.55
+ 
+-      if (eyes === c.eyes) return
++      if (eyes === c.eyes && lEyes === c.lEyes) return
+       c.eyes = eyes
++      c.lEyes = lEyes
+     }
+ 
+     const gazeX = c.lookX
+@@ -1083,6 +1140,7 @@ function mountLodger(
+   const onLeave = () => {
+     pointer.inside = false
+     c.near = 0
++    c.lEyes = 0
+     const s = state()
+ 
+     if (!selectWordmarkCanInteract(s)) return
