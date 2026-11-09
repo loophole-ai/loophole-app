@@ -1,0 +1,437 @@
+diff --git a/LICENSE b/LICENSE
+index d16ebe8f7..ebdbf0a56 100644
+--- a/LICENSE
++++ b/LICENSE
+@@ -2,25 +2,110 @@ Loophole Proprietary License
+ 
+ Copyright (c) 2026 Loophole AI. All rights reserved.
+ 
+-This software, including its source code, documentation, build scripts, and
+-all associated files (the "Software"), is proprietary and confidential.
+-
+-No part of the Software may be copied, modified, merged, published,
+-distributed, sublicensed, sold, or used in any form, in whole or in part,
+-without the prior written permission of Loophole AI.
+-
+-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+-SOFTWARE.
+-
+-Third-party components
+-
+-The Software includes third-party open-source components that are licensed
+-under their own terms. Their copyright notices and license texts are retained
+-in NOTICE.md and LICENSE-opencode.md and continue to apply to those components.
+-Portions derived from OpenCode remain available under the MIT License as
+-described in those files.
++READ THIS LICENSE CAREFULLY BEFORE USING THE SOFTWARE. BY INSTALLING,
++COPYING, OR USING THE SOFTWARE IN ANY WAY, YOU AGREE TO THE TERMS BELOW.
++IF YOU DO NOT AGREE, DO NOT USE THE SOFTWARE.
++
++1. DEFINITIONS
++   "Software" means the Loophole application and all accompanying files as
++   distributed by Loophole AI, including (as applicable) the Loophole CLI,
++   the Loophole desktop application and the Loophole IDE, together with
++   their documentation but excluding third-party components identified in
++   Section 4. "You" means the person or entity accessing or using the
++   Software. "Licensor" means Loophole AI.
++
++2. LICENSE GRANT
++   Subject to the terms and conditions of this License, Licensor grants you
++   a non-exclusive, non-transferable, non-sublicensable, revocable license
++   to install and use the Software solely for your personal or internal
++   business purposes ("Permitted Use"), as well as to make a reasonable
++   number of copies of the Software solely as necessary to install and use
++   it for Permitted Use.
++
++3. RESTRICTIONS
++   Except as expressly permitted in this License, you may not, and may not
++   permit any third party to:
++   1. copy, publish, distribute, transmit, lease, rent, sublicense, transfer,
++      display, or otherwise make the Software (in whole or in part), or
++      any of its source code, available to any third party;
++   2. modify, create, derivative works of, decompile, reverse engineer,
++      disassemble, or attempt to extract the source code of the Software,
++      except to the extent such restriction is prohibited by applicable
++      law;
++   3. remove, obscure, or alter any copyright, trademark, or other
++      proprietary notices;
++   4. circumvent any technical protection measures applied to the Software;
++   5. use the Software in violation of any applicable law, third-party
++      rights, or the terms of any upstream services you connect to through
++      it; or
++   6. use the Software to build a competing product or service based on
++      the Software.
++
++4. OPEN-SOURCE AND THIRD-PARTY COMPONENTS
++   The Software includes third-party open-source components under their own
++   licenses. Nothing in this License changes the license of any component
++   whose license is retained with the Software; every such component
++   remains subject to the terms of its respective license, which you accept
++   by using the Software. In particular, portions of the Software derived
++   from OpenCode (https://github.com/anomalyco/opencode) are distributed
++   under the MIT License; the original MIT license text is retained in
++   LICENSE-opencode.md and all copyright notices are preserved in
++   NOTICE.md.
++
++5. OWNERSHIP
++   The Software is licensed, not sold. ALL RIGHTS RESERVED to Licensor and
++   its licensors in and to the Software. Any feedback or suggestions you
++   provide about the Software may be used by Licensor without restriction
++   or obligation of any kind.
++
++6. NO OTHER RIGHTS
++   Nothing in this License grants you any right, title, or interest in or
++   to the Software, or any intellectual property therein or related
++   thereto, except the limited license expressly set forth herein. All
++   rights not expressly granted are reserved.
++
++7. TERMINATION
++   This License terminates automatically without notice if you breach any
++   term of it. Upon termination, you must immediately destroy all copies of
++   the Software in your possession or control. Sections 3-11 survive
++   termination.
++
++8. LIMITED WARRANTY
++   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS,
++   IMPLIED, OR STATUTORY, INCLUDING WITHOUT LIMITATION THE WARRANTIES OF
++   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
++   You assume the entire risk as to quality and performance.
++
++9. LIMITATION OF LIABILITY
++   TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL
++   LOOPHOLE AI, ITS AFFILIATES, ITS SUPPLIERS, OR ANY THIRD PARTY BE
++   LIABLE FOR ANY DAMAGES (INCLUDING, WITHOUT LIMITATION, INCIDENTAL,
++   SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, LOST PROFITS, OR LOSS OF
++   DATA) ARISING OUT OF OR IN CONNECTION WITH THIS LICENSE OR YOUR USE
++   OF THE SOFTWARE, WHETHER ARISING IN CONTRACT, TORT (INCLUDING
++   NEGLIGENCE), STRICT LIABILITY, OR ANY THEORY, AND WHETHER OR NOT
++   ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. If liability cannot be
++   excluded, total liability is limited to the amounts paid by you for the
++   Software in the twelve (12) months preceding the event giving rise to
++   the claim.
++
++10. EXPORT CONTROLS
++   The Software is subject to applicable export control laws. You agree to
++   comply with all such laws and not export or re-export the Software to
++   any country, person, or entity restricted by such laws.
++
++11. GOVERNING LAW
++   This License is governed by the laws of the jurisdiction in which the
++   Licensor is established, without regard to its conflict-of-law rules.
++   The United Nations Convention on Contracts for the International Sale
++   of Goods does not apply.
++
++12. MISCELLANEOUS
++   This License is the entire agreement between you and Licensor concerning
++   the Software. If any provision is held unenforceable, the remaining
++   provisions remain in full force. You may not assign this License
++   without Licensor's prior written consent; Licensor may assign its
++   rights and obligations. Notices under this License are delivered to the
++   contact information included in the Software.
++
++# END OF LICENSE
+diff --git a/packages/cli/LICENSE b/packages/cli/LICENSE
+new file mode 100644
+index 000000000..ebdbf0a56
+--- /dev/null
++++ b/packages/cli/LICENSE
+@@ -0,0 +1,111 @@
++Loophole Proprietary License
++
++Copyright (c) 2026 Loophole AI. All rights reserved.
++
++READ THIS LICENSE CAREFULLY BEFORE USING THE SOFTWARE. BY INSTALLING,
++COPYING, OR USING THE SOFTWARE IN ANY WAY, YOU AGREE TO THE TERMS BELOW.
++IF YOU DO NOT AGREE, DO NOT USE THE SOFTWARE.
++
++1. DEFINITIONS
++   "Software" means the Loophole application and all accompanying files as
++   distributed by Loophole AI, including (as applicable) the Loophole CLI,
++   the Loophole desktop application and the Loophole IDE, together with
++   their documentation but excluding third-party components identified in
++   Section 4. "You" means the person or entity accessing or using the
++   Software. "Licensor" means Loophole AI.
++
++2. LICENSE GRANT
++   Subject to the terms and conditions of this License, Licensor grants you
++   a non-exclusive, non-transferable, non-sublicensable, revocable license
++   to install and use the Software solely for your personal or internal
++   business purposes ("Permitted Use"), as well as to make a reasonable
++   number of copies of the Software solely as necessary to install and use
++   it for Permitted Use.
++
++3. RESTRICTIONS
++   Except as expressly permitted in this License, you may not, and may not
++   permit any third party to:
++   1. copy, publish, distribute, transmit, lease, rent, sublicense, transfer,
++      display, or otherwise make the Software (in whole or in part), or
++      any of its source code, available to any third party;
++   2. modify, create, derivative works of, decompile, reverse engineer,
++      disassemble, or attempt to extract the source code of the Software,
++      except to the extent such restriction is prohibited by applicable
++      law;
++   3. remove, obscure, or alter any copyright, trademark, or other
++      proprietary notices;
++   4. circumvent any technical protection measures applied to the Software;
++   5. use the Software in violation of any applicable law, third-party
++      rights, or the terms of any upstream services you connect to through
++      it; or
++   6. use the Software to build a competing product or service based on
++      the Software.
++
++4. OPEN-SOURCE AND THIRD-PARTY COMPONENTS
++   The Software includes third-party open-source components under their own
++   licenses. Nothing in this License changes the license of any component
++   whose license is retained with the Software; every such component
++   remains subject to the terms of its respective license, which you accept
++   by using the Software. In particular, portions of the Software derived
++   from OpenCode (https://github.com/anomalyco/opencode) are distributed
++   under the MIT License; the original MIT license text is retained in
++   LICENSE-opencode.md and all copyright notices are preserved in
++   NOTICE.md.
++
++5. OWNERSHIP
++   The Software is licensed, not sold. ALL RIGHTS RESERVED to Licensor and
++   its licensors in and to the Software. Any feedback or suggestions you
++   provide about the Software may be used by Licensor without restriction
++   or obligation of any kind.
++
++6. NO OTHER RIGHTS
++   Nothing in this License grants you any right, title, or interest in or
++   to the Software, or any intellectual property therein or related
++   thereto, except the limited license expressly set forth herein. All
++   rights not expressly granted are reserved.
++
++7. TERMINATION
++   This License terminates automatically without notice if you breach any
++   term of it. Upon termination, you must immediately destroy all copies of
++   the Software in your possession or control. Sections 3-11 survive
++   termination.
++
++8. LIMITED WARRANTY
++   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS,
++   IMPLIED, OR STATUTORY, INCLUDING WITHOUT LIMITATION THE WARRANTIES OF
++   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
++   You assume the entire risk as to quality and performance.
++
++9. LIMITATION OF LIABILITY
++   TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL
++   LOOPHOLE AI, ITS AFFILIATES, ITS SUPPLIERS, OR ANY THIRD PARTY BE
++   LIABLE FOR ANY DAMAGES (INCLUDING, WITHOUT LIMITATION, INCIDENTAL,
++   SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, LOST PROFITS, OR LOSS OF
++   DATA) ARISING OUT OF OR IN CONNECTION WITH THIS LICENSE OR YOUR USE
++   OF THE SOFTWARE, WHETHER ARISING IN CONTRACT, TORT (INCLUDING
++   NEGLIGENCE), STRICT LIABILITY, OR ANY THEORY, AND WHETHER OR NOT
++   ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. If liability cannot be
++   excluded, total liability is limited to the amounts paid by you for the
++   Software in the twelve (12) months preceding the event giving rise to
++   the claim.
++
++10. EXPORT CONTROLS
++   The Software is subject to applicable export control laws. You agree to
++   comply with all such laws and not export or re-export the Software to
++   any country, person, or entity restricted by such laws.
++
++11. GOVERNING LAW
++   This License is governed by the laws of the jurisdiction in which the
++   Licensor is established, without regard to its conflict-of-law rules.
++   The United Nations Convention on Contracts for the International Sale
++   of Goods does not apply.
++
++12. MISCELLANEOUS
++   This License is the entire agreement between you and Licensor concerning
++   the Software. If any provision is held unenforceable, the remaining
++   provisions remain in full force. You may not assign this License
++   without Licensor's prior written consent; Licensor may assign its
++   rights and obligations. Notices under this License are delivered to the
++   contact information included in the Software.
++
++# END OF LICENSE
+diff --git a/packages/cli/package.json b/packages/cli/package.json
+index dedc75d37..c42d41bb6 100644
+--- a/packages/cli/package.json
++++ b/packages/cli/package.json
+@@ -3,7 +3,12 @@
+   "name": "@loophole-ai/cli",
+   "version": "1.1.4",
+   "type": "module",
+-  "license": "UNLICENSED",
++  "license": "SEE LICENSE IN LICENSE",
++  "repository": {
++    "type": "git",
++    "url": "git+https://github.com/loophole-ai/loophole-app.git",
++    "directory": "packages/cli"
++  }
+   "bin": {
+     "loophole-cli": "./bin/loophole-cli.cjs",
+     "lhc": "./bin/lhc.cjs"
+@@ -88,7 +93,7 @@
+   },
+   "repository": {
+     "type": "git",
+-    "url": "git+https://github.com/anomalyco/opencode.git",
++    "url": "git+https://github.com/loophole-ai/loophole-app.git",
+     "directory": "packages/cli"
+   }
+ }
+diff --git a/packages/cli/script/build.ts b/packages/cli/script/build.ts
+index a447111ef..d4005b4f3 100755
+--- a/packages/cli/script/build.ts
++++ b/packages/cli/script/build.ts
+@@ -231,7 +231,7 @@ export default { path: file, version: ${JSON.stringify(opencodePty.version)}, sh
+       {
+         name: `@loophole-ai/${name}`,
+         version: Script.version,
+-        license: "UNLICENSED",
++        license: "SEE LICENSE IN LICENSE",
+         repository: { type: "git", url: "git+https://github.com/loophole-ai/loophole-app.git" },
+         os: [item.os],
+         cpu: [item.arch],
+diff --git a/packages/cli/script/pack.ts b/packages/cli/script/pack.ts
+index b66cfb2e3..624d68f00 100755
+--- a/packages/cli/script/pack.ts
++++ b/packages/cli/script/pack.ts
+@@ -81,7 +81,7 @@ async function packDistribution(input: {
+         scripts: { postinstall: "node ./postinstall.mjs" },
+         version,
+         license: pkg.license,
+-        repository: { type: "git", url: "git+https://github.com/anomalyco/opencode.git" },
++        repository: { type: "git", url: "git+https://github.com/loophole-ai/loophole-app.git" },
+         os: ["darwin", "linux", "win32"],
+         cpu: ["arm64", "x64"],
+         optionalDependencies: binaries,
+diff --git a/packages/desktop/package.json b/packages/desktop/package.json
+index 9b9ad4e0e..443ec21b0 100644
+--- a/packages/desktop/package.json
++++ b/packages/desktop/package.json
+@@ -3,7 +3,7 @@
+   "private": true,
+   "version": "0.0.0",
+   "type": "module",
+-  "license": "UNLICENSED",
++  "license": "SEE LICENSE IN LICENSE",
+   "homepage": "https://github.com/loophole-ai/loophole-app",
+   "author": {
+     "name": "Loophole",
+diff --git a/packages/desktop/resources/LICENSE.txt b/packages/desktop/resources/LICENSE.txt
+new file mode 100644
+index 000000000..ebdbf0a56
+--- /dev/null
++++ b/packages/desktop/resources/LICENSE.txt
+@@ -0,0 +1,111 @@
++Loophole Proprietary License
++
++Copyright (c) 2026 Loophole AI. All rights reserved.
++
++READ THIS LICENSE CAREFULLY BEFORE USING THE SOFTWARE. BY INSTALLING,
++COPYING, OR USING THE SOFTWARE IN ANY WAY, YOU AGREE TO THE TERMS BELOW.
++IF YOU DO NOT AGREE, DO NOT USE THE SOFTWARE.
++
++1. DEFINITIONS
++   "Software" means the Loophole application and all accompanying files as
++   distributed by Loophole AI, including (as applicable) the Loophole CLI,
++   the Loophole desktop application and the Loophole IDE, together with
++   their documentation but excluding third-party components identified in
++   Section 4. "You" means the person or entity accessing or using the
++   Software. "Licensor" means Loophole AI.
++
++2. LICENSE GRANT
++   Subject to the terms and conditions of this License, Licensor grants you
++   a non-exclusive, non-transferable, non-sublicensable, revocable license
++   to install and use the Software solely for your personal or internal
++   business purposes ("Permitted Use"), as well as to make a reasonable
++   number of copies of the Software solely as necessary to install and use
++   it for Permitted Use.
++
++3. RESTRICTIONS
++   Except as expressly permitted in this License, you may not, and may not
++   permit any third party to:
++   1. copy, publish, distribute, transmit, lease, rent, sublicense, transfer,
++      display, or otherwise make the Software (in whole or in part), or
++      any of its source code, available to any third party;
++   2. modify, create, derivative works of, decompile, reverse engineer,
++      disassemble, or attempt to extract the source code of the Software,
++      except to the extent such restriction is prohibited by applicable
++      law;
++   3. remove, obscure, or alter any copyright, trademark, or other
++      proprietary notices;
++   4. circumvent any technical protection measures applied to the Software;
++   5. use the Software in violation of any applicable law, third-party
++      rights, or the terms of any upstream services you connect to through
++      it; or
++   6. use the Software to build a competing product or service based on
++      the Software.
++
++4. OPEN-SOURCE AND THIRD-PARTY COMPONENTS
++   The Software includes third-party open-source components under their own
++   licenses. Nothing in this License changes the license of any component
++   whose license is retained with the Software; every such component
++   remains subject to the terms of its respective license, which you accept
++   by using the Software. In particular, portions of the Software derived
++   from OpenCode (https://github.com/anomalyco/opencode) are distributed
++   under the MIT License; the original MIT license text is retained in
++   LICENSE-opencode.md and all copyright notices are preserved in
++   NOTICE.md.
++
++5. OWNERSHIP
++   The Software is licensed, not sold. ALL RIGHTS RESERVED to Licensor and
++   its licensors in and to the Software. Any feedback or suggestions you
++   provide about the Software may be used by Licensor without restriction
++   or obligation of any kind.
++
++6. NO OTHER RIGHTS
++   Nothing in this License grants you any right, title, or interest in or
++   to the Software, or any intellectual property therein or related
++   thereto, except the limited license expressly set forth herein. All
++   rights not expressly granted are reserved.
++
++7. TERMINATION
++   This License terminates automatically without notice if you breach any
++   term of it. Upon termination, you must immediately destroy all copies of
++   the Software in your possession or control. Sections 3-11 survive
++   termination.
++
++8. LIMITED WARRANTY
++   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS,
++   IMPLIED, OR STATUTORY, INCLUDING WITHOUT LIMITATION THE WARRANTIES OF
++   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
++   You assume the entire risk as to quality and performance.
++
++9. LIMITATION OF LIABILITY
++   TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL
++   LOOPHOLE AI, ITS AFFILIATES, ITS SUPPLIERS, OR ANY THIRD PARTY BE
++   LIABLE FOR ANY DAMAGES (INCLUDING, WITHOUT LIMITATION, INCIDENTAL,
++   SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, LOST PROFITS, OR LOSS OF
++   DATA) ARISING OUT OF OR IN CONNECTION WITH THIS LICENSE OR YOUR USE
++   OF THE SOFTWARE, WHETHER ARISING IN CONTRACT, TORT (INCLUDING
++   NEGLIGENCE), STRICT LIABILITY, OR ANY THEORY, AND WHETHER OR NOT
++   ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. If liability cannot be
++   excluded, total liability is limited to the amounts paid by you for the
++   Software in the twelve (12) months preceding the event giving rise to
++   the claim.
++
++10. EXPORT CONTROLS
++   The Software is subject to applicable export control laws. You agree to
++   comply with all such laws and not export or re-export the Software to
++   any country, person, or entity restricted by such laws.
++
++11. GOVERNING LAW
++   This License is governed by the laws of the jurisdiction in which the
++   Licensor is established, without regard to its conflict-of-law rules.
++   The United Nations Convention on Contracts for the International Sale
++   of Goods does not apply.
++
++12. MISCELLANEOUS
++   This License is the entire agreement between you and Licensor concerning
++   the Software. If any provision is held unenforceable, the remaining
++   provisions remain in full force. You may not assign this License
++   without Licensor's prior written consent; Licensor may assign its
++   rights and obligations. Notices under this License are delivered to the
++   contact information included in the Software.
++
++# END OF LICENSE
