@@ -685,7 +685,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Minh họa đầu tiên ở London, Anh",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, tác nhân mã hóa nguồn mở",
-  "settings.about.trademark": "Loophole là nhãn hiệu đã đăng ký của Anomaly Innovations, Inc.",
+  "settings.about.trademark": "Loophole là nhãn hiệu đã đăng ký của Loophole AI",
   "settings.about.typeset": "Bộ sắp chữ trong Inter và IBM Plex Mono",
   "settings.about.tagline": "AI không thể xây dựng phần mềm tuyệt vời nếu không có bạn",
   "settings.about.copyright": "© Loophole AI",

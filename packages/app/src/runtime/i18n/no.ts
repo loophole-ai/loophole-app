@@ -28,7 +28,7 @@ export const dict = {
   "server.connect.failed": "Kunne ikke koble til. Sjekk serveradressen og passordet, og prøv på nytt.",
   "server.connect.scan": "Skann QR-koden",
   "server.connect.scan.description": "Pek kameraet mot QR-koden vist av opencode pair.",
-  "server.connect.scan.invalid": "Dette er ikke en OpenCode-paringskode. Skann koden vist av opencode pair.",
+  "server.connect.scan.invalid": "Dette er ikke en Loophole-paringskode. Skann koden vist av opencode pair.",
   "server.connect.camera": "Sammenkobling av kamera",
   "server.connect.camera.starting": "Åpner kamera …",
   "server.connect.mixedContent":
@@ -146,7 +146,7 @@ export const dict = {
   "settings.about.firstIllustrated": "FÃ¸rst illustrert i London, England",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, kodeagenten med Ã¥pen kildekode",
-  "settings.about.trademark": "Loophole er et registrert varemerke for Anomaly Innovations, Inc.",
+  "settings.about.trademark": "Loophole er et registrert varemerke for Loophole AI",
   "settings.about.typeset": "Satt med Inter og IBM Plex Mono",
   "settings.about.tagline": "KI kan ikke bygge fantastisk programvare uten deg",
   "settings.about.copyright": "© Loophole AI",

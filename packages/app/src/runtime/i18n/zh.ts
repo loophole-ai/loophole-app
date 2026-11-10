@@ -736,7 +736,7 @@ export const dict = {
   "settings.about.firstIllustrated": "首次在英国伦敦展出",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole ，开源编码代理",
-  "settings.about.trademark": "Loophole是Anomaly Innovations, Inc.的注册商标。",
+  "settings.about.trademark": "Loophole是Loophole AI的注册商标。",
   "settings.about.typeset": "Inter和IBM Plex Mono中的排版",
   "settings.about.tagline": "没有您，人工智能无法构建出色的软件",
   "settings.about.copyright": "© Loophole AI",

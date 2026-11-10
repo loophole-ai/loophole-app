@@ -674,7 +674,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Fyrst myndprýdd í London í Onglandi",
   "settings.about.website": "www.opna koda.ai",
   "settings.about.description": "Loophole, opna keldukoduumboðnum",
-  "settings.about.trademark": "Loophole er eitt skrásett vørumerki hjá Anomaly Innovations, Inc.",
+  "settings.about.trademark": "Loophole er eitt skrásett vørumerki hjá Loophole AI",
   "settings.about.typeset": "Skriftsett í Inter og IBM Plex Mono",
   "settings.about.tagline": "AI kann ikki byggja góða ritbúnað, uttan teg",
   "settings.about.copyright": "© Loophole AI",

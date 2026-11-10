@@ -683,7 +683,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Il·lustrat per primera vegada a Londres, Anglaterra",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, l'agent de codificació de codi obert",
-  "settings.about.trademark": "Loophole és una marca registrada de Anomaly Innovations, Inc.",
+  "settings.about.trademark": "Loophole és una marca registrada de Loophole AI",
   "settings.about.typeset": "Tipografia en Inter i IBM Plex Mono",
   "settings.about.tagline": "La IA no pot crear un gran programari sense tu",
   "settings.about.copyright": "© Loophole AI",

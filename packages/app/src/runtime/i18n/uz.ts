@@ -679,7 +679,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Ilk bor London, Angliyada bezatilgan",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, ochiq manbali kodlash agenti",
-  "settings.about.trademark": "Loophole — Anomaly Innovations, Inc. kompaniyasining ro‘yxatdan o‘tgan savdo belgisi.",
+  "settings.about.trademark": "Loophole — Loophole AI kompaniyasining ro‘yxatdan o‘tgan savdo belgisi.",
   "settings.about.typeset": "Inter va IBM Plex Mono shriftlarida terilgan",
   "settings.about.tagline": "Sizsiz AI ajoyib dasturiy ta’minot yarata olmaydi",
   "settings.about.copyright": "© Loophole AI",

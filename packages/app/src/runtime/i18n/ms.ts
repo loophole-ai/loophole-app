@@ -679,7 +679,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Pertama digambarkan di London, England",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, ejen pengekodan sumber terbuka",
-  "settings.about.trademark": "Loophole ialah tanda dagangan berdaftar Anomaly Innovations, Inc.",
+  "settings.about.trademark": "Loophole ialah tanda dagangan berdaftar Loophole AI",
   "settings.about.typeset": "Set taip dalam Inter dan IBM Plex Mono",
   "settings.about.tagline": "AI tidak boleh membina perisian yang hebat, tanpa anda",
   "settings.about.copyright": "© Loophole AI",

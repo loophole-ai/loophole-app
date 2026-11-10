@@ -690,7 +690,7 @@ export const dict = {
   "settings.about.firstIllustrated": "イングランド、ロンドンで最初のイラスト",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "オープンソースのコーディングエージェントであるLoophole",
-  "settings.about.trademark": "LoopholeはAnomaly Innovations, Inc.の登録商標です。",
+  "settings.about.trademark": "LoopholeはLoophole AIの登録商標です。",
   "settings.about.typeset": "InterおよびIBM Plex Monoのタイプセット",
   "settings.about.tagline": "AIはあなたなしで素晴らしいソフトウェアを構築することはできません",
   "settings.about.copyright": "© Loophole AI",

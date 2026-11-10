@@ -679,7 +679,7 @@ export const dict = {
   "settings.about.firstIllustrated": "पहली बार लंदन, इंग्लैंड में चित्रित",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, ओपन-सोर्स कोडिंग एजेंट",
-  "settings.about.trademark": "Loophole, Anomaly Innovations, Inc. का पंजीकृत ट्रेडमार्क है।",
+  "settings.about.trademark": "Loophole, Loophole AI का पंजीकृत ट्रेडमार्क है।",
   "settings.about.typeset": "Inter और IBM Plex Mono में अक्षर-संयोजन",
   "settings.about.tagline": "आपके बिना AI बेहतरीन सॉफ़्टवेयर नहीं बना सकता",
   "settings.about.copyright": "© Loophole AI",

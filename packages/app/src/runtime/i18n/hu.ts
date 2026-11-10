@@ -684,7 +684,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Először Londonban, Angliában illusztrálták",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, a nyílt forráskódú kódoló ügynök",
-  "settings.about.trademark": "A Loophole a Anomaly Innovations, Inc. bejegyzett védjegye.",
+  "settings.about.trademark": "A Loophole a Loophole AI bejegyzett védjegye.",
   "settings.about.typeset": "Betűkészlet Inter és IBM Plex Mono nyelven",
   "settings.about.tagline": "Az AI nem tud nagyszerű szoftvert készíteni nélküled",
   "settings.about.copyright": "© Loophole AI",

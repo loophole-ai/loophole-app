@@ -675,7 +675,7 @@ export const dict = {
   "settings.about.firstIllustrated": "ຮູບ​ພາບ​ຄັ້ງ​ທໍາ​ອິດ​ໃນ​ລອນ​ດອນ​, ປະ​ເທດ​ອັງ​ກິດ​",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, ຕົວແທນລະຫັດແຫຼ່ງເປີດ",
-  "settings.about.trademark": "Loophole ເປັນເຄື່ອງໝາຍການຄ້າທີ່ຈົດທະບຽນຂອງ Anomaly Innovations, Inc.",
+  "settings.about.trademark": "Loophole ເປັນເຄື່ອງໝາຍການຄ້າທີ່ຈົດທະບຽນຂອງ Loophole AI",
   "settings.about.typeset": "Typeset ໃນ Inter ແລະ IBM Plex Mono",
   "settings.about.tagline": "AI ບໍ່ສາມາດສ້າງຊອບແວທີ່ດີໄດ້, ຖ້າບໍ່ມີທ່ານ",
   "settings.about.copyright": "© Loophole AI",

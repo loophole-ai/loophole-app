@@ -144,7 +144,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Først illustreret i London, England",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, open source-kodningsagenten",
-  "settings.about.trademark": "Loophole er et registreret varemærke tilhørende Anomaly Innovations, Inc.",
+  "settings.about.trademark": "Loophole er et registreret varemærke tilhørende Loophole AI",
   "settings.about.typeset": "Sat med Inter og IBM Plex Mono",
   "settings.about.tagline": "AI kan ikke bygge fantastisk software uden dig",
   "settings.about.copyright": "© Loophole AI",

@@ -701,7 +701,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Prvýkrát ilustrovaný v Londýne, Anglicko",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, kódovací agent s otvoreným zdrojovým kódom",
-  "settings.about.trademark": "Loophole je registrovaná ochranná známka spoločnosti Anomaly Innovations, Inc.",
+  "settings.about.trademark": "Loophole je registrovaná ochranná známka spoločnosti Loophole AI",
   "settings.about.typeset": "typová súprava v Inter a IBM Plex Mono",
   "settings.about.tagline": "AI nedokáže vytvoriť skvelý softvér bez vás",
   "settings.about.copyright": "© Loophole AI",

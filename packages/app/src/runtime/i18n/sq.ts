@@ -675,7 +675,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Ilustruar për herë të parë në Londër, Angli",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, agjenti kodues me burim të hapur",
-  "settings.about.trademark": "Loophole është një markë e regjistruar e Anomaly Innovations, Inc.",
+  "settings.about.trademark": "Loophole është një markë e regjistruar e Loophole AI",
   "settings.about.typeset": "Llojet në Inter dhe IBM Plex Mono",
   "settings.about.tagline": "AI nuk mund të ndërtojë softuer të shkëlqyeshëm, pa ju",
   "settings.about.copyright": "© Loophole AI",

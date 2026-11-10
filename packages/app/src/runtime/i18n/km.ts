@@ -675,7 +675,7 @@ export const dict = {
   "settings.about.firstIllustrated": "គូរដំបូងនៅទីក្រុងឡុង ប្រទេសអង់គ្លេស",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole ដែលជាភ្នាក់ងារសរសេរកូដប្រភពបើកចំហ",
-  "settings.about.trademark": "Loophole គឺជាពាណិជ្ជសញ្ញាដែលបានចុះបញ្ជីរបស់ Anomaly Innovations, Inc.",
+  "settings.about.trademark": "Loophole គឺជាពាណិជ្ជសញ្ញាដែលបានចុះបញ្ជីរបស់ Loophole AI",
   "settings.about.typeset": "Typeset នៅក្នុង Inter និង IBM Plex Mono",
   "settings.about.tagline": "AI មិនអាចបង្កើតកម្មវិធីដ៏អស្ចារ្យបានទេ បើគ្មានអ្នក",
   "settings.about.copyright": "© Loophole AI",

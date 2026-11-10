@@ -768,7 +768,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Вперше проілюстровано в Лондоні, Англія",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, агент кодування з відкритим кодом",
-  "settings.about.trademark": "Loophole є зареєстрованою торговою маркою Anomaly Innovations, Inc.",
+  "settings.about.trademark": "Loophole є зареєстрованою торговою маркою Loophole AI",
   "settings.about.typeset": "Набір на Inter та IBM Plex Mono",
   "settings.about.tagline": "AI не може створити чудове програмне забезпечення без вас",
   "settings.about.copyright": "© Loophole AI",

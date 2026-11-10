@@ -691,7 +691,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Pirmą kartą iliustruotas Londone, Anglijoje",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, atvirojo kodo kodavimo agentas",
-  "settings.about.trademark": "Loophole yra registruotasis Anomaly Innovations, Inc. prekės ženklas.",
+  "settings.about.trademark": "Loophole yra registruotasis Loophole AI prekės ženklas.",
   "settings.about.typeset": "Rinkinys „Inter“ ir „IBM Plex Mono“.",
   "settings.about.tagline": "AI negali sukurti puikios programinės įrangos be jūsų",
   "settings.about.copyright": "© Loophole AI",

@@ -681,7 +681,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Pirmo reizi ilustrēts Londonā, Anglijā",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, atvērtā koda kodēšanas aģents",
-  "settings.about.trademark": "Loophole ir Anomaly Innovations, Inc. reģistrēta preču zīme.",
+  "settings.about.trademark": "Loophole ir Loophole AI reģistrēta preču zīme.",
   "settings.about.typeset": "Salikums Inter un IBM Plex Mono",
   "settings.about.tagline": "AI nevar izveidot lielisku programmatūru bez jums",
   "settings.about.copyright": "© Loophole AI",

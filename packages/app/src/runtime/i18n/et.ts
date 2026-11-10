@@ -670,7 +670,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Esmakordselt illustreeritud Londonis, Inglismaal",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, avatud lähtekoodiga kodeerimisagent",
-  "settings.about.trademark": "Loophole on ettevõtte Anomaly Innovations, Inc. registreeritud kaubamärk.",
+  "settings.about.trademark": "Loophole on ettevõtte Loophole AI registreeritud kaubamärk.",
   "settings.about.typeset": "Sisestatud Inter ja IBM Plex Mono",
   "settings.about.tagline": "AI ei saa ilma sinuta suurepärast tarkvara luua",
   "settings.about.copyright": "© Loophole AI",

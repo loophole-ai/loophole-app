@@ -678,7 +678,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Бори аввал дар Лондон, Англия мусаввар шудааст",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, агенти рамзнависии манбаи кушода",
-  "settings.about.trademark": "Loophole тамғаи тиҷории бақайдгирифтаи Anomaly Innovations, Inc. мебошад.",
+  "settings.about.trademark": "Loophole тамғаи тиҷории бақайдгирифтаи Loophole AI мебошад.",
   "settings.about.typeset": "Бо Inter ва IBM Plex Mono ҳуруфчинӣ шудааст",
   "settings.about.tagline": "AI бе шумо нармафзори олӣ сохта наметавонад",
   "settings.about.copyright": "© Loophole AI",

@@ -738,7 +738,7 @@ export const dict = {
   "settings.about.firstIllustrated": "ภาพประกอบครั้งแรกในลอนดอน ประเทศอังกฤษ",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole เอเจนต์การเข้ารหัสโอเพ่นซอร์ส",
-  "settings.about.trademark": "Loophole เป็นเครื่องหมายการค้าจดทะเบียนของ Anomaly Innovations, Inc.",
+  "settings.about.trademark": "Loophole เป็นเครื่องหมายการค้าจดทะเบียนของ Loophole AI",
   "settings.about.typeset": "เรียงพิมพ์ใน Inter และ IBM Plex Mono",
   "settings.about.tagline": "AI ไม่สามารถสร้างซอฟต์แวร์ที่ยอดเยี่ยมได้หากไม่มีคุณ",
   "settings.about.copyright": "© Loophole AI",

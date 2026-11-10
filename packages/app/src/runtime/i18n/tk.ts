@@ -673,7 +673,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Ilkinji gezek London, Angliýada suratlandyryldy",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, açyk çeşmeli kodlaşdyrma agenti",
-  "settings.about.trademark": "Loophole Anomaly Innovations, Inc. kompaniýasynyň bellige alnan söwda nyşanydyr.",
+  "settings.about.trademark": "Loophole Loophole AI kompaniýasynyň bellige alnan söwda nyşanydyr.",
   "settings.about.typeset": "Inter we IBM Plex Mono bilen düzüldi",
   "settings.about.tagline": "AI sizsiz ajaýyp programma üpjünçiligini döredip bilmez",
   "settings.about.copyright": "© Loophole AI",

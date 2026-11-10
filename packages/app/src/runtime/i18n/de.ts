@@ -157,7 +157,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Erstmals illustriert in London, England",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, der Open-Source-Coding-Agent",
-  "settings.about.trademark": "Loophole ist eine eingetragene Marke von Anomaly Innovations, Inc.",
+  "settings.about.trademark": "Loophole ist eine eingetragene Marke von Loophole AI",
   "settings.about.typeset": "Gesetzt in Inter und IBM Plex Mono",
   "settings.about.tagline": "KI kann ohne Sie keine großartige Software entwickeln",
   "settings.about.copyright": "© Loophole AI",

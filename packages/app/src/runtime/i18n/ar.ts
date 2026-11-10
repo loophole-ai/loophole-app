@@ -726,7 +726,7 @@ export const dict = {
   "settings.about.firstIllustrated": "رُسم أول مرة في \u2068London, England\u2069",
   "settings.about.website": "\u2068www.loopholeeditor.in\u2069",
   "settings.about.description": "\u2068Loophole\u2069، وكيل البرمجة مفتوح المصدر",
-  "settings.about.trademark": "\u2068Loophole\u2069 علامة تجارية مسجلة لشركة \u2068Anomaly Innovations, Inc.\u2069",
+  "settings.about.trademark": "\u2068Loophole\u2069 علامة تجارية مسجلة لشركة \u2068Loophole AI\u2069",
   "settings.about.typeset": "منضّد بخطي \u2068Inter\u2069 و\u2068IBM Plex Mono\u2069",
   "settings.about.tagline": "لا يستطيع الذكاء الاصطناعي بناء برمجيات رائعة من دونك",
   "settings.about.copyright": "© Loophole AI",

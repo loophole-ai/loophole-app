@@ -679,7 +679,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Анх Английн Лондон хотод зурагласан",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, нээлттэй эхийн кодчиллын агент",
-  "settings.about.trademark": "Loophole нь Anomaly Innovations, Inc.-ийн бүртгэлтэй барааны тэмдэг юм.",
+  "settings.about.trademark": "Loophole нь Loophole AI-ийн бүртгэлтэй барааны тэмдэг юм.",
   "settings.about.typeset": "Inter болон IBM Plex Mono үсгийн хэвээр өрсөн",
   "settings.about.tagline": "Тангүйгээр AI гайхалтай програм хангамж бүтээж чадахгүй",
   "settings.about.copyright": "© Loophole AI",

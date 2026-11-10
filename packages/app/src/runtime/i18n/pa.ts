@@ -687,7 +687,7 @@ export const dict = {
   "settings.about.firstIllustrated": "پہلی واری لندن، انگلینڈ وچ تصویراں بݨیاں",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole، اوپن سورس کوڈنگ ایجنٹ",
-  "settings.about.trademark": "Loophole، Anomaly Innovations, Inc. دا رجسٹرڈ ٹریڈ مارک اے۔",
+  "settings.about.trademark": "Loophole، Loophole AI دا رجسٹرڈ ٹریڈ مارک اے۔",
   "settings.about.typeset": "Inter تے IBM Plex Mono وچ ٹائپ سیٹ",
   "settings.about.tagline": "تہاڈے بغیر AI ودھیا سافٹ ویئر نئیں بݨا سکدا",
   "settings.about.copyright": "© Loophole AI",

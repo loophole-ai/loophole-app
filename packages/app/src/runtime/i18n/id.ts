@@ -747,7 +747,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Pertama kali diilustrasikan di London, Inggris",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, agen pengkodean sumber terbuka",
-  "settings.about.trademark": "Loophole adalah merek dagang terdaftar dari Anomaly Innovations, Inc.",
+  "settings.about.trademark": "Loophole adalah merek dagang terdaftar dari Loophole AI",
   "settings.about.typeset": "Pengesetan di Inter dan IBM Plex Mono",
   "settings.about.tagline": "AI tidak dapat membuat perangkat lunak yang hebat tanpa Anda",
   "settings.about.copyright": "© Loophole AI",

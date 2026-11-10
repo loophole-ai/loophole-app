@@ -675,7 +675,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Առաջին անգամ նկարազարդվել է Լոնդոնում, Անգլիա",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole՝ բաց կոդով կոդավորման գործակալ",
-  "settings.about.trademark": "Loophole-ը Anomaly Innovations, Inc.-ի գրանցված ապրանքային նշանն է։",
+  "settings.about.trademark": "Loophole-ը Loophole AI-ի գրանցված ապրանքային նշանն է։",
   "settings.about.typeset": "Շարված է Inter և IBM Plex Mono տառատեսակներով",
   "settings.about.tagline": "AI-ը չի կարող հիանալի ծրագրակազմ ստեղծել առանց ձեզ",
   "settings.about.copyright": "© Loophole AI",

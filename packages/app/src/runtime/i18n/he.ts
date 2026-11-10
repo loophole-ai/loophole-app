@@ -688,7 +688,7 @@ export const dict = {
   "settings.about.firstIllustrated": "אויר לראשונה ב-\u2068London, England\u2069",
   "settings.about.website": "\u2068www.loopholeeditor.in\u2069",
   "settings.about.description": "\u2068Loophole\u2069, סוכן הקוד בקוד פתוח",
-  "settings.about.trademark": "\u2068Loophole\u2069 הוא סימן מסחרי רשום של \u2068Anomaly Innovations, Inc.\u2069",
+  "settings.about.trademark": "\u2068Loophole\u2069 הוא סימן מסחרי רשום של \u2068Loophole AI\u2069",
   "settings.about.typeset": "סודר בגופנים \u2068Inter\u2069 ו-\u2068IBM Plex Mono\u2069",
   "settings.about.tagline": "בינה מלאכותית לא יכולה לבנות תוכנה מעולה בלעדיך",
   "settings.about.copyright": "© Loophole AI",

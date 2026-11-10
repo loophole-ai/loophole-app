@@ -752,7 +752,7 @@ export const dict = {
   "settings.about.firstIllustrated": "İlk kez Londra, İngiltere'de resmedildi",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, açık kaynak kodlama aracısı",
-  "settings.about.trademark": "Loophole, Anomaly Innovations, Inc.'in tescilli ticari markasıdır.",
+  "settings.about.trademark": "Loophole, Loophole AI'in tescilli ticari markasıdır.",
   "settings.about.typeset": "Inter ve IBM Plex Mono'da dizgi",
   "settings.about.tagline": "Yapay zeka siz olmadan mükemmel yazılım geliştiremez",
   "settings.about.copyright": "© Loophole AI",

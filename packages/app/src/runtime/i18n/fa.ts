@@ -688,7 +688,7 @@ export const dict = {
   "settings.about.firstIllustrated": "نخستین تصویرسازی در \u2068London, England\u2069",
   "settings.about.website": "\u2068www.loopholeeditor.in\u2069",
   "settings.about.description": "\u2068Loophole\u2069، عامل کدنویسی متن‌باز",
-  "settings.about.trademark": "\u2068Loophole\u2069 علامت تجاری ثبت‌شدهٔ \u2068Anomaly Innovations, Inc.\u2069 است",
+  "settings.about.trademark": "\u2068Loophole\u2069 علامت تجاری ثبت‌شدهٔ \u2068Loophole AI\u2069 است",
   "settings.about.typeset": "حروف‌چینی با \u2068Inter\u2069 و \u2068IBM Plex Mono\u2069",
   "settings.about.tagline": "هوش مصنوعی بدون شما نمی‌تواند نرم‌افزار عالی بسازد",
   "settings.about.copyright": "© Loophole AI",

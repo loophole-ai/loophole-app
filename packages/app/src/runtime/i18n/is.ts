@@ -677,7 +677,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Fyrst myndskreytt í London á Englandi",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, opinn kóðunaraðili",
-  "settings.about.trademark": "Loophole er skráð vörumerki Anomaly Innovations, Inc.",
+  "settings.about.trademark": "Loophole er skráð vörumerki Loophole AI",
   "settings.about.typeset": "Tegund í Inter og IBM Plex Mono",
   "settings.about.tagline": "AI getur ekki smíðað frábæran hugbúnað án þín",
   "settings.about.copyright": "© Loophole AI",

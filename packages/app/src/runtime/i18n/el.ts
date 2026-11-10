@@ -684,7 +684,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Εικονογραφήθηκε για πρώτη φορά στο Λονδίνο της Αγγλίας",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, ο παράγοντας κωδικοποίησης ανοιχτού κώδικα",
-  "settings.about.trademark": "Το Loophole είναι σήμα κατατεθέν της Anomaly Innovations, Inc.",
+  "settings.about.trademark": "Το Loophole είναι σήμα κατατεθέν της Loophole AI",
   "settings.about.typeset": "Δακτυλογράφηση σε Inter και IBM Plex Mono",
   "settings.about.tagline": "Το AI δεν μπορεί να δημιουργήσει εξαιρετικό λογισμικό, χωρίς εσάς",
   "settings.about.copyright": "© Loophole AI",

@@ -692,7 +692,7 @@ export const dict = {
   "settings.about.firstIllustrated": "ފުރަތަމަ ކުރެހީ އިނގިރޭސިވިލާތުގެ ލަންޑަންގައެވެ",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole، އޯޕަން ސޯސް ކޯޑިންގ އޭޖެންޓް",
-  "settings.about.trademark": "Loophole އަކީ Anomaly Innovations, Inc. ގެ ރަޖިސްޓަރޑް ޓްރޭޑްމާކެވެ.",
+  "settings.about.trademark": "Loophole އަކީ Loophole AI ގެ ރަޖިސްޓަރޑް ޓްރޭޑްމާކެވެ.",
   "settings.about.typeset": "Inter އަދި IBM Plex Mono އިން ޓައިޕްސެޓްކޮށްފައި",
   "settings.about.tagline": "ތިބާ ނެތި AI އަށް ރަނގަޅު ސޮފްޓްވެއަރ ނުހެދޭނެ",
   "settings.about.copyright": "© Loophole AI",

@@ -26,7 +26,7 @@ export const dict = {
   "server.connect.scan": "Escanea el código QR",
   "server.connect.scan.description": "Apunte su cámara al código QR mostrado por opencode pair.",
   "server.connect.scan.invalid":
-    "Este no es un código de emparejamiento OpenCode. Escanea el código mostrado por opencode pair.",
+    "Este no es un código de emparejamiento Loophole. Escanea el código mostrado por opencode pair.",
   "server.connect.camera": "Emparejamiento de cámara",
   "server.connect.camera.starting": "Abriendo cámara...",
   "server.connect.mixedContent":
@@ -157,7 +157,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Ilustrado por primera vez en Londres, Inglaterra",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, el agente de programaciÃ³n de cÃ³digo abierto",
-  "settings.about.trademark": "Loophole es una marca registrada de Anomaly Innovations, Inc.",
+  "settings.about.trademark": "Loophole es una marca registrada de Loophole AI",
   "settings.about.typeset": "Compuesto con Inter e IBM Plex Mono",
   "settings.about.tagline": "La IA no puede crear software excelente sin ti",
   "settings.about.copyright": "© Loophole AI",

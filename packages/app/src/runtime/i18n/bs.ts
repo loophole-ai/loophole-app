@@ -743,7 +743,7 @@ export const dict = {
   "settings.about.firstIllustrated": "Prvi put ilustrovan u Londonu, Engleska",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, agent za kodiranje otvorenog koda",
-  "settings.about.trademark": "Loophole je registrovani zaštitni znak Anomaly Innovations, Inc.",
+  "settings.about.trademark": "Loophole je registrovani zaštitni znak Loophole AI",
   "settings.about.typeset": "Postavljen u Inter i IBM Plex Mono",
   "settings.about.tagline": "AI ne može napraviti odličan softver bez vas",
   "settings.about.copyright": "© Loophole AI",

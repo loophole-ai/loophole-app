@@ -662,7 +662,7 @@ export const dict = {
   "settings.about.firstIllustrated": "መጀመሪያ ምስል የተሰራለት በለንደን፣ እንግሊዝ",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole፣ ክፍት ምንጭ የኮድ ወኪል",
-  "settings.about.trademark": "Loophole የAnomaly Innovations, Inc. የተመዘገበ የንግድ ምልክት ነው።",
+  "settings.about.trademark": "Loophole የLoophole AI የተመዘገበ የንግድ ምልክት ነው።",
   "settings.about.typeset": "በInter እና IBM Plex Mono ተሰድሯል",
   "settings.about.tagline": "ያለ እርስዎ AI ምርጥ ሶፍትዌር መገንባት አይችልም",
   "settings.about.copyright": "© Loophole AI",

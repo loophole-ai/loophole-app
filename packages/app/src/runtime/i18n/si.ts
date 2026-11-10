@@ -674,7 +674,7 @@ export const dict = {
   "settings.about.firstIllustrated": "මුලින්ම එංගලන්තයේ ලන්ඩන්හි රූප සටහන් කරන ලදී",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, විවෘත මූලාශ්‍ර කේතකරණ නියෝජිතයා",
-  "settings.about.trademark": "Loophole යනු Anomaly Innovations, Inc. හි ලියාපදිංචි වෙළඳ ලකුණකි.",
+  "settings.about.trademark": "Loophole යනු Loophole AI හි ලියාපදිංචි වෙළඳ ලකුණකි.",
   "settings.about.typeset": "Inter සහ IBM Plex Mono අකුරුවලින් සකසා ඇත",
   "settings.about.tagline": "ඔබ නොමැතිව AI හට විශිෂ්ට මෘදුකාංග තැනිය නොහැක",
   "settings.about.copyright": "© Loophole AI",

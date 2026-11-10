@@ -674,7 +674,7 @@ export const dict = {
   "settings.about.firstIllustrated": "პირველად ილუსტრირდა ლონდონში, ინგლისი",
   "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, ღია კოდის მქონე კოდირების აგენტი",
-  "settings.about.trademark": "Loophole არის Anomaly Innovations, Inc.-ის რეგისტრირებული სავაჭრო ნიშანი.",
+  "settings.about.trademark": "Loophole არის Loophole AI-ის რეგისტრირებული სავაჭრო ნიშანი.",
   "settings.about.typeset": "აწყობილია Inter და IBM Plex Mono შრიფტებით",
   "settings.about.tagline": "AI ვერ შექმნის შესანიშნავ პროგრამულ უზრუნველყოფას თქვენ გარეშე",
   "settings.about.copyright": "© Loophole AI",
