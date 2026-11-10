@@ -8,7 +8,7 @@
     "type": "git",
     "url": "git+https://github.com/loophole-ai/loophole-app.git",
     "directory": "packages/cli"
-  }
+  },
   "bin": {
     "loophole-cli": "./bin/loophole-cli.cjs",
     "lhc": "./bin/lhc.cjs"
