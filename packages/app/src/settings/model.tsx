@@ -311,7 +311,7 @@ export const defaultSettings: Settings = {
     mobileTitlebarPosition: "top",
     followUpBehavior: "steer",
   },
-  appearance: { fontSize: 14, mono: "", sans: "", terminal: "", tabLayout: "horizontal", reduceMotion: "system" },
+  appearance: { fontSize: 14, mono: "", sans: "", terminal: "", tabLayout: "inbox", reduceMotion: "system" },
   keybinds: {},
   permissions: { autoApprove: false, autoApproveProjects: {} },
   workspaces: { defaultDestination: "last-used", lastUsed: {} },
@@ -462,9 +462,11 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
         setTerminalFont(value: string) {
           setStore("appearance", "terminal", value.trim() ? value : "")
         },
-        tabLayout: withFallback(() => store.appearance?.tabLayout, defaultSettings.appearance.tabLayout),
-        setTabLayout(value: TabLayout) {
-          setStore("appearance", "tabLayout", value)
+        // The desktop ships one interface: the Inbox. The stored value is kept for
+        // older builds but the app always renders the inbox layout.
+        tabLayout: createMemo(() => "inbox" as TabLayout),
+        setTabLayout(_value: TabLayout) {
+          setStore("appearance", "tabLayout", "inbox")
         },
         sidebarOpen: withFallback(() => store.appearance?.sidebarOpen, true),
         setSidebarOpen(value: boolean) {

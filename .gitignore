@@ -31,6 +31,7 @@ target
 
 # Local dev files
 opencode-dev
+loophole-dev
 RELEASE_REVIEW.md
 logs/
 *.bun-build

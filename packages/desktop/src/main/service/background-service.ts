@@ -107,12 +107,16 @@ const prepare = Effect.fn("BackgroundService.prepare")(function* (mode: Backgrou
 
   if (isolated) process.env.XDG_STATE_HOME = app.getPath("userData")
   const client = yield* Effect.promise(() => import("@opencode/client/service"))
-
+  // The CLI names its registration file after its channel, and a compiled binary reads that channel
+  // from the binary itself, so both sides have to settle on one. Pinning it here also covers the dev
+  // path, where the CLI is run from source and would otherwise take a different channel than the
+  // bundled build, leaving ensure() waiting on a file the sidecar never writes.
+  process.env.OPENCODE_CHANNEL = CHANNEL
   const file =
     process.env.OPENCODE_DESKTOP_SERVER_CHANNEL === "local"
       ? path.join(
           process.env.XDG_STATE_HOME ?? path.join(app.getPath("home"), ".local", "state"),
-          "opencode",
+          "loophole",
           "service-local.json",
         )
       : undefined

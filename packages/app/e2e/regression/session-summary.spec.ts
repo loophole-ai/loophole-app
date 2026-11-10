@@ -810,8 +810,8 @@ test("Extensions lists open on hover, hold course into the open list, and follow
 })
 
 test("Extensions lists open config files and skills in a side tab and start setup sessions", async ({ page }) => {
-  const global = "C:/Users/kit/.config/opencode/opencode.jsonc"
-  const skill = `${fixture.directory}/.opencode/skills/release-notes/SKILL.md`
+  const global = "C:/Users/kit/.config/loophole/loophole.jsonc"
+  const skill = `${fixture.directory}/.loophole/skills/release-notes/SKILL.md`
   let builtinReads = 0
 
   await mockStressTimeline(page, {
@@ -828,7 +828,7 @@ test("Extensions lists open config files and skills in a side tab and start setu
         info: { mcp: { servers: { "atlas-search": { type: "remote", url: "https://atlas.example" } } } },
       },
       // An empty project override used to win, so the servers' own file never opened.
-      { type: "document", path: `${fixture.directory}/.opencode/opencode.jsonc`, info: { mcp: {} } },
+      { type: "document", path: `${fixture.directory}/.loophole/loophole.jsonc`, info: { mcp: {} } },
     ],
     fileContent: (path) => ({ type: "text", content: `contents:${path}` }),
   })
@@ -851,12 +851,12 @@ test("Extensions lists open config files and skills in a side tab and start setu
   await trigger.click()
   await row("MCP").hover()
   // A file outside the workspace is read by name from its own directory.
-  const read = page.waitForRequest((request) => new URL(request.url()).pathname.endsWith("/api/fs/read/opencode.jsonc"))
+  const read = page.waitForRequest((request) => new URL(request.url()).pathname.endsWith("/api/fs/read/loophole.jsonc"))
   await list("MCP").getByRole("button", { name: "Configuration file", exact: true }).click()
-  expect(new URL((await read).url()).searchParams.get("location[directory]")).toBe("C:/Users/kit/.config/opencode/")
+  expect(new URL((await read).url()).searchParams.get("location[directory]")).toBe("C:/Users/kit/.config/loophole/")
   await expect(summary).toBeHidden()
-  await expect(page.getByRole("tab", { name: "opencode.jsonc", exact: true })).toHaveAttribute("aria-selected", "true")
-  await expect(page.getByText("contents:opencode.jsonc", { exact: true })).toBeVisible()
+  await expect(page.getByRole("tab", { name: "loophole.jsonc", exact: true })).toHaveAttribute("aria-selected", "true")
+  await expect(page.getByText("contents:loophole.jsonc", { exact: true })).toBeVisible()
 
   await trigger.click()
   await row("Skills").hover()
@@ -872,7 +872,7 @@ test("Extensions lists open config files and skills in a side tab and start setu
   await list("Skills").getByRole("button", { name: "release-notes", exact: true }).click()
   await expect(summary).toBeHidden()
   await expect(page.getByRole("tab", { name: "SKILL.md", selected: true, exact: true })).toBeVisible()
-  await expect(page.getByText("contents:.opencode/skills/release-notes/SKILL.md", { exact: true })).toBeVisible()
+  await expect(page.getByText("contents:.loophole/skills/release-notes/SKILL.md", { exact: true })).toBeVisible()
 
   // An empty list offers a draft session in the global configuration's directory, its prompt filled in.
   await trigger.click()
@@ -909,14 +909,14 @@ test.describe("remote configuration", () => {
 
   test("remote servers copy each service's configuration path", async ({ page }) => {
     const remote = "http://summary-remote.test:4096"
-    const home = "/home/remote/.config/opencode"
+    const home = "/home/remote/.config/loophole"
 
     const entries = [
       { type: "document", path: `${home}/mcp.jsonc`, info: { mcp: { servers: {} } } },
       { type: "document", path: `${home}/plugins.json`, info: { plugins: [] } },
       { type: "document", path: `${home}/skills.jsonc`, info: { skills: [] } },
-      { type: "document", path: `${fixture.directory}/opencode.json`, info: {} },
-      { type: "document", path: `${fixture.directory}/.opencode/agents/review.md`, info: {} },
+      { type: "document", path: `${fixture.directory}/loophole.json`, info: {} },
+      { type: "document", path: `${fixture.directory}/.loophole/agents/review.md`, info: {} },
     ]
 
     await mockOpenCodeServer(page, {

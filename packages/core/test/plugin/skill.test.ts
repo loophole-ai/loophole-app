@@ -35,23 +35,16 @@ describe("SkillPlugin.Plugin", () => {
       const skills = yield* skill.list()
       const report = skills.find((item) => item.id === "report")
 
-      expect(skills).toContainEqual(
-        expect.objectContaining({
-          id: "opencode",
-          name: "OpenCode",
-          path: "skill://opencode/SKILL.md",
-          description: expect.stringContaining("any question about OpenCode itself"),
-        }),
-      )
+      expect(skills.some((item) => item.id === "opencode")).toBe(false)
       expect(skills).toContainEqual(
         expect.objectContaining({
           id: "report",
           name: "Report",
           path: "skill://report/SKILL.md",
-          description: expect.stringContaining("opencode issue"),
+          description: expect.stringContaining("Loophole issue"),
         }),
       )
-      expect(report?.content).toContain("- opencode version: 1.2.3")
+      expect(report?.content).toContain("- Loophole version: 1.2.3")
       expect(report?.content).toContain("- install/channel: beta")
     }),
   )

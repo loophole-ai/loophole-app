@@ -1,4 +1,4 @@
-import type { PromptResponse, SessionUpdate } from "@agentclientprotocol/sdk"
+﻿import type { PromptResponse, SessionUpdate } from "@agentclientprotocol/sdk"
 import type { OpenCodeEvent } from "@opencode/client/effect"
 import type { Session } from "@opencode/schema/session"
 import type { SessionError } from "@opencode/schema/session-error"
@@ -139,7 +139,7 @@ export function failure(state: TurnState) {
   if (error?.type === "provider.auth") return new ACPError.AuthRequiredError()
   if (error && error.type !== "aborted" && error.type !== "provider.content-filter") {
     return new ACPError.ServiceFailureError({
-      safeMessage: error.message || "OpenCode prompt failed",
+      safeMessage: error.message || "Loophole prompt failed",
       service: "session",
       errorName: error.type,
     })

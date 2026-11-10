@@ -735,16 +735,9 @@ export function RunFooterView(props: RunFooterViewProps) {
                 <box
                   width="100%"
                   flexShrink={0}
-                  border={panel() || prompt() ? false : ["left"]}
-                  borderColor={panel() || prompt() ? undefined : theme().border}
-                  customBorderChars={
-                    panel() || prompt()
-                      ? undefined
-                      : {
-                          ...EMPTY_BORDER,
-                          vertical: props.mono ? "|" : "█",
-                        }
-                  }
+                  border={["top", "bottom"]}
+                  borderColor={theme().border}
+                  customBorderChars={{ ...EMPTY_BORDER, horizontal: props.mono ? "-" : "─" }}
                 >
                   <box
                     width="100%"
@@ -753,7 +746,7 @@ export function RunFooterView(props: RunFooterViewProps) {
                     paddingRight={0}
                     paddingTop={0}
                     flexDirection="column"
-                    backgroundColor={panel() || prompt() ? "transparent" : theme().surface}
+                    backgroundColor="transparent"
                     gap={0}
                   >
                     <box width="100%" flexGrow={1} flexShrink={1} flexDirection="column">
@@ -763,8 +756,7 @@ export function RunFooterView(props: RunFooterViewProps) {
                             theme={theme}
                             cursorStyle={props.tuiConfig.cursor}
                             background={() => runTheme().background}
-                            rail={() => (shell() ? theme().formfieldFocusedText : agentColor())}
-                            mono={props.mono}
+                                            mono={props.mono}
                             placeholder={composer.placeholder}
                             onSubmit={composer.onSubmit}
                             onKeyDown={composer.onKeyDown}
@@ -1014,12 +1006,9 @@ export function RunFooterView(props: RunFooterViewProps) {
           width="100%"
           flexGrow={1}
           flexShrink={1}
-          border={["left"]}
+          border={["top", "bottom"]}
           borderColor={theme().border}
-          customBorderChars={{
-            ...EMPTY_BORDER,
-            vertical: props.mono ? "|" : "┃",
-          }}
+          customBorderChars={{ ...EMPTY_BORDER, horizontal: props.mono ? "-" : "─" }}
         >
           <RunFooterSubagentBody
             active={inspecting}

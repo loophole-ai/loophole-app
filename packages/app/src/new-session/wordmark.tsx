@@ -1,6 +1,7 @@
 import { Logo } from "@opencode/ui/logo"
 import { prefersReducedMotion } from "@opencode/ui/motion"
 import { type Accessor, createEffect, For, onCleanup, onMount, Show } from "solid-js"
+import { usePlatform } from "@/runtime/platform/platform"
 import { PinSound } from "./pin-sound"
 import {
   LODGER_POP,
@@ -161,13 +162,16 @@ export function NewSessionWordmark(props: {
 }) {
   // Read once: the lodger stays mounted after handing over to the pin board, and can be dragged back into the hole.
   const lodger = selectWordmarkLodger(props.state())
+  const platform = usePlatform()
+  // The desktop app version sits under the wordmark; the web app has its own version and does not show one here.
+  const version = () => (platform.platform === "desktop" ? platform.version : undefined)
   let box!: HTMLDivElement
 
   return (
     <div
       data-component="new-session-wordmark"
       aria-hidden="true"
-      class="pointer-events-none mx-auto w-full max-w-[720px] text-v2-background-bg-inverse"
+      class="pointer-events-none mx-auto w-full max-w-[720px] text-v2-text-text-muted"
     >
       <div
         ref={(el) => {
@@ -186,15 +190,25 @@ export function NewSessionWordmark(props: {
             play={!!props.play}
           />
         </Show>
+        <Show when={version()}>
+          {(value) => (
+            <span
+              data-slot="wordmark-version"
+              class="pointer-events-none absolute -bottom-5 end-0 select-none text-[11px] leading-[var(--line-height-compact)] tracking-[-0.04px] text-v2-text-text-faint"
+            >
+              {value()}
+            </span>
+          )}
+        </Show>
       </div>
     </div>
   )
 }
 
 /**
- * Eyes peek out of the "e" when the pointer comes near. Dragging them pulls the lodger and a single corner pin
- * out on a stretchy neck; pull far enough and that pin triggers an elastic 3D pull-wave across the wordmark.
- * Dragging the lodger back into the "e" hole reels all the pins back into the flat wordmark.
+ * The wordmark's lodger: pulling it out of the "e" drags a single corner pin on a stretchy neck; pull far
+ * enough and that pin triggers an elastic 3D pull-wave across the wordmark. Dragging the lodger back into
+ * the "e" hole reels all the pins back into the flat wordmark. The lodger's eyes stay hidden.
  */
 function WordmarkLodger(props: {
   box: HTMLDivElement
@@ -237,7 +251,9 @@ function WordmarkLodger(props: {
           <For each={LETTERS}>
             {(item, i) => (
               <g ref={(el) => (letters[i()] = el)}>
-                <g class="opacity-[0.16]">
+                {/* The traced wordmark below already draws "loophole"; the old "opencode" paths stay mounted for the
+                    lodger geometry and its "e" notch, but must not show through as a ghost. */}
+                <g class="opacity-0">
                   <path d={item.weak} fill="var(--icon-weak-base)" />
                   <path d={item.stem} fill={item.fill} />
                 </g>
@@ -1008,7 +1024,8 @@ function mountLodger(
       },
       `${Math.round(c.ball * 100) / 100}`,
     )
-    put("eyes", opacity(parts.eyes), `${c.eyes}`)
+    // Loophole keeps the wordmark still: the lodger eyes never show, so the wordmark reads clean.
+    put("eyes", opacity(parts.eyes), `0`)
     put(
       "look",
       attr(parts.eyes, "transform"),

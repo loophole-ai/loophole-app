@@ -25,12 +25,6 @@ export const clientSettings: Entry<SettingsRootTab>[] = [
   { tab: "general", label: "settings.general.row.language.title", target: "settings-language" },
   {
     tab: "general",
-    label: "settings.general.row.interfaceMode.title",
-    target: "settings-tab-layout",
-    keywords: "top side tabs inbox sidebar mode layout vertical horizontal focus pro",
-  },
-  {
-    tab: "general",
     label: "settings.workspaces.default.title",
     target: "settings-workspace-destination",
     description: "settings.workspaces.default.description",

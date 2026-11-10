@@ -102,8 +102,8 @@ export function NewSessionView(props: {
           active={props.composer.state.drag === "active"}
           input={props.composer.model.selection.current()?.capabilities.input}
         />
-        <div class="absolute inset-x-0 top-[25.375%] flex justify-center px-6">
-          <div class={NEW_SESSION_CONTENT_WIDTH}>
+        <div class="absolute inset-0 flex flex-col items-center px-6">
+          <div class={`${NEW_SESSION_CONTENT_WIDTH} flex min-h-0 flex-1 items-center justify-center pb-8`}>
             <NewSessionWordmark
               ref={setLogo}
               state={wordmark}
@@ -111,7 +111,9 @@ export function NewSessionView(props: {
               play
               sound={settings.sounds.interfaceEnabled}
             />
-            <div class="mt-8 flex flex-col gap-3">
+          </div>
+          <div class="w-full max-w-[720px] px-0 shrink-0 pb-[max(64px,9vh)]">
+            <div class="flex flex-col gap-3">
               <div data-slot="new-session-composer" class="flex flex-col gap-1">
                 <div class="relative z-10">
                   <Composer model={props.composer} />

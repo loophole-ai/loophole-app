@@ -1,4 +1,4 @@
-import { confirm, intro, log, outro, spinner } from "@clack/prompts"
+﻿import { confirm, intro, log, outro, spinner } from "@clack/prompts"
 import { Service } from "@opencode/client/effect/service"
 import { Global } from "@opencode/util/global"
 import { Effect, FileSystem, Schedule } from "effect"
@@ -14,7 +14,7 @@ import { errorMessage } from "../../util/error"
 export default Runtime.handler(
   Commands.commands.uninstall,
   Effect.fn("cli.uninstall")(function* (input) {
-    intro("Uninstall OpenCode")
+    intro("Uninstall Loophole")
     const fs = yield* FileSystem.FileSystem
     const global = yield* Global.Service
     const updater = yield* Updater.Service
@@ -29,7 +29,7 @@ export default Runtime.handler(
     const shell = method === "curl" ? yield* shellConfigs(global.home) : []
 
     log.info(`Installation method: ${method ?? "unknown"}`)
-    log.message("The following global files will be removed (shared by OpenCode versions and channels):")
+    log.message("The following global files will be removed (shared by Loophole versions and channels):")
     if (yield* fs.exists(global.cache)) log.info(`  Cache: ${global.cache}`)
     services.forEach((name) =>
       log.info(`  Stop background service and persistent terminals: ${path.join(global.state, name)}`),
@@ -70,7 +70,7 @@ export default Runtime.handler(
       )
     }
 
-    // Links that keep an older OpenCode replaceable may still run; move them so the cache can go.
+    // Links that keep an older Loophole replaceable may still run; move them so the cache can go.
     if (process.platform === "win32") yield* RetainedImage.relocate(global.cache, global.tmp)
     const errors: string[] = []
     progress.start("Removing Cache...")
@@ -121,7 +121,9 @@ const shellConfigs = Effect.fnUntraced(function* (home: string) {
   const fs = yield* FileSystem.FileSystem
   const bin = path.dirname(process.execPath)
   // V1 and V2 curl installs share a PATH entry; retain it while another binary uses it.
-  if ((yield* fs.readDirectory(bin)).some((name) => name !== path.basename(process.execPath))) return []
+  // The `lhc` shim belongs to this install, so it must not keep the directory alive.
+  const own = new Set([path.basename(process.execPath), "lhc", "lhc.cmd", "lhc.exe"])
+  if ((yield* fs.readDirectory(bin)).some((name) => !own.has(name))) return []
   const xdg = process.env.XDG_CONFIG_HOME || path.join(home, ".config")
   const zsh = process.env.ZDOTDIR || home
   const candidates: Record<string, string[]> = {
@@ -154,8 +156,12 @@ const shellConfigs = Effect.fnUntraced(function* (home: string) {
 function cleanShellConfig(content: string) {
   const lines = content.split("\n")
   const entry = (line: string) =>
-    /^(?:export PATH=|fish_add_path\s)/.test(line.trim()) && line.includes(".opencode/bin")
+    /^(?:export PATH=|fish_add_path\s)/.test(line.trim()) && line.includes(".loophole/bin")
   return lines
-    .filter((line, index) => !entry(line) && !(line.trim() === "# opencode" && entry(lines[index + 1] ?? "")))
+    .filter(
+      (line, index) =>
+        !entry(line) &&
+        !(["# loophole-cli", "# opencode"].includes(line.trim()) && entry(lines[index + 1] ?? "")),
+    )
     .join("\n")
 }

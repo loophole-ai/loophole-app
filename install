@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-APP=opencode
-SOURCE_APP=opencode
+APP=loophole-cli
+SOURCE_APP=loophole-cli
 
 MUTED='\033[0;2m'
 RED='\033[0;31m'
@@ -10,20 +10,18 @@ NC='\033[0m' # No Color
 
 usage() {
     cat <<EOF
-OpenCode Installer
+Loophole CLI Installer
 
 Usage: install.sh [options]
 
 Options:
     -h, --help              Display this help message
-    -v, --version <version> Install a specific version (e.g., 0.0.0-beta-17236)
+    -v, --version <version> Install a specific version
     -b, --binary <path>     Install from a local binary instead of downloading
         --no-modify-path    Don't modify shell config files (.zshrc, .bashrc, etc.)
 
 Examples:
-    curl -fsSL https://opencode.ai/v2/install | bash
-    curl -fsSL https://opencode.ai/v2/install | bash -s -- --version 0.0.0-beta-17236
-    ./install --binary /path/to/opencode
+    ./install --binary /path/to/loophole-cli
 EOF
 }
 
@@ -66,7 +64,16 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-INSTALL_DIR=$HOME/.opencode/bin
+# Loophole CLI binaries are shipped with Loophole Desktop and installed with
+# `--binary`. There is no standalone download endpoint yet, so refuse to fall
+# back to the upstream OpenCode package.
+if [ -z "$binary_path" ]; then
+    echo -e "${RED}Error: Loophole CLI must be installed from Loophole Desktop or with --binary <path>.${NC}"
+    echo -e "${MUTED}Open Loophole Desktop, go to Settings, and choose Install CLI.${NC}"
+    exit 1
+fi
+
+INSTALL_DIR=$HOME/.loophole/bin
 mkdir -p "$INSTALL_DIR"
 
 # If --binary is provided, skip all download/detection logic
@@ -342,27 +349,30 @@ install_from_binary() {
     chmod 755 "$INSTALL_DIR/$installed_binary"
 }
 
-install_legacy_shim() {
+install_shortcut() {
     local shim_os="${os:-}"
     if [[ -z "$shim_os" ]]; then
         case "$(uname -s)" in
             MINGW*|MSYS*|CYGWIN*) shim_os="windows" ;;
         esac
     fi
-    rm -f "$INSTALL_DIR/opencode2" "$INSTALL_DIR/opencode2.exe" "$INSTALL_DIR/opencode2.cmd"
+    # `lhc` is the short alias for the CLI; keep it next to the real binary.
+    rm -f "$INSTALL_DIR/lhc" "$INSTALL_DIR/lhc.exe" "$INSTALL_DIR/lhc.cmd"
+    # Remove binaries and shims from older installs that used the bare `loophole` name.
+    rm -f "$INSTALL_DIR/loophole" "$INSTALL_DIR/loophole.exe" "$INSTALL_DIR/loophole2" "$INSTALL_DIR/loophole2.exe" "$INSTALL_DIR/loophole2.cmd"
     if [[ "$shim_os" == "windows" ]]; then
-        cat > "$INSTALL_DIR/opencode2.cmd" <<'EOF'
+        cat > "$INSTALL_DIR/lhc.cmd" <<'EOF'
 @echo off
-"%~dp0opencode.exe" %*
+"%~dp0loophole-cli.exe" %*
 exit /b %errorlevel%
 EOF
         return
     fi
-    cat > "$INSTALL_DIR/opencode2" <<'EOF'
+    cat > "$INSTALL_DIR/lhc" <<'EOF'
 #!/bin/sh
-exec "$(dirname "$0")/opencode" "$@"
+exec "$(dirname "$0")/loophole-cli" "$@"
 EOF
-    chmod 755 "$INSTALL_DIR/opencode2"
+    chmod 755 "$INSTALL_DIR/lhc"
 }
 
 if [ -n "$binary_path" ]; then
@@ -371,7 +381,7 @@ else
     check_version
     download_and_install
 fi
-install_legacy_shim
+install_shortcut
 
 
 path_added=false
@@ -382,10 +392,10 @@ add_to_path() {
     if grep -Fxq "$command" "$config_file"; then
         print_message info "Command already exists in $config_file, skipping write."
     elif [[ -w $config_file ]]; then
-        echo -e "\n# opencode" >> "$config_file"
+        echo -e "\n# loophole-cli" >> "$config_file"
         echo "$command" >> "$config_file"
         path_added=true
-        print_message info "${MUTED}Successfully added ${NC}opencode ${MUTED}to \$PATH in ${NC}$config_file"
+        print_message info "${MUTED}Successfully added ${NC}loophole-cli ${MUTED}to \$PATH in ${NC}$config_file"
     else
         print_message warning "Manually add the directory to $config_file (or similar):"
         print_message info "  $command"
@@ -426,7 +436,7 @@ if [[ "$no_modify_path" != "true" ]]; then
         fi
     done
 
-    # A new Mac has no ~/.zshrc, so create the shell's main config file rather than leaving opencode off PATH.
+    # A new Mac has no ~/.zshrc, so create the shell's main config file rather than leaving loophole-cli off PATH.
     if [[ -z $config_file ]]; then
         case $current_shell in
             zsh) new_config_file="${ZDOTDIR:-$HOME}/.zshrc" ;;
@@ -479,14 +489,15 @@ echo -e "${MUTED}█░░█ █░░█ █▀▀▀ █░░█ ${NC}█░
 echo -e "${MUTED}▀▀▀▀ █▀▀▀ ▀▀▀▀ ▀  ▀ ${NC}▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀"
 echo -e ""
 echo -e ""
-echo -e "${MUTED}OpenCode includes free models, to start:${NC}"
+echo -e "${MUTED}Loophole includes free models, to start:${NC}"
 echo -e ""
 if [[ $path_added == "true" ]]; then
     echo -e "exec \$SHELL   ${MUTED}# Reload PATH (or open a new terminal)${NC}"
 fi
 echo -e "cd <project>  ${MUTED}# Open directory${NC}"
-echo -e "opencode      ${MUTED}# Run command${NC}"
+echo -e "loophole-cli  ${MUTED}# Run command${NC}"
+echo -e "lhc           ${MUTED}# Short alias${NC}"
 echo -e ""
-echo -e "${MUTED}For more information visit ${NC}https://opencode.ai/docs"
+echo -e "${MUTED}For more information visit ${NC}https://www.loopholeeditor.in/docs"
 echo -e ""
 echo -e ""

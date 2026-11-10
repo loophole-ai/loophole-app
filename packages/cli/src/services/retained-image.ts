@@ -1,4 +1,4 @@
-export * as RetainedImage from "./retained-image"
+﻿export * as RetainedImage from "./retained-image"
 
 import { Effect, FileSystem } from "effect"
 import { randomBytes } from "node:crypto"
@@ -58,10 +58,16 @@ export function installed(home: string) {
   const runtime = path.basename(process.execPath, path.extname(process.execPath)).toLowerCase()
   if (runtime === "bun" || runtime === "node" || runtime === "nodejs") return false
   const executable = path.resolve(process.execPath)
+  const installedBinary = path.resolve(
+    home,
+    ".loophole",
+    "bin",
+    process.platform === "win32" ? "loophole-cli.exe" : "loophole-cli",
+  )
   return (
     executable.split(path.sep).includes("node_modules") ||
     /[\\/]winget[\\/]packages[\\/]/i.test(executable) ||
-    executable === path.resolve(home, ".opencode", "bin", "opencode.exe")
+    executable === installedBinary
   )
 }
 

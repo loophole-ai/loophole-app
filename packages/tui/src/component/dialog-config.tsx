@@ -1,4 +1,4 @@
-import { createMemo, createSignal } from "solid-js"
+﻿import { createMemo, createSignal } from "solid-js"
 import { useConfig, useNewDesigns } from "../config"
 import { useThemes } from "../context/theme"
 import { useDialog, type DialogContext } from "../ui/dialog"

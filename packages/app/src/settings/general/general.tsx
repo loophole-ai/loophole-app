@@ -18,7 +18,6 @@ import { SettingsList } from "@/settings/list"
 import { SettingsRow } from "@/settings/row"
 import { createShellOptions } from "./behavior"
 import { createOptimisticSetting, type ShellSettingsController } from "./controllers"
-import { InterfaceModeSetting } from "./interface-mode"
 import "@/settings/settings.css"
 
 const AutoApprovePermissionsSetting: Component = () => {
@@ -255,7 +254,6 @@ export const SettingsGeneral: Component = () => {
     <div class="settings-section">
       <h3 class="settings-section-title">{language.t("settings.general.section.general")}</h3>
       <SettingsList>
-        <InterfaceModeSetting />
         <LanguageSetting />
 
         <WorkspaceDestinationSetting />

@@ -25,7 +25,7 @@ describe("debug config command", () => {
     const entries = [
       {
         type: "document",
-        path: path.join(project, "opencode.json"),
+        path: path.join(project, "loophole.json"),
         info: {
           permissions: [
             { action: "shell", resource: "*", effect: "ask" },

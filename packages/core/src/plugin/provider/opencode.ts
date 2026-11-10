@@ -186,7 +186,6 @@ export const OpencodePlugin = define<
 >({
   id: "opencode.provider.opencode",
   effect: Effect.fn(function* (ctx) {
-    const disableFree = ["1", "true"].includes(process.env.OPENCODE_DISABLE_FREE_MODELS?.toLowerCase() ?? "")
     const client = yield* HttpClient.HttpClient
     // Every request here goes to the Console, which reads the User-Agent to tell which OpenCode a member runs
     // and whether it evaluates the policies it is being sent.
@@ -468,17 +467,8 @@ export const OpencodePlugin = define<
     yield* ctx.provider.transform((providers) => {
       if (integrated) ConfigProviderPlugin.integrate(providers, integrated)
     })
-    yield* ctx.provider.transform((providers) => {
-      const item = providers.get(Provider.ID.opencode)
-      if (!item) return
-      const hasKey = Boolean(process.env.OPENCODE_API_KEY || snapshot.connection || item.provider.settings?.apiKey)
-      providers.update(item.provider.id, (provider) => {
-        if (!hasKey && !disableFree) {
-          provider.activation = "enabled"
-          provider.settings = { ...provider.settings, apiKey: "public" }
-        }
-      })
-    })
+    // This fork does not ship a hosted free tier: the opencode provider stays disconnected
+    // until the user supplies their own key, so no models are force-enabled with a public key.
     yield* ctx.model.transform((models) => {
       const item = models.provider.get(Provider.ID.opencode)
       if (!item) return

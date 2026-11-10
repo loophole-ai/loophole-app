@@ -202,7 +202,7 @@ test("local config commands do not start or require a server", async () => {
     ])
     expect({ exitCode, stderr }).toEqual({ exitCode: 0, stderr: "" })
     expect(stdout).toContain('MCP server "demo" added')
-    const config = await Bun.file(path.join(root, "config", "opencode.json")).json()
+    const config = await Bun.file(path.join(root, "config", "loophole.json")).json()
     expect(config).toMatchObject({
       mcp: {
         servers: {

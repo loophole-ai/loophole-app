@@ -1,0 +1,13 @@
+{
+	"$schema": "https://json.schemastore.org/tsconfig",
+	"extends": "@tsconfig/bun/tsconfig.json",
+	"compilerOptions": {
+		"types": ["bun"],
+		"outDir": "./dist",
+		"rootDir": "./src",
+		"noUncheckedIndexedAccess": false,
+		"noUnusedLocals": true
+	},
+	"include": ["src/**/*"],
+	"exclude": ["node_modules", "dist", "test", "native"]
+}

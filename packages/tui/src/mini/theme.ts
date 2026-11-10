@@ -73,6 +73,10 @@ export type RunTheme = {
 
 export const transparent = RGBA.fromValues(0, 0, 0, 0)
 
+// Warm accent for the plain interface's signature marks (the entry-splash
+// cwd dot). Fixed so the look stays brand-identical across user themes.
+export const ACCENT = "#e8823a"
+
 const ansiPalette = Array.from({ length: 256 }, (_, index) => RGBA.fromIndex(index, ansiToRgba(index)))
 const palettes = new WeakMap<CliRenderer, TerminalColors>()
 
@@ -157,9 +161,10 @@ function map(
       error: exact(theme.text.feedback.error.base),
       muted: exact(theme.text.muted),
       text: exact(theme.text.base),
-      shade: exact(theme.background.raised.base),
-      surface: exact(theme.background.raised.base),
-      pane: exact(theme.background.raised.high),
+      // Plain interface: no raised panels, the terminal background shows through everywhere.
+      shade: transparent,
+      surface: transparent,
+      pane: transparent,
       border: exact(theme.border.base),
       line: exact(theme.background.raised.high),
     },

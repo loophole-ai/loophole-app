@@ -1019,6 +1019,9 @@ function errorBody(value: unknown) {
 const ProviderErrorDetail = Schema.Struct({
   message: Schema.optionalKey(Schema.String),
   code: Schema.optionalKey(Schema.Union([Schema.String, Schema.Finite])),
+  // OpenRouter puts the useful explanation here while `message` says
+  // "Provider returned error".
+  metadata: Schema.optionalKey(Schema.Struct({ raw: Schema.optionalKey(Schema.String) })),
 })
 const ProviderErrorBody = Schema.Struct({
   ...ProviderErrorDetail.fields,
@@ -1041,16 +1044,31 @@ function unknownErrorMessage(error: unknown) {
   return message.trim() === "" ? "Provider request failed" : message
 }
 
+const genericProviderMessage = /^provider returned (?:an )?error\.?$/i
+
+/** Prefer a specific reason over a gateway's generic "Provider returned error". */
+function preferProviderMessage(primary: string | undefined, detail: string | undefined) {
+  const value = primary?.trim()
+  if (value && !genericProviderMessage.test(value)) return value
+  const specific = detail?.trim()
+  if (specific) return specific
+  return value || undefined
+}
+
 function providerErrorMessage(error: APICallError) {
   const data = Option.getOrUndefined(decodeProviderError(error.data))
   const body = Option.getOrUndefined(decodeProviderError(error.responseBody))
   const details = [data?.error, data, body?.error, body]
+  const raw = details.map((detail) => detail?.metadata?.raw).find((value) => value?.trim())
   const message = details.map((detail) => detail?.message).find((value) => value?.trim())
   const value = details.map((detail) => detail?.code).find((value) => value !== undefined)
   const code = value === undefined ? undefined : String(value)
   const prefix =
     error.statusCode === undefined ? "Provider request failed" : `Provider request failed with HTTP ${error.statusCode}`
-  return error.message.trim() !== "" ? error.message : (message ?? (code === undefined ? prefix : `${prefix}: ${code}`))
+  return (
+    preferProviderMessage(error.message, raw ?? message) ??
+    (code === undefined ? prefix : `${prefix}: ${code}`)
+  )
 }
 
 export const node = makeLocationNode({ service: Service, layer: locationLayer, deps: [httpFetch] })

@@ -1,4 +1,4 @@
-/// <reference path="./audio.d.ts" />
+﻿/// <reference path="./audio.d.ts" />
 import type {
   Attention,
   AttentionNotifyOptions,
@@ -32,7 +32,7 @@ type AttentionHost = Attention & {
   dispose(): void
 }
 
-const DEFAULT_TITLE = "OpenCode"
+const DEFAULT_TITLE = "Loophole"
 const TITLE_LIMIT = 80
 const MESSAGE_LIMIT = 240
 const BUILTIN_SOUNDS: Record<AttentionSoundName, string> = {

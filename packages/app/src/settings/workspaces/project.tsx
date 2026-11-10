@@ -13,7 +13,8 @@ import { useLanguage } from "@/runtime/i18n/language"
 import type { LocalProject } from "@/shell/state/layout"
 import { type ServerConnection, useServers } from "@/runtime/server/registry"
 import { useSettingsServers } from "@/settings/servers/inventory"
-import { useServerCtx } from "@/runtime/server/runtime"
+import { useGlobal, useServerCtx } from "@/runtime/server/runtime"
+import { useSettingsSurface } from "@/settings/surface"
 import { projectSettingsKey, useSettings } from "@/settings/model"
 import { ProjectIcon } from "@/shell/layout/project-icon"
 import { ProjectFolderMissing } from "./project-folder-missing"
@@ -32,6 +33,8 @@ export const SettingsProjectGeneral: Component<{
   const model = createEditProjectModel(props)
   const servers = useSettingsServers()
   const registry = useServers()
+  const global = useGlobal()
+  const surface = useSettingsSurface()
 
   return (
     <>
@@ -59,7 +62,15 @@ export const SettingsProjectGeneral: Component<{
               </Show>
             </div>
           </div>
-          <ProjectOptions server={props.server} project={props.project} size="large" />
+          <ProjectOptions
+            server={props.server}
+            project={props.project}
+            size="large"
+            onClose={() => {
+              global.ensureServerCtx(props.server).projects.hide(props.project)
+              surface.back()
+            }}
+          />
         </div>
       </div>
 

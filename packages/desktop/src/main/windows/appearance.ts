@@ -26,7 +26,7 @@ let backgroundColor: string | undefined
 
 export function windowAppearance(path: Path.Path, paths: DesktopPaths.Resolved) {
   return {
-    title: "OpenCode",
+    title: "Loophole Desktop",
     icon: iconPath(path, paths),
     backgroundColor: backgroundColor ?? storedBackgroundColor(),
     ...platformFrame(tone(), storedZoomLevel()),

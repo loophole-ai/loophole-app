@@ -222,8 +222,7 @@ export function RunFooterMenu(props: {
           const available = () => Math.max(0, width() - (row.item.icon ? 2 : 0))
           const attributes = () =>
             active() ? TextAttributes.BOLD | (props.mono ? TextAttributes.INVERSE : 0) : undefined
-          const background = () =>
-            active() ? props.theme().actionFocusedBg : props.background ? props.theme().shade : transparent
+          const background = () => (props.background ? props.theme().shade : transparent)
           const footer = () => {
             if (!row.item.footer) return
             const title = stringWidth(row.item.display)
@@ -243,7 +242,7 @@ export function RunFooterMenu(props: {
             <box height={1} flexShrink={0} paddingRight={0} flexDirection="row" backgroundColor={background()}>
               {border() ? (
                 <text fg={props.theme().actionFocusedText} bg={background()} wrapMode="none">
-                  {active() ? (props.mono ? ">" : "▌") : " "}
+                  {active() ? (props.mono ? ">" : "→") : " "}
                 </text>
               ) : undefined}
               <box

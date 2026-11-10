@@ -1,12 +1,17 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "@opencode/cli",
-  "version": "2.2.5",
+  "name": "@loophole-ai/cli",
+  "version": "1.1.4",
   "type": "module",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/loophole-ai/loophole-app.git",
+    "directory": "packages/cli"
+  }
   "bin": {
-    "opencode": "./bin/opencode.cjs",
-    "opencode2": "./bin/opencode2.cjs"
+    "loophole-cli": "./bin/loophole-cli.cjs",
+    "lhc": "./bin/lhc.cjs"
   },
   "files": [
     "bin"
@@ -30,6 +35,9 @@
     "@clack/core": "1.0.0-alpha.1",
     "@clack/prompts": "1.0.0-alpha.1",
     "@effect/platform-node": "catalog:",
+    "@loophole/screen": "workspace:*",
+    "@loophole/tui-engine": "workspace:*",
+    "@loophole/tui-pi": "workspace:*",
     "@opencode/client": "workspace:*",
     "@opencode/plugin": "workspace:*",
     "@opencode/pty": "0.4.0",
@@ -84,7 +92,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/anomalyco/opencode.git",
+    "url": "git+https://github.com/loophole-ai/loophole-app.git",
     "directory": "packages/cli"
   }
 }

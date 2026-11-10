@@ -70,7 +70,7 @@ const callCodeMode = (registry: Tool.Interface, sessionID: Session.ID, name: str
       type: "tool-call",
       id: `call-${name}`,
       name: "execute",
-      input: { code: `return await tools.opencode.${name}(${JSON.stringify(input)})` },
+      input: { code: `return await tools.loophole.${name}(${JSON.stringify(input)})` },
     },
   }).pipe(
     Effect.map((result) => {

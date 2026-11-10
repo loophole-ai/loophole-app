@@ -70,7 +70,7 @@ export async function createAcpFixture(
       })
     },
   })
-  await Bun.write(path.join(config, "opencode.json"), JSON.stringify(verifierConfig(`http://127.0.0.1:${llm.port}/v1`)))
+  await Bun.write(path.join(config, "loophole.json"), JSON.stringify(verifierConfig(`http://127.0.0.1:${llm.port}/v1`)))
   await Bun.write(models, "{}")
 
   const processes = new Set<AcpProcess>()

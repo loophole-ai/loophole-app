@@ -4,9 +4,9 @@
   content.
 -->
 
-# Report an opencode Issue
+# Report a Loophole Issue
 
-Use this skill when the user wants to report an opencode issue or bug. Your job
+Use this skill when the user wants to report a Loophole issue or bug. Your job
 is to turn the user's problem into a useful GitHub issue with standard
 diagnostics plus the context needed to reproduce and resolve it.
 
@@ -26,7 +26,7 @@ title/body for the user.
 
 Collect these values when possible:
 
-- opencode version: run `opencode --version`.
+- Loophole version: run `loophole-cli --version`.
 - Operating system: run `uname -a` on Unix-like systems, or `ver` on Windows.
 - Terminal: inspect `$TERM`, `$TERM_PROGRAM`, `$COLORTERM`, and any obvious
   terminal app context the user provides.
@@ -34,11 +34,11 @@ Collect these values when possible:
   Windows when relevant.
 - Install/channel context: include whether this appears to be local, dev, beta,
   or release if the version output or environment reveals it.
-- Active plugins: inspect opencode config for configured plugins when possible.
-  Check likely config locations such as `opencode.json`, `opencode.jsonc`,
-  `.opencode/opencode.json`, and `~/.config/opencode/opencode.json`. Record
-  configured plugin entries, local plugin files under `.opencode/plugin/` or
-  `.opencode/plugins/`, and note if plugin status could not be determined.
+- Active plugins: inspect Loophole config for configured plugins when possible.
+  Check likely config locations such as `loophole.json`, `loophole.jsonc`,
+  `.loophole/loophole.json`, and `~/.config/loophole/loophole.json`. Record
+  configured plugin entries, local plugin files under `.loophole/plugin/` or
+  `.loophole/plugins/`, and note if plugin status could not be determined.
 
 If a diagnostic command fails, include `Unavailable` with the reason instead of
 guessing.
@@ -53,7 +53,7 @@ Capture the details that make the issue actionable:
 - Reproduction steps, ideally minimal and numbered.
 - Relevant logs, stack traces, screenshots, terminal output, or config snippets.
 - Whether the issue is reproducible consistently, intermittently, or only once.
-- Recent changes that may be related, such as updating opencode, changing
+- Recent changes that may be related, such as updating Loophole, changing
   config, installing a plugin, changing terminal, or switching workspace.
 - Workarounds tried and whether they helped.
 
@@ -72,7 +72,7 @@ otherwise:
 
 ## Environment
 
-- opencode version: <!-- value or Unavailable: reason -->
+- Loophole version: <!-- value or Unavailable: reason -->
 - OS: <!-- value or Unavailable: reason -->
 - Terminal: <!-- value or Unavailable: reason -->
 - Shell: <!-- value or Unavailable: reason -->

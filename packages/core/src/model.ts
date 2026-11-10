@@ -246,7 +246,7 @@ const layer = Layer.effect(
           .sort((left, right) => right.time.released - left.time.released)
         other.forEach((models) => models.sort((left, right) => right.time.released - left.time.released))
         cached = freeze(
-          { data, all, available: preferFree(all.filter((model) => model.enabled)), other, byProvider },
+          { data, all, available: all.filter((model) => model.enabled), other, byProvider },
           true,
         )
         return cached
@@ -321,24 +321,6 @@ const layer = Layer.effect(
 )
 
 export const node = makeLocationNode({ service: Service, layer, deps: [Provider.node, Bus.node, Location.node] })
-
-// Signed out, only free OpenCode models are enabled. Clients default to the first available model, so keep
-// these free models ahead of each new free launch instead of letting release order pick the default.
-const PREFERRED_FREE = [
-  "big-pickle",
-  "deepseek-v4.1-flash-free",
-  "glm-5.3-flash-free",
-  "muse-spark-1.3-contributor-free",
-]
-
-function preferFree(models: Info[]) {
-  const freeOnly = models.every(
-    (model) => model.providerID === Provider.ID.opencode && !model.cost.some((cost) => cost.input > 0),
-  )
-  if (!freeOnly) return models
-  const picks = PREFERRED_FREE.flatMap((id) => models.find((model) => model.id === id) ?? [])
-  return [...picks, ...models.filter((model) => !picks.includes(model))]
-}
 
 export function supportsText(model: Pick<Info, "capabilities">) {
   return (

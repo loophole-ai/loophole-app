@@ -25,7 +25,11 @@ export const make = Effect.fn("Updater.platform")(function* (channel: string) {
   updateClient.channel = "latest"
   updateClient.requestHeaders = { "User-Agent": userAgent }
   updateClient.allowPrerelease = false
-  updateClient.allowDowngrade = true
+  // Loophole release builds are versioned from this fork and prod test builds are built ahead of
+  // the published desktop release. Treating an older published build as an update would stage a
+  // reinstall over the local build on every launch, so prod only ever moves forward. Beta keeps
+  // the upstream downgrade path so it can migrate to a stable release.
+  updateClient.allowDowngrade = channel !== "prod"
   updateClient.autoDownload = false
   updateClient.autoInstallOnAppQuit = process.platform === "darwin"
   yield* Effect.logInfo("auto updater configured", {

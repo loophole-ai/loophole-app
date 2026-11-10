@@ -9,6 +9,6 @@ describe("Logging", () => {
   })
 
   test("keeps non-local installs on the default log file", () => {
-    expect(Logging.file(false, "next")).toBe(path.join(Global.Path.log, "opencode.log"))
+    expect(Logging.file(false, "next")).toBe(path.join(Global.Path.log, "loophole.log"))
   })
 })

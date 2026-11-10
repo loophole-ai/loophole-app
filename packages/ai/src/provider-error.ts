@@ -154,6 +154,10 @@ const SERVER_ERROR_TEXT =
 
 const Message = Schema.String.check(Schema.isPattern(/\S/))
 
+// OpenRouter (and some gateways) put the useful explanation in error.metadata.raw
+// while error.message only says "Provider returned error".
+const GENERIC_PROVIDER_MESSAGE = /^provider returned (?:an )?error\.?$/i
+
 const messageAt = <Fields extends Schema.Struct.Fields>(
   fields: Fields,
   message: (body: Schema.Struct<Fields>["Type"]) => string,
@@ -170,6 +174,11 @@ const messageAt = <Fields extends Schema.Struct.Fields>(
 const decodeMessage = Schema.decodeUnknownOption(
   Schema.fromJsonString(
     Schema.Union([
+      // Prefer a specific upstream reason over a generic gateway message.
+      messageAt(
+        { error: Schema.Struct({ message: Message, metadata: Schema.Struct({ raw: Message }) }) },
+        (body) => (GENERIC_PROVIDER_MESSAGE.test(body.error.message) ? body.error.metadata.raw : body.error.message),
+      ),
       messageAt({ error: Schema.Struct({ message: Message }) }, (body) => body.error.message),
       messageAt({ error: Message }, (body) => body.error),
       messageAt({ message: Message }, (body) => body.message),

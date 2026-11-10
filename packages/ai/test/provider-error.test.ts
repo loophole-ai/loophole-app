@@ -59,6 +59,25 @@ describe("provider error classification", () => {
     expect(messages.some(isContextOverflow)).toBe(false)
   })
 
+  test("prefers OpenRouter's upstream reason over its generic message", () => {
+    const body = JSON.stringify({
+      error: {
+        message: "Provider returned error",
+        code: 429,
+        metadata: {
+          raw: "google/gemma-4-31b-it:free is temporarily rate-limited upstream. Please retry shortly, or add your own provider key to use your own limits.",
+        },
+      },
+    })
+    expect(providerErrorMessage(body)).toBe(
+      "google/gemma-4-31b-it:free is temporarily rate-limited upstream. Please retry shortly, or add your own provider key to use your own limits.",
+    )
+  })
+
+  test("keeps a specific provider message untouched", () => {
+    expect(providerErrorMessage(JSON.stringify({ error: { message: "Invalid API key" } }))).toBe("Invalid API key")
+  })
+
   test("classifies V1 plain-text rate limit fallbacks", () => {
     expect(
       [

@@ -187,12 +187,12 @@ describe("Config", () => {
     Effect.acquireDisposable(Effect.promise(() => tmpdir())).pipe(
       Effect.flatMap((tmp) => {
         // The location sits BENEATH the global config dir, so the upward walk
-        // reaches the global opencode.json as a direct file.
+        // reaches the global loophole.json as a direct file.
         const global = path.join(tmp.path, "global")
         const project = path.join(global, "plugins", "demo")
         return Effect.promise(async () => {
           await fs.mkdir(project, { recursive: true })
-          await fs.writeFile(path.join(global, "opencode.json"), JSON.stringify({ shell: "global-sentinel" }))
+          await fs.writeFile(path.join(global, "loophole.json"), JSON.stringify({ shell: "global-sentinel" }))
         }).pipe(
           Effect.andThen(
             // Fixture control: with global enabled the file loads.
@@ -228,9 +228,9 @@ describe("Config", () => {
         return Effect.promise(async () => {
           await fs.mkdir(path.join(locked, "agents"), { recursive: true })
           await fs.mkdir(project, { recursive: true })
-          await fs.writeFile(path.join(project, "opencode.json"), JSON.stringify({ shell: "project" }))
+          await fs.writeFile(path.join(project, "loophole.json"), JSON.stringify({ shell: "project" }))
           await fs.symlink(path.join(locked, "agents"), path.join(home, ".agents"))
-          await fs.symlink(path.join(locked, "agents"), path.join(project, ".opencode"))
+          await fs.symlink(path.join(locked, "agents"), path.join(project, ".loophole"))
           await fs.chmod(locked, 0o000)
         }).pipe(
           Effect.andThen(Effect.addFinalizer(() => Effect.promise(() => fs.chmod(locked, 0o755)))),
@@ -258,7 +258,7 @@ describe("Config", () => {
         // different string than the global root.
         const real = path.join(tmp.path, "real")
         const link = path.join(tmp.path, "link")
-        const global = AbsolutePath.make(path.join(real, ".opencode"))
+        const global = AbsolutePath.make(path.join(real, ".loophole"))
         const once = Effect.gen(function* () {
           const config = yield* Config.Service
           const watcher = yield* Watcher.Test
@@ -272,13 +272,13 @@ describe("Config", () => {
           ).toEqual([global])
           expect(
             (yield* watcher.subscriptions()).filter((subscription) =>
-              subscription.path.includes(`${path.sep}.opencode${path.sep}`),
+              subscription.path.includes(`${path.sep}.loophole${path.sep}`),
             ),
           ).toEqual([])
         })
         return Effect.promise(async () => {
           await fs.mkdir(global, { recursive: true })
-          await fs.writeFile(path.join(global, "opencode.json"), JSON.stringify({ shell: "global" }))
+          await fs.writeFile(path.join(global, "loophole.json"), JSON.stringify({ shell: "global" }))
           await fs.symlink(real, link, process.platform === "win32" ? "junction" : undefined)
         }).pipe(
           Effect.andThen(once.pipe(Effect.provide(testLayer(link, global, real)))),
@@ -300,12 +300,12 @@ describe("Config", () => {
           await fs.mkdir(global, { recursive: true })
           await fs.mkdir(project, { recursive: true })
           await fs.writeFile(
-            path.join(system, "opencode.json"),
+            path.join(system, "loophole.json"),
             JSON.stringify({ shell: "system", username: "system-user", experimental: { policies: [tool("deny")] } }),
           )
-          await fs.writeFile(path.join(global, "opencode.json"), JSON.stringify({ shell: "global" }))
+          await fs.writeFile(path.join(global, "loophole.json"), JSON.stringify({ shell: "global" }))
           await fs.writeFile(
-            path.join(project, "opencode.json"),
+            path.join(project, "loophole.json"),
             JSON.stringify({ shell: "project", experimental: { policies: [tool("allow")] } }),
           )
         }).pipe(
@@ -353,21 +353,21 @@ describe("Config", () => {
 
   test("resolves the system configuration directory per platform", () => {
     expect(ConfigDiscovery.systemDirectory("darwin", {})).toBe(
-      AbsolutePath.make("/Library/Application Support/opencode"),
+      AbsolutePath.make("/Library/Application Support/loophole"),
     )
-    expect(ConfigDiscovery.systemDirectory("linux", {})).toBe(AbsolutePath.make("/etc/opencode"))
+    expect(ConfigDiscovery.systemDirectory("linux", {})).toBe(AbsolutePath.make("/etc/loophole"))
     expect(ConfigDiscovery.systemDirectory("win32", { ProgramData: "D:\\ProgramData" })).toBe(
-      AbsolutePath.make(path.join("D:\\ProgramData", "opencode")),
+      AbsolutePath.make(path.join("D:\\ProgramData", "loophole")),
     )
     expect(ConfigDiscovery.systemDirectory("win32", {})).toBe(
-      AbsolutePath.make(path.join("C:\\ProgramData", "opencode")),
+      AbsolutePath.make(path.join("C:\\ProgramData", "loophole")),
     )
   })
 
   test("resolves macOS managed preferences with user-specific profiles first", () => {
     expect(ConfigDiscovery.preferencePaths("alice")).toEqual([
-      AbsolutePath.make(path.join("/Library/Managed Preferences", "alice", "ai.opencode.managed.plist")),
-      AbsolutePath.make("/Library/Managed Preferences/ai.opencode.managed.plist"),
+      AbsolutePath.make(path.join("/Library/Managed Preferences", "alice", "ai.loophole.managed.plist")),
+      AbsolutePath.make("/Library/Managed Preferences/ai.loophole.managed.plist"),
     ])
   })
 
@@ -377,8 +377,8 @@ describe("Config", () => {
         ConfigDiscovery.stripPreferenceMetadata(
           JSON.stringify({
             PayloadDisplayName: "OpenCode",
-            PayloadIdentifier: "ai.opencode.managed",
-            PayloadType: "ai.opencode.managed",
+            PayloadIdentifier: "ai.loophole.managed",
+            PayloadType: "ai.loophole.managed",
             PayloadUUID: "00000000-0000-0000-0000-000000000000",
             PayloadVersion: 1,
             _manualProfile: true,
@@ -398,9 +398,9 @@ describe("Config", () => {
         return Effect.promise(async () => {
           await fs.mkdir(global, { recursive: true })
           await fs.mkdir(project, { recursive: true })
-          await fs.writeFile(path.join(global, "opencode.json"), JSON.stringify({ shell: "global" }))
+          await fs.writeFile(path.join(global, "loophole.json"), JSON.stringify({ shell: "global" }))
           await fs.writeFile(explicit, JSON.stringify({ shell: "explicit" }))
-          await fs.writeFile(path.join(project, "opencode.json"), JSON.stringify({ shell: "project" }))
+          await fs.writeFile(path.join(project, "loophole.json"), JSON.stringify({ shell: "project" }))
         }).pipe(
           Effect.andThen(
             Effect.gen(function* () {
@@ -433,8 +433,8 @@ describe("Config", () => {
         yield* Effect.promise(async () => {
           await fs.mkdir(global, { recursive: true })
           await fs.mkdir(project, { recursive: true })
-          await fs.writeFile(path.join(global, "opencode.json"), JSON.stringify(named("global")))
-          await fs.writeFile(path.join(project, "opencode.json"), JSON.stringify(named("project")))
+          await fs.writeFile(path.join(global, "loophole.json"), JSON.stringify(named("global")))
+          await fs.writeFile(path.join(project, "loophole.json"), JSON.stringify(named("project")))
         })
         const integrationID = Integration.ID.make("https://example.com")
         const credentialNode = makeGlobalNode({
@@ -516,7 +516,7 @@ describe("Config", () => {
         const write = (directory: string, policies: unknown[]) =>
           fs
             .mkdir(directory, { recursive: true })
-            .then(() => fs.writeFile(path.join(directory, "opencode.json"), JSON.stringify({ policies })))
+            .then(() => fs.writeFile(path.join(directory, "loophole.json"), JSON.stringify({ policies })))
         return Effect.promise(() =>
           Promise.all([
             write(system, [shell("shell:rm*", "deny")]),
@@ -624,7 +624,7 @@ describe("Config", () => {
         return Effect.promise(() =>
           fs.mkdir(system, { recursive: true }).then(() =>
             fs.writeFile(
-              path.join(system, "opencode.json"),
+              path.join(system, "loophole.json"),
               JSON.stringify({
                 policies: [
                   { action: "integration.use", resource: "*", effect: "deny" },
@@ -684,8 +684,8 @@ describe("Config", () => {
         return Effect.promise(async () => {
           await fs.mkdir(global, { recursive: true })
           await fs.mkdir(project, { recursive: true })
-          await fs.writeFile(path.join(global, "opencode.json"), JSON.stringify({ shell: "global" }))
-          await fs.writeFile(path.join(project, "opencode.json"), JSON.stringify({ shell: "project" }))
+          await fs.writeFile(path.join(global, "loophole.json"), JSON.stringify({ shell: "global" }))
+          await fs.writeFile(path.join(project, "loophole.json"), JSON.stringify({ shell: "project" }))
         }).pipe(
           Effect.andThen(
             Effect.gen(function* () {
@@ -712,7 +712,7 @@ describe("Config", () => {
         Effect.gen(function* () {
           const global = path.join(tmp.path, "global")
           const project = path.join(tmp.path, "project")
-          const file = path.join(global, "opencode.json")
+          const file = path.join(global, "loophole.json")
           const source = path.join(global, "shell.txt")
           yield* Effect.promise(async () => {
             await fs.mkdir(global, { recursive: true })
@@ -807,7 +807,7 @@ describe("Config", () => {
         Effect.gen(function* () {
           const global = path.join(tmp.path, "global")
           const project = path.join(tmp.path, "project")
-          const file = path.join(project, "opencode.json")
+          const file = path.join(project, "loophole.json")
           yield* Effect.promise(async () => {
             await fs.mkdir(global, { recursive: true })
             await fs.mkdir(project, { recursive: true })
@@ -898,8 +898,8 @@ describe("Config", () => {
         yield* Effect.promise(async () => {
           await fs.mkdir(global, { recursive: true })
           await fs.mkdir(project, { recursive: true })
-          await fs.writeFile(path.join(global, "opencode.json"), JSON.stringify({ shell: "global" }))
-          await fs.writeFile(path.join(project, "opencode.json"), JSON.stringify({ shell: "project" }))
+          await fs.writeFile(path.join(global, "loophole.json"), JSON.stringify({ shell: "global" }))
+          await fs.writeFile(path.join(project, "loophole.json"), JSON.stringify({ shell: "project" }))
         })
 
         const integrationID = Integration.ID.make("https://example.com")
@@ -1069,7 +1069,7 @@ describe("Config", () => {
             const updated = yield* bus
               .subscribe(Event.Updated)
               .pipe(Stream.take(1), Stream.runCollect, Effect.forkScoped({ startImmediately: true }))
-            yield* Effect.promise(() => fs.writeFile(path.join(project, "opencode.json"), JSON.stringify({ shell })))
+            yield* Effect.promise(() => fs.writeFile(path.join(project, "loophole.json"), JSON.stringify({ shell })))
             yield* trigger
             yield* Fiber.join(updated)
             return remote(yield* config.entries())
@@ -1138,8 +1138,8 @@ describe("Config", () => {
         yield* Effect.promise(async () => {
           await fs.mkdir(global, { recursive: true })
           await fs.mkdir(project, { recursive: true })
-          await fs.writeFile(path.join(global, "opencode.json"), "null")
-          await fs.writeFile(path.join(project, "opencode.json"), "")
+          await fs.writeFile(path.join(global, "loophole.json"), "null")
+          await fs.writeFile(path.join(project, "loophole.json"), "")
           await fs.writeFile(malformed, '{ "credential": "file-secret"')
         })
         const integrationID = Integration.ID.make("https://invalid.example.com")
@@ -1203,8 +1203,8 @@ describe("Config", () => {
 
         expect(output.map((item) => `${item.source}:${item.path}:${item.kind}`).toSorted()).toEqual(
           [
-            `${path.join(global, "opencode.json")}:$:invalid`,
-            `${path.join(project, "opencode.json")}:$:invalid`,
+            `${path.join(global, "loophole.json")}:$:invalid`,
+            `${path.join(project, "loophole.json")}:$:invalid`,
             `${malformed}:$:invalid`,
             "https://invalid.example.com:$:invalid",
             "OPENCODE_CONFIG_CONTENT:$:invalid",
@@ -1559,7 +1559,7 @@ describe("Config", () => {
               {
                 type: "entries",
                 path: tmp.path,
-                names: [".agents", ".claude", ".opencode", "opencode.json", "opencode.jsonc"],
+                names: [".agents", ".claude", ".loophole", "loophole.json", "loophole.jsonc"],
               },
             ])
           }).pipe(Effect.provide(testLayer(tmp.path, undefined, undefined, undefined, Watcher.testLayer)))
@@ -1575,11 +1575,11 @@ describe("Config", () => {
           yield* Effect.promise(() =>
             Promise.all([
               fs.writeFile(
-                path.join(tmp.path, "opencode.json"),
+                path.join(tmp.path, "loophole.json"),
                 JSON.stringify({ $schema: "base", providers: { base: provider } }),
               ),
               fs.writeFile(
-                path.join(tmp.path, "opencode.jsonc"),
+                path.join(tmp.path, "loophole.jsonc"),
                 `{
                   // Later global files override scalar fields while retaining providers.
                   "$schema": "last",
@@ -1596,11 +1596,11 @@ describe("Config", () => {
             expect(documents.map((document) => document.type)).toEqual(["document", "document"])
             expect(documents.map((document) => document.info.$schema)).toEqual(["base", "last"])
             expect(documents[0]).toBeInstanceOf(Document)
-            expect(documents[0]?.path).toBe(AbsolutePath.make(path.join(tmp.path, "opencode.json")))
+            expect(documents[0]?.path).toBe(AbsolutePath.make(path.join(tmp.path, "loophole.json")))
             expect(documents[1]?.info.providers?.last).toBeInstanceOf(ConfigProvider.Info)
 
             yield* Effect.promise(() =>
-              fs.writeFile(path.join(tmp.path, "opencode.jsonc"), JSON.stringify({ $schema: "changed" })),
+              fs.writeFile(path.join(tmp.path, "loophole.jsonc"), JSON.stringify({ $schema: "changed" })),
             )
             expect(
               (yield* config.entries())
@@ -1627,7 +1627,7 @@ describe("Config", () => {
               Promise.all([
                 fs.writeFile(path.join(tmp.path, "token.txt"), 'file\n"token"\n'),
                 fs.writeFile(
-                  path.join(tmp.path, "opencode.jsonc"),
+                  path.join(tmp.path, "loophole.jsonc"),
                   `{
                       // Ignored reference: {file:.}
                       "username": "user-{env:OPENCODE_TEST_MISSING}",
@@ -1707,7 +1707,7 @@ describe("Config", () => {
     Effect.acquireDisposable(Effect.promise(() => tmpdir())).pipe(
       Effect.flatMap((tmp) =>
         Effect.gen(function* () {
-          const file = path.join(tmp.path, "opencode.json")
+          const file = path.join(tmp.path, "loophole.json")
           const contents = JSON.stringify({
             shell: "/bin/zsh",
             providers: { local: provider },
@@ -1733,7 +1733,7 @@ describe("Config", () => {
         Effect.gen(function* () {
           yield* Effect.promise(() =>
             fs.writeFile(
-              path.join(tmp.path, "opencode.json"),
+              path.join(tmp.path, "loophole.json"),
               JSON.stringify({
                 shell: "/bin/bash",
                 model: "anthropic/claude",
@@ -1915,7 +1915,7 @@ describe("Config", () => {
         Effect.gen(function* () {
           yield* Effect.promise(() =>
             fs.writeFile(
-              path.join(tmp.path, "opencode.json"),
+              path.join(tmp.path, "loophole.json"),
               JSON.stringify({
                 reference: {
                   local: { path: "../library" },
@@ -1948,7 +1948,7 @@ describe("Config", () => {
         Effect.gen(function* () {
           yield* Effect.promise(() =>
             fs.writeFile(
-              path.join(tmp.path, "opencode.json"),
+              path.join(tmp.path, "loophole.json"),
               JSON.stringify({
                 shell: "/bin/zsh",
                 default_agent: "reviewer",
@@ -2132,8 +2132,8 @@ describe("Config", () => {
         Effect.gen(function* () {
           yield* Effect.promise(() =>
             Promise.all([
-              fs.writeFile(path.join(tmp.path, "opencode.json"), JSON.stringify({ $schema: "base" })),
-              fs.writeFile(path.join(tmp.path, "opencode.jsonc"), "{ invalid"),
+              fs.writeFile(path.join(tmp.path, "loophole.json"), JSON.stringify({ $schema: "base" })),
+              fs.writeFile(path.join(tmp.path, "loophole.jsonc"), "{ invalid"),
             ]),
           )
           return yield* Effect.gen(function* () {
@@ -2145,7 +2145,7 @@ describe("Config", () => {
             expect(yield* watcher.subscriptions()).toContainEqual({
               path: tmp.path,
               type: "entries",
-              names: [".agents", ".claude", ".opencode", "opencode.json", "opencode.jsonc"],
+              names: [".agents", ".claude", ".loophole", "loophole.json", "loophole.jsonc"],
             })
           }).pipe(Effect.provide(testLayer(tmp.path)))
         }),
@@ -2170,19 +2170,19 @@ describe("Config", () => {
             await fs.mkdir(directory, { recursive: true })
             await fs.mkdir(path.join(root, ".agents"), { recursive: true })
             await fs.mkdir(path.join(root, ".claude"), { recursive: true })
-            await fs.mkdir(path.join(root, ".opencode"), { recursive: true })
+            await fs.mkdir(path.join(root, ".loophole"), { recursive: true })
             await fs.mkdir(path.join(directory, ".agents"), { recursive: true })
             await fs.mkdir(path.join(directory, ".claude"), { recursive: true })
-            await fs.mkdir(path.join(directory, ".opencode"), { recursive: true })
+            await fs.mkdir(path.join(directory, ".loophole"), { recursive: true })
             await Promise.all([
-              fs.writeFile(path.join(tmp.path, "opencode.json"), JSON.stringify({ $schema: "outside" })),
-              fs.writeFile(path.join(global, "opencode.json"), JSON.stringify({ $schema: "global" })),
-              fs.writeFile(path.join(root, "opencode.json"), JSON.stringify({ $schema: "root" })),
-              fs.writeFile(path.join(parent, "opencode.jsonc"), JSON.stringify({ $schema: "parent" })),
-              fs.writeFile(path.join(directory, "opencode.json"), JSON.stringify({ $schema: "directory" })),
-              fs.writeFile(path.join(root, ".opencode", "opencode.json"), JSON.stringify({ $schema: "root-dot" })),
+              fs.writeFile(path.join(tmp.path, "loophole.json"), JSON.stringify({ $schema: "outside" })),
+              fs.writeFile(path.join(global, "loophole.json"), JSON.stringify({ $schema: "global" })),
+              fs.writeFile(path.join(root, "loophole.json"), JSON.stringify({ $schema: "root" })),
+              fs.writeFile(path.join(parent, "loophole.jsonc"), JSON.stringify({ $schema: "parent" })),
+              fs.writeFile(path.join(directory, "loophole.json"), JSON.stringify({ $schema: "directory" })),
+              fs.writeFile(path.join(root, ".loophole", "loophole.json"), JSON.stringify({ $schema: "root-dot" })),
               fs.writeFile(
-                path.join(directory, ".opencode", "opencode.jsonc"),
+                path.join(directory, ".loophole", "loophole.jsonc"),
                 JSON.stringify({ $schema: "directory-dot" }),
               ),
             ])
@@ -2196,8 +2196,8 @@ describe("Config", () => {
 
             expect(entries.filter((entry) => entry.type === "directory").map((entry) => entry.path)).toEqual([
               AbsolutePath.make(global),
-              AbsolutePath.make(path.join(root, ".opencode")),
-              AbsolutePath.make(path.join(directory, ".opencode")),
+              AbsolutePath.make(path.join(root, ".loophole")),
+              AbsolutePath.make(path.join(directory, ".loophole")),
             ])
             expect(compatibility.agents.filter((path) => inFixture(tmp.path, path))).toEqual([
               AbsolutePath.make(globalAgents),
@@ -2226,9 +2226,9 @@ describe("Config", () => {
               "parent",
               "directory",
               "root-dot",
-              AbsolutePath.make(path.join(root, ".opencode")),
+              AbsolutePath.make(path.join(root, ".loophole")),
               "directory-dot",
-              AbsolutePath.make(path.join(directory, ".opencode")),
+              AbsolutePath.make(path.join(directory, ".loophole")),
             ])
           }).pipe(
             Effect.provide(

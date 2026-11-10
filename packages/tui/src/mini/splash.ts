@@ -15,9 +15,9 @@ import {
 } from "@opentui/core"
 import { Locale } from "../util/locale"
 import { stringWidth } from "../util/string-width"
-import { go } from "../logo"
+import { logo } from "../logo"
 import { monoTruncate } from "./mono"
-import type { RunSplashTheme } from "./theme"
+import { type RunSplashTheme } from "./theme"
 
 const SPLASH_TITLE_LIMIT = 50
 const SPLASH_TITLE_FALLBACK = "Untitled session"
@@ -176,12 +176,12 @@ function buildExit(input: SplashWriterInput, ctx: ScrollbackRenderContext): Scro
   const left = input.theme.left
   const right = input.theme.right
   const leftShadow = input.theme.leftShadow
-  const mark = input.mono ? ["[O]"] : go.right.slice(1)
+  const mark = input.mono ? ["[L]"] : logo.narrow
   const top = 1
-  const body_left = (mark[0]?.length ?? 0) + 2
+  const body_left = (mark[0]?.length ?? 0) + 3
   const session = "Session  "
   const label = "Continue "
-  const command = `opencode mini -s ${meta.session_id}`
+  const command = `loophole mini -s ${meta.session_id}`
   const wide = body_left + stringWidth(label + command) <= width
   const commandHeight = wide ? 1 : Math.ceil(stringWidth(command) / width)
 
@@ -253,6 +253,41 @@ export function entrySplash(input: {
 }): ScrollbackWriter {
   return (ctx) => {
     const width = Math.max(1, ctx.width)
+    // Plain header in the pi.dev style: the full wordmark indented one column,
+    // the version beside its top row, then the working directory underneath.
+    const mark = input.mono ? undefined : logo.narrow
+    const top = 1
+    const left = 1
+    const markWidth = stringWidth(mark?.[0] ?? "")
+    const versionText = `v${input.version}`
+    if (mark && left + markWidth + stringWidth(versionText) + 2 <= width) {
+      const lines: Array<{ left: number; top: number; text: string; fg: ColorInput; bg?: ColorInput; attrs?: number }> =
+        []
+      for (let i = 0; i < mark.length; i += 1) {
+        draw(lines, mark[i] ?? "", {
+          left,
+          top: top + i,
+          fg: input.theme.right,
+          shadow: input.theme.leftShadow,
+        })
+      }
+      push(lines, left + markWidth + 2, top, versionText, input.theme.left)
+      if (input.detail) {
+        push(lines, left, top + mark.length + 1, input.detail, input.theme.left)
+      }
+      const height = top + mark.length + 2
+      const root = new BoxRenderable(ctx.renderContext, {
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width,
+        height,
+      })
+      for (const line of lines) {
+        write(root, ctx, line)
+      }
+      return { root, width, height, rowColumns: width, startOnNewLine: true, trailingNewline: false }
+    }
     const layout = entrySplashLayout({ ...input, width })
     const root = new BoxRenderable(ctx.renderContext, {
       width,
@@ -285,9 +320,9 @@ export function entrySplashLayout(input: { width: number; version: string; detai
     .map((_, index) => ellipsis + slash + segments.slice(index + 1).join(slash))
     .reverse()
     .filter((path) => stringWidth(path) < stringWidth(detail))
-  let layout = { label: Locale.takeWidth("oc mini", input.width), version: "", path: "", metadata: "" }
+  let layout = { label: Locale.takeWidth("loophole", input.width), version: "", path: "", metadata: "" }
   const stages = [
-    { label: `${input.mono ? "[O]" : "▪"} oc mini` },
+    { label: `${input.mono ? "[O]" : "▪"} loophole` },
     ...(leaf ? [{ path: leaf }] : []),
     ...(input.version ? [{ version: input.version }] : []),
     ...paths.concat(detail ? [detail] : []).map((path) => ({ path })),

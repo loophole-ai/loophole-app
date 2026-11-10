@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://opencode.ai">
+  <a href="https://github.com/loophole-ai/loophole-app">
     <picture>
       <source srcset=".github/assets/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
       <source srcset=".github/assets/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
@@ -62,9 +62,9 @@ nix run github:anomalyco/opencode  # Nix
 > [!TIP]
 > Remove versions older than 0.1.x before installing.
 
-### Desktop App (BETA)
+Prebuilt binaries and desktop builds, when published, are available from the [releases page](https://github.com/loophole-ai/loophole-app/releases).
 
-OpenCode is also available as a desktop application. Download it from [opencode.ai/download](https://opencode.ai/download).
+### Desktop App (BETA)
 
 | Platform              | Download                           |
 | --------------------- | ---------------------------------- |
@@ -84,7 +84,7 @@ The install script installs OpenCode to `$HOME/.opencode/bin`.
 
 ### Agents
 
-OpenCode includes two built-in agents you can switch between with the `Tab` key.
+Loophole includes two built-in agents you can switch between with the `Tab` key.
 
 - **build** - Default, full-access agent for development work
 - **plan** - Read-only agent for analysis and code exploration
@@ -103,9 +103,9 @@ For more info on how to configure OpenCode, [**head over to our docs**](https://
 
 ### Contributing
 
-If you're interested in contributing to OpenCode, please read our [contributing docs](./CONTRIBUTING.md) before submitting a pull request.
+If you're interested in contributing to Loophole, please read our [contributing docs](./CONTRIBUTING.md) before submitting a pull request.
 
-### Building on OpenCode
+### License
 
 If you are working on a project that's related to OpenCode and is using "opencode" as part of its name, for example "opencode-dashboard" or "opencode-mobile", please add a note to your README to clarify that it is not built by the OpenCode team and is not affiliated with us in any way.
 

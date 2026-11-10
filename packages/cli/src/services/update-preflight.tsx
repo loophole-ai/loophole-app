@@ -22,7 +22,7 @@ import {
   untrack,
 } from "solid-js"
 
-const stages = ["Keeping your session safe", "Starting the new background service", "Loading OpenCode"] as const
+const stages = ["Keeping your session safe", "Preparing server", "Loading Loophole"] as const
 const stageFloor = 480
 const transitionDuration = 420
 const completionHold = 650
@@ -41,7 +41,7 @@ export const make = (): Handle => {
     begin: (from) => {
       if (!process.stdout.isTTY || !process.stdin.isTTY) return false
       session ??= open(from).catch(() => {
-        process.stderr.write("Restarting background server (version mismatch)...\n")
+        process.stderr.write("Preparing server...\n")
         return undefined
       })
       return true
@@ -327,7 +327,7 @@ function UpdateFooter(props: {
   const statusSweep = createSweep()
   const runningHeader = () =>
     phrase(
-      ["OpenCode", colors.muted, true],
+      ["Loophole", colors.muted, true],
       ["is updating", colors.muted],
       ...(props.from
         ? ([
@@ -339,11 +339,11 @@ function UpdateFooter(props: {
       [OPENCODE_VERSION, colors.accent],
     )
   const completedHeader = phrase(
-    ["OpenCode", colors.muted, true],
+    ["Loophole", colors.muted, true],
     ["updated to", colors.muted],
     [OPENCODE_VERSION, colors.accent],
   )
-  const pausedHeader = phrase(["OpenCode", colors.muted, true], ["update paused", colors.muted])
+  const pausedHeader = phrase(["Loophole", colors.muted, true], ["update paused", colors.muted])
   const outcomeStatus = () =>
     props.outcome() === "success"
       ? [...styled("✓", colors.success), ...styled(" Ready", colors.text)]

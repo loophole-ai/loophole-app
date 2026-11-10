@@ -126,8 +126,15 @@ const testModel = (id: string, limit: ModelLimit = defaultModelLimit) => {
 }
 const model = testModel("fake-model")
 const defaultSystem = SessionSystemPrompt.make([])
+const IDENTITY_PREAMBLE = [
+  "# Your Identity",
+  "You are Loophole, an AI agent built by Loophole AI.",
+  "When the user asks who you are or which model you are, answer that you are Loophole, an AI agent built by Loophole AI. Never identify yourself as the underlying model or provider; the runtime details below are for your own reference only.",
+  "",
+  "# Runtime",
+].join("\n")
 const identity = (providerID: string, id: string) =>
-  ["# Your Model", `- Name: ${id}`, `- Provider ID: ${providerID}`, `- Model ID: ${id}`].join("\n")
+  `${IDENTITY_PREAMBLE}\n- Model: ${id}\n- Provider ID: ${providerID}\n- Model ID: ${id}`
 const fakeIdentity = identity("fake", "fake-model")
 const replacementIdentity = identity("fake", "replacement")
 const gptIdentity = identity("openai", "gpt-5")

@@ -262,7 +262,7 @@
   min-height: 462px;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 24px;
   padding-block: 80px calc(80px + var(--settings-bottom-inset, 0px));
   color: var(--v2-text-text-muted);
@@ -344,43 +344,37 @@
   gap: 16px;
 }
 
-.settings-about-wordmark {
-  width: 178px;
-  height: 32px;
+.settings-about-name {
+  margin: 0;
   flex-shrink: 0;
-  opacity: 0.2;
+  color: var(--v2-text-text-base);
+  font-size: 24px;
+  font-weight: 530;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.settings-about-description {
+  max-width: 420px;
   color: var(--v2-text-text-muted);
-  fill: currentColor;
 }
 
-.settings-about-letter-shadow {
-  opacity: 0.3;
-}
-
-.settings-about-faint,
-.settings-about-credits {
+.settings-about-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 12px;
   color: var(--v2-text-text-faint);
 }
 
-.settings-about-legal {
-  width: 109.2px;
-  height: 19.2px;
+.settings-about-separator {
+  color: var(--v2-text-text-faint);
 }
 
 .settings-about-copyright {
-  display: flex;
-  width: 100%;
-  flex-shrink: 0;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-
-.settings-about-anomaly-brush {
-  width: 126.72px;
-  height: 48.384px;
-  flex-shrink: 0;
-  pointer-events: none;
+  color: var(--v2-text-text-faint);
+  font-size: 12px;
 }
 
 .settings-about-content a {

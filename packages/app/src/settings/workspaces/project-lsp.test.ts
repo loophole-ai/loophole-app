@@ -4,7 +4,7 @@ import { configuredLanguageServers } from "./project-lsp"
 
 const global: ConfigEntry = {
   type: "document",
-  path: "/config/opencode.json",
+  path: "/config/loophole.json",
   info: {
     lsp: {
       typescript: { command: ["typescript-language-server", "--stdio"], extensions: [".ts", ".tsx"] },
@@ -21,7 +21,7 @@ describe("configuredLanguageServers", () => {
         { type: "directory", path: "/project/.opencode" },
         {
           type: "document",
-          path: "/project/opencode.jsonc",
+          path: "/project/loophole.jsonc",
           info: {
             lsp: {
               typescript: { disabled: true },

@@ -251,32 +251,39 @@ function MessageTimelineView(
 
   const title = props.title.view
 
-  command.register(() =>
-    props.active === false || props.hideHeader
-      ? []
-      : [
-          {
-            id: "session.rename",
-            category: language.t("command.category.session"),
-            title: language.t("command.session.rename"),
-            keybind: "ctrl+r",
-            disabled: !sessionID() || !!parentID() || title().editing,
-            skip: (event) => pluginScoped(event.target),
-            onSelect: props.title.edit,
-          },
-          {
-            id: "session.delete",
-            category: language.t("command.category.session"),
-            title: language.t("command.session.delete"),
-            disabled: !sessionID() || !!parentID(),
-            onSelect: () => {
-              const id = sessionID()
+  command.register(() => {
+    if (props.active === false) return []
 
-              if (id) props.action.showDelete(id)
+    return [
+      // The header is hidden on narrow layouts, but Delete stays registered so /delete works in every session.
+      ...(props.hideHeader
+        ? []
+        : [
+            {
+              id: "session.rename",
+              category: language.t("command.category.session"),
+              title: language.t("command.session.rename"),
+              keybind: "ctrl+r",
+              disabled: !sessionID() || !!parentID() || title().editing,
+              skip: (event) => pluginScoped(event.target),
+              onSelect: props.title.edit,
             },
-          },
-        ],
-  )
+          ]),
+      {
+        id: "session.delete",
+        category: language.t("command.category.session"),
+        title: language.t("command.session.delete"),
+        slash: "delete",
+        slashArguments: true,
+        disabled: !sessionID(),
+        onSelect: () => {
+          const id = sessionID()
+
+          if (id) props.action.showDelete(id)
+        },
+      },
+    ]
+  })
 
   const settings = useSettings()
 

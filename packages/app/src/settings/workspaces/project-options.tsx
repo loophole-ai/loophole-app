@@ -19,6 +19,7 @@ export const ProjectOptions: Component<{
   onEdit?: () => void
   onRename?: () => void
   onAdd?: () => void
+  onClose?: () => void
   class?: string
   size?: "small" | "normal" | "large"
 }> = (props) => {
@@ -73,6 +74,14 @@ export const ProjectOptions: Component<{
             <Menu.Item disabled={!hasUnread()} onSelect={clearNotifications}>
               {language.t("sidebar.project.clearNotifications")}
             </Menu.Item>
+          </Show>
+          <Show when={props.onClose} keyed>
+            {(close) => (
+              <>
+                <Menu.Separator />
+                <Menu.Item onSelect={close}>{language.t("common.close")}</Menu.Item>
+              </>
+            )}
           </Show>
         </Menu.Content>
       </Menu.Portal>

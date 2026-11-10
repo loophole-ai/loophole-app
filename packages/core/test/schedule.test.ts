@@ -1435,7 +1435,7 @@ describe("Schedule", () => {
         expect(yield* bad("return await tools.slack.dangerous_edit({})")).toMatchObject({
           reason: "Tool slack.dangerous_edit cannot be used inside a schedule check",
         })
-        expect(yield* bad("return await tools.opencode.schedule_create({})")).toMatchObject({
+        expect(yield* bad("return await tools.loophole.schedule_create({})")).toMatchObject({
           reason: "Tool opencode.schedule_create cannot be used inside a schedule check",
         })
 

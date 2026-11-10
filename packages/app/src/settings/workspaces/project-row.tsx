@@ -113,6 +113,11 @@ export function SettingsProjectRow(props: {
             onEdit={() => props.onOpen(props.project)}
             onRename={() => rename.start(displayName(props.project))}
             onAdd={props.onAdd}
+            onClose={() => {
+              // Closing removes the project from this client's lists; the folder and
+              // its sessions stay on disk/server.
+              context.projects.hide(props.project)
+            }}
           />
         </Show>
       </div>

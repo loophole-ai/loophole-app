@@ -1,4 +1,4 @@
-export * as DesktopLogging from "./logging"
+﻿export * as DesktopLogging from "./logging"
 
 import log from "electron-log/main.js"
 import { app, crashReporter, netLog, shell } from "electron"
@@ -266,7 +266,7 @@ function initCrashReporter(fs: FileSystem.FileSystem, path: Path.Path) {
 
 function writeDebugArchive(fs: FileSystem.FileSystem, path: Path.Path, netLogPath: string | undefined) {
   return Effect.gen(function* () {
-    const output = path.join(app.getPath("downloads"), `opencode-debug-${stamp()}.zip`)
+    const output = path.join(app.getPath("downloads"), `loophole-debug-${stamp()}.zip`)
     yield* Effect.logInfo("exporting debug logs", { output })
 
     const files = [
@@ -350,7 +350,9 @@ function manifest(path: Path.Path, netLogPath: string | undefined) {
 function serverLogRoots(path: Path.Path) {
   const xdgData = process.env.XDG_DATA_HOME || path.join(homedir(), ".local", "share")
 
-  return [...new Set([path.join(xdgData, "opencode", "log"), path.join(app.getPath("userData"), "opencode", "log")])]
+  return [
+    ...new Set([path.join(xdgData, "loophole", "log"), path.join(app.getPath("userData"), "loophole", "log")]),
+  ]
 }
 
 type Entry = { name: string; path: string; offset: number } | { name: string; data: Uint8Array }

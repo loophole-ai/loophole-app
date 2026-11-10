@@ -36,7 +36,7 @@ const FIELD = "\x1f"
 
 const RECORD = "\x1e"
 
-const REPOSITORY = { owner: "anomalyco", name: "opencode" }
+const REPOSITORY = { owner: "loophole-ai", name: "loophole-app" }
 
 /** Pull requests per GitHub query; the newest 200 commits take at most two. */
 const BATCH = 100
@@ -259,7 +259,7 @@ async function pullRequests(numbers: number[], token: string, request: Request) 
 
   const response = await request("https://api.github.com/graphql", {
     method: "POST",
-    headers: { authorization: `bearer ${token}`, "content-type": "application/json", "user-agent": "opencode-desktop" },
+    headers: { authorization: `bearer ${token}`, "content-type": "application/json", "user-agent": "loophole-desktop" },
     body: JSON.stringify({ query }),
     signal: AbortSignal.timeout(10_000),
   })

@@ -9,8 +9,12 @@ import { OptimizePlugin } from "./optimize.js"
 
 export function identity(model: { readonly name: string; readonly ref: Model.Ref }) {
   return [
-    "# Your Model",
-    `- Name: ${model.name}`,
+    "# Your Identity",
+    "You are Loophole, an AI agent built by Loophole AI.",
+    "When the user asks who you are or which model you are, answer that you are Loophole, an AI agent built by Loophole AI. Never identify yourself as the underlying model or provider; the runtime details below are for your own reference only.",
+    "",
+    "# Runtime",
+    `- Model: ${model.name}`,
     `- Provider ID: ${model.ref.providerID}`,
     `- Model ID: ${model.ref.id}`,
   ].join("\n")

@@ -117,6 +117,8 @@ export function resolveRunAgent(agents: RunAgent[], current: string | undefined)
 const PERMISSION_ROWS = 12
 const FORM_ROWS = 14
 const SUBAGENT_ROWS = RUN_SUBAGENT_PANEL_ROWS
+// Rows consumed by the footer's top+bottom rules in the plain look.
+const RULE_ROWS = 2
 const NOTICE_DURATION = 3000
 const THEME_REFRESH_DELAYS = [1000, 1000] as const
 
@@ -756,10 +758,12 @@ export class RunFooter implements FooterApi {
               : route === "subagent"
                 ? this.base + SUBAGENT_INSPECTOR_ROWS
                 : prompt.padding * 2 + 1 + this.rows
+    // The plain look draws thin top+bottom rules around the footer content; they
+    // cost two rows that the old left-rail border did not.
     const height = Math.max(
       1,
       Math.min(
-        desired + (this.startup() ? 1 : 0),
+        desired + RULE_ROWS + (this.startup() ? 1 : 0),
         this.renderer.terminalHeight - (type === "prompt" && route === "composer" ? 1 : 0),
       ),
     )

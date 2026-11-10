@@ -66,7 +66,6 @@ import type {
   RunReference,
   RunTuiConfig,
 } from "./types"
-import { EmptyBorder } from "../ui/border"
 
 const AUTOCOMPLETE_ROWS = FOOTER_MENU_ROWS
 
@@ -209,8 +208,7 @@ export function selectedCommand(text: string, command: RunPrompt["command"]) {
 export function RunPromptBody(props: {
   theme: () => RunFooterTheme
   background: () => ColorInput
-  rail: () => ColorInput
-  mono: boolean
+    mono: boolean
   cursorStyle: RunTuiConfig["cursor"]
   placeholder: () => StyledText | string
   onSubmit: () => void
@@ -266,14 +264,8 @@ export function RunPromptBody(props: {
 
   return (
     <box width="100%" paddingTop={props.layout().padding} paddingBottom={props.layout().padding}>
-      <box
-        border={["left"]}
-        borderColor={props.rail()}
-        customBorderChars={{ ...EmptyBorder, vertical: props.mono ? "|" : "┃" }}
-        paddingLeft={1}
-        paddingRight={2}
-        onSizeChange={props.onSizeChange}
-      >
+      <box width="100%" onSizeChange={props.onSizeChange}>
+        <box flexGrow={1} paddingLeft={1} paddingRight={2} flexDirection="column">
         <Show when={props.layout().images > 0}>
           <box width="100%" height={props.layout().images} flexDirection="row" gap={1}>
             <For
@@ -331,6 +323,7 @@ export function RunPromptBody(props: {
             area = next
           }}
         />
+        </box>
       </box>
     </box>
   )
@@ -352,7 +345,9 @@ export function createPromptState(input: PromptInput): PromptState {
     }
 
     return new StyledText([
-      fg(input.theme().muted)(`Ask anything, / for commands, @ for context${input.mono() ? "..." : "…"}`),
+      fg(
+        input.theme().muted,
+      )(`Ask Loophole to build features, fix bugs, or work on your code${input.mono() ? "..." : "…"}`),
     ])
   })
 
@@ -528,7 +523,7 @@ export function createPromptState(input: PromptInput): PromptState {
         description: "compact older session context to free space",
       } satisfies SlashOption,
       ...EXIT_COMMANDS.map(
-        (name) => ({ kind: "slash", name, display: `/${name}`, description: "close OpenCode" }) satisfies SlashOption,
+        (name) => ({ kind: "slash", name, display: `/${name}`, description: "close Loophole" }) satisfies SlashOption,
       ),
     ]
     const hidden = new Set(builtins.map((item) => item.name))

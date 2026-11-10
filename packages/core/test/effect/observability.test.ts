@@ -91,7 +91,7 @@ test("file logger appends concurrent runs with a run on every line", async () =>
       await fs.rm(dir, { recursive: true, force: true })
     },
   }
-  const file = path.join(dir, "opencode.log")
+  const file = path.join(dir, "loophole.log")
   const write = (runID: string) =>
     Effect.forEach(
       Array.from({ length: 50 }, (_, index) => index),
@@ -119,7 +119,7 @@ test("file logger flattens nested objects", async () => {
       await fs.rm(dir, { recursive: true, force: true })
     },
   }
-  const file = path.join(dir, "opencode.log")
+  const file = path.join(dir, "loophole.log")
 
   await Effect.logInfo("request complete", {
     request: { method: "GET", timing: { duration: 42 } },

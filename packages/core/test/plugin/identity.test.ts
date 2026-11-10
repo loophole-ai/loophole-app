@@ -21,11 +21,19 @@ test("formats the model identity part", () => {
       name: "GPT-4o mini",
       ref: Model.Ref.make({ providerID: Provider.ID.make("openai"), id: Model.ID.make("gpt-4o-mini") }),
     }),
-  ).toBe(["# Your Model", "- Name: GPT-4o mini", "- Provider ID: openai", "- Model ID: gpt-4o-mini"].join("\n"))
+  ).toBe(identity("GPT-4o mini", "gpt-4o-mini", "openai"))
 })
 
-const identity = (name: string, id: string) =>
-  ["# Your Model", `- Name: ${name}`, "- Provider ID: test", `- Model ID: ${id}`].join("\n")
+const IDENTITY_PREAMBLE = [
+  "# Your Identity",
+  "You are Loophole, an AI agent built by Loophole AI.",
+  "When the user asks who you are or which model you are, answer that you are Loophole, an AI agent built by Loophole AI. Never identify yourself as the underlying model or provider; the runtime details below are for your own reference only.",
+  "",
+  "# Runtime",
+].join("\n")
+
+const identity = (name: string, id: string, providerID = "test") =>
+  `${IDENTITY_PREAMBLE}\n- Model: ${name}\n- Provider ID: ${providerID}\n- Model ID: ${id}`
 
 const context = (id: string): SessionHooks["context"] => ({
   sessionID: Session.ID.make("ses_model_identity"),
