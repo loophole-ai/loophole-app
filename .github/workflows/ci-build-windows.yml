@@ -1,7 +1,7 @@
 name: CI - Build - Windows
 
 # The single CLI build path, same shape as VSCodium: clone upstream at the pin,
-# apply patches, build, upload. There is no branch detection and no second
+# build, upload. There is no branch detection and no second
 # layout to keep in sync.
 
 on:
@@ -47,10 +47,10 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
 
-      - name: Clone upstream opencode
+      - name: Check out the Loophole source
         run: bash ./get_repo.sh
 
-      - name: Apply patches and assets
+      - name: Prepare the source tree
         run: bash ./prepare_src.sh
 
       # The CLI version is pinned here so desktop and CLI builds agree. It is not the desktop app's

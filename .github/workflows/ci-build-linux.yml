@@ -1,7 +1,7 @@
 name: CI - Build - Linux
 
 # Same shape as ci-build-windows.yml and VSCodium's ci-build-linux.yml:
-# clone upstream at the pin, apply patches, build the CLI, upload.
+# check out the Loophole source branch, build the CLI, upload.
 
 on:
   push:
@@ -46,10 +46,10 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
 
-      - name: Clone upstream opencode
+      - name: Check out the Loophole source
         run: bash ./get_repo.sh
 
-      - name: Apply patches and assets
+      - name: Prepare the source tree
         run: bash ./prepare_src.sh
 
       # The CLI version is pinned here so desktop and CLI builds agree. Override with the dispatch input.

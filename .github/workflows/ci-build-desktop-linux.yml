@@ -1,6 +1,6 @@
 name: CI - Build Desktop - Linux
 
-# Desktop build for Linux x64: clone upstream at the pin, apply patches, build
+# Desktop build for Linux x64: check out the Loophole source branch, build
 # the CLI, build and package the Electron app, upload.
 #
 # Packaging is the same single electron-builder pass as forge's desktop-builder
@@ -57,10 +57,10 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
 
-      - name: Clone upstream opencode
+      - name: Check out the Loophole source
         run: bash ./get_repo.sh
 
-      - name: Apply patches and assets
+      - name: Prepare the source tree
         run: bash ./prepare_src.sh
 
       - name: Resolve versions
