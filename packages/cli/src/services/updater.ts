@@ -384,6 +384,8 @@ const make = Effect.gen(function* () {
     readonly displayCommand?: string[]
     readonly title?: string
     readonly retry?: string
+    /** Package installs download a ~250 MB platform package; give them room. */
+    readonly timeout?: Duration.Input
   }) => {
     const failure = (detail: string, cause?: unknown) =>
       new UpgradeError(
@@ -395,7 +397,7 @@ const make = Effect.gen(function* () {
         },
         cause === undefined ? undefined : { cause },
       )
-    return exec(input.command, "5 minutes").pipe(
+    return exec(input.command, input.timeout ?? "5 minutes").pipe(
       Effect.flatMap((result) =>
         result.code === 0 ? Effect.succeed(result) : Effect.fail(failure(resultDetail(result))),
       ),
@@ -426,7 +428,6 @@ const make = Effect.gen(function* () {
         "npm",
         "install",
         "--global",
-        `--allow-scripts=${packageName}`,
         ...((OPENCODE_ARTIFACT === "cli" && !installedPackage?.endsWith("/cli-node")) ||
         (installedPackage && packageName !== installedPackage)
           ? ["--force"]
@@ -497,7 +498,7 @@ const make = Effect.gen(function* () {
               ],
             }),
           )
-        return yield* retaining(method, runUpgrade({ method, command: commands[method] }))
+        return yield* retaining(method, runUpgrade({ method, command: commands[method], timeout: "20 minutes" }))
       }),
     ).pipe(
       Effect.mapError((cause) =>

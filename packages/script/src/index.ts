@@ -19,7 +19,7 @@ if (!semver.satisfies(process.versions.bun, expectedBunVersionRange)) {
 
 // Fallback version for local builds only. Release workflows pass OPENCODE_VERSION (or
 // LOOPHOLE_VERSION), which takes priority, so no release version lives in a patch.
-const LOOPHOLE_PREVIEW_VERSION = "1.1.4"
+const LOOPHOLE_PREVIEW_VERSION = "1.1.6"
 
 const env = {
   OPENCODE_CHANNEL: process.env["OPENCODE_CHANNEL"],

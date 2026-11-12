@@ -5,6 +5,17 @@ All notable changes to the Loophole CLI and desktop app.
 Format: a `## v<version>` section per release; release notes are generated from
 the section matching the version being published, so add one when cutting a release.
 
+## v1.1.6
+
+### Fixed
+
+- `loophole-cli upgrade` no longer fails with **Timed out** on slow connections: package installs now get 20 minutes instead of 5, which matters because a platform package is ~250 MB.
+- `loophole-cli upgrade` no longer passes `--allow-scripts` to npm, which is not a valid npm flag.
+
+### Changed
+
+- Release notes are generated from `CHANGELOG.md`, so every release page lists what changed.
+
 ## v1.1.5
 
 ### Added
