@@ -35,11 +35,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Desktop version (empty = 1.1.8)"
+        description: "Desktop version (empty = 1.1.11)"
         required: false
         default: ""
       cli_version:
-        description: "Bundled CLI version (empty = 1.1.4)"
+        description: "Bundled CLI version (empty = 1.1.8)"
         required: false
         default: ""
 
@@ -79,11 +79,11 @@ jobs:
           cli="${{ inputs.cli_version }}"
           if [ -z "$desktop" ]; then
             # Pinned desktop version; bump when cutting a new desktop release.
-            desktop="1.1.8"
+            desktop="1.1.11"
           fi
           if [ -z "$cli" ]; then
             # Pinned bundled CLI version; bump when cutting a new CLI.
-            cli="1.1.4"
+            cli="1.1.8"
           fi
           if [ -z "$desktop" ] || [ -z "$cli" ]; then
             echo "::error::could not resolve versions (desktop='$desktop' cli='$cli')"
