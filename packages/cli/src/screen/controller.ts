@@ -75,6 +75,7 @@ const BUILTIN_COMMANDS: readonly SlashCommand[] = [
   { name: "resume", description: "Alias of /sessions" },
   { name: "continue", description: "Alias of /sessions" },
   { name: "new", description: "Start a new session" },
+  { name: "delete", description: "Delete the current session and start fresh" },
   { name: "clear", description: "Clear the transcript view" },
   { name: "reset", description: "Alias of /clear" },
   { name: "open", description: "Open a session from any project" },
@@ -664,6 +665,8 @@ export class ScreenController {
           await this.switchTo(session.id, session.title ?? "", session)
           return void (await this.refreshServerCommands())
         }
+        case "delete":
+          return await this.deleteSession()
         case "sessions":
           return await this.pickSession()
         case "open":
@@ -847,6 +850,23 @@ export class ScreenController {
     const file = join(tmpdir(), `loophole-session-${sessionID}.md`)
     writeFileSync(file, markdown, "utf8")
     this.screen.addStatus(`Exported ${String(data.messages.length)} messages to ${file}`)
+  }
+
+  private async deleteSession(): Promise<void> {
+    const sessionID = this.sessionID
+    if (!sessionID) return this.screen.addStatus("There is no session to delete.", "warning")
+    const title = this.sessionTitle ? `"${this.sessionTitle}" (${sessionID})` : sessionID
+    // A destructive action is not passed straight through to the API: the user confirms first, matching how the full TUI handles its session list.
+    const picked = await this.screen.pick(`Delete ${title}?`, [
+      { value: "delete", label: "Delete session", description: "Unrecoverable. The next session starts fresh." },
+      { value: "keep", label: "Keep session", description: "Nothing is removed." },
+    ])
+    if (picked !== "delete") return
+    await this.api.session.remove({ sessionID })
+    const session = await this.api.session.create({ location: { directory: this.directory } })
+    await this.switchTo(session.id, session.title ?? "", session)
+    await this.refreshServerCommands()
+    this.screen.addStatus("Session deleted. Started a fresh one.")
   }
 
   private async forkSession(): Promise<void> {
