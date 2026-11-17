@@ -1,7 +1,11 @@
 {
   "name": "@loophole-ai/desktop",
   "private": true,
+<<<<<<< HEAD
   "version": "0.0.0",
+=======
+  "version": "2.3.0",
+>>>>>>> origin/dev
   "type": "module",
   "license": "SEE LICENSE IN LICENSE",
   "homepage": "https://github.com/loophole-ai/loophole-app",
@@ -50,7 +54,6 @@
     "electron": "44.9.1",
     "electron-builder": "26.15.7",
     "electron-vite": "6.0.0-beta.1",
-    "htmlparser2": "8.0.2",
     "magic-string": "0.30.21",
     "solid-js": "catalog:",
     "typescript": "catalog:",
