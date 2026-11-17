@@ -16,12 +16,8 @@ export default Runtime.handler(
       const method = Option.getOrUndefined(input.method) ?? (yield* updater.method())
       if (!method)
         return yield* Effect.fail(
-<<<<<<< HEAD
-          new Error("Could not detect the installation method. Pass --method to choose how to upgrade Loophole."),
-=======
           (yield* updater.managed(Option.getOrUndefined(input.target))) ??
-            new Error("Could not detect the installation method. Pass --method to choose how to upgrade OpenCode."),
->>>>>>> origin/dev
+            new Error("Could not detect the installation method. Pass --method to choose how to upgrade Loophole."),
         )
 
       log.info(`Using method: ${method}`)

@@ -1,11 +1,7 @@
 {
   "name": "@loophole-ai/desktop",
   "private": true,
-<<<<<<< HEAD
   "version": "0.0.0",
-=======
-  "version": "2.3.0",
->>>>>>> origin/dev
   "type": "module",
   "license": "SEE LICENSE IN LICENSE",
   "homepage": "https://github.com/loophole-ai/loophole-app",

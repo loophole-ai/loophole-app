@@ -83,6 +83,10 @@ export function isCompactCommand(input: string): boolean {
   return input.trim().toLowerCase() === "/compact"
 }
 
+export function isDeleteCommand(input: string): boolean {
+  return input.trim().toLowerCase() === "/delete"
+}
+
 export function createPromptHistory(items?: RunPrompt[]): PromptHistoryState {
   const list = (items ?? [])
     .filter((item) => item.text.trim().length > 0 || item.parts.some((part) => part.type === "file"))

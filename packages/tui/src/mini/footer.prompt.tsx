@@ -43,6 +43,7 @@ import {
   EXIT_COMMANDS,
   isExitCommand,
   isCompactCommand,
+  isDeleteCommand,
   mentionTriggerIndex,
   slashTriggerIndex,
   isNewCommand,
@@ -517,6 +518,12 @@ export function createPromptState(input: PromptInput): PromptState {
         description: "configure Mini transcript output",
       } satisfies SlashOption,
       { kind: "slash", name: "new", display: "/new", description: "start a new session" } satisfies SlashOption,
+      {
+        kind: "slash",
+        name: "delete",
+        display: "/delete",
+        description: "delete the current session",
+      } satisfies SlashOption,
       {
         kind: "slash",
         name: "compact",
@@ -1385,6 +1392,7 @@ export function createPromptState(input: PromptInput): PromptState {
       (next.mode === "shell" ||
         isNewCommand(next.text) ||
         isCompactCommand(next.text) ||
+        isDeleteCommand(next.text) ||
         isExitCommand(next.text) ||
         next.text.trim().toLowerCase() === "/settings")
     ) {

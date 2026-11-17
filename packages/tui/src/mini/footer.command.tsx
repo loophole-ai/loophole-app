@@ -459,6 +459,14 @@ export function RunCommandMenuBody(props: {
         footer: "/new",
         keywords: "new session clear",
       },
+      {
+        action: "slash",
+        category: "Session",
+        name: "delete",
+        display: "Delete session",
+        footer: "/delete",
+        keywords: "delete current session remove",
+      },
     ]
     const agent: CommandEntry[] = [
       {

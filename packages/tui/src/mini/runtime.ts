@@ -880,6 +880,92 @@ async function runInteractiveRuntime(input: RunRuntimeInput, deps: RunRuntimeDep
 
     const mod = await import("./runtime.queue")
     const createSession = input.createSession
+    const startNewSession = createSession
+      ? async () => {
+          try {
+            await state.switching?.catch(() => {})
+            const created = await createSession(
+              state.sdk,
+              {
+                location: newSessionLocation(
+                  (await tuiConfigTask).session.new_location,
+                  input.directory,
+                  state.location,
+                ),
+                agent: state.agent,
+                model: state.model,
+                variant: state.activeVariant,
+              },
+              runtimeController.signal,
+            )
+            if (!created.sessionID) throw new Error("Failed to create session")
+            await footer.idle().catch(() => {})
+            await state.stream?.then((item) => item.handle.close()).catch(() => {})
+            state.stream = undefined
+            state.session = undefined
+            state.selectSubagent = undefined
+            state.shown = false
+            state.sessionID = created.sessionID
+            state.sessionTitle = created.sessionTitle
+            shell.setTitle(state.sessionTitle)
+            state.agent = created.agent ?? state.agent
+            state.location = created.location
+            state.model = created.model
+            state.activeVariant = created.variant
+            footer.event({ type: "agent", agent: state.agent })
+            state.history = []
+            state.localRows = []
+            includeFiles = true
+            state.demo = input.demo ? await createDemo() : undefined
+            log?.write("session.new", {
+              sessionID: state.sessionID,
+            })
+            footer.event({
+              type: "stream.subagent",
+              state: {
+                tabs: [],
+                details: {},
+                permissions: [],
+                forms: [],
+              },
+            })
+            footer.event({ type: "stream.view", view: { type: "prompt" } })
+            footer.event({ type: "queued.prompts", prompts: [] })
+            footer.event({
+              type: "stream.patch",
+              patch: {
+                phase: "idle",
+                usage: undefined,
+                first: true,
+              },
+            })
+            footer.append({
+              kind: "system",
+              text: `new session ${state.sessionID}`,
+              phase: "final",
+              source: "system",
+            })
+            await state.demo?.start()
+          } catch (error) {
+            footer.event({
+              type: "stream.patch",
+              patch: {
+                phase: "idle",
+                status: "failed to start new session",
+              },
+            })
+            const commit = {
+              kind: "error",
+              text: errorMessage(error),
+              phase: "start",
+              source: "system",
+              messageID: SessionMessage.ID.create(),
+            } as const
+            rememberLocal(commit)
+            footer.append(commit)
+          }
+        }
+      : undefined
     await mod.runPromptQueue({
       footer,
       initialInput: input.initialInput,
@@ -922,92 +1008,32 @@ async function runInteractiveRuntime(input: RunRuntimeInput, deps: RunRuntimeDep
         const next = await ensureStream()
         await next.handle.waitForIdle()
       },
-      onNewSession: createSession
-        ? async () => {
-            try {
-              await state.switching?.catch(() => {})
-              const created = await createSession(
-                state.sdk,
-                {
-                  location: newSessionLocation(
-                    (await tuiConfigTask).session.new_location,
-                    input.directory,
-                    state.location,
-                  ),
-                  agent: state.agent,
-                  model: state.model,
-                  variant: state.activeVariant,
-                },
-                runtimeController.signal,
-              )
-              if (!created.sessionID) throw new Error("Failed to create session")
-              await footer.idle().catch(() => {})
-              await state.stream?.then((item) => item.handle.close()).catch(() => {})
-              state.stream = undefined
-              state.session = undefined
-              state.selectSubagent = undefined
-              state.shown = false
-              state.sessionID = created.sessionID
-              state.sessionTitle = created.sessionTitle
-              shell.setTitle(state.sessionTitle)
-              state.agent = created.agent ?? state.agent
-              state.location = created.location
-              state.model = created.model
-              state.activeVariant = created.variant
-              footer.event({ type: "agent", agent: state.agent })
-              state.history = []
-              state.localRows = []
-              includeFiles = true
-              state.demo = input.demo ? await createDemo() : undefined
-              log?.write("session.new", {
-                sessionID: state.sessionID,
-              })
-              footer.event({
-                type: "stream.subagent",
-                state: {
-                  tabs: [],
-                  details: {},
-                  permissions: [],
-                  forms: [],
-                },
-              })
-              footer.event({ type: "stream.view", view: { type: "prompt" } })
-              footer.event({ type: "queued.prompts", prompts: [] })
-              footer.event({
-                type: "stream.patch",
-                patch: {
-                  phase: "idle",
-                  usage: undefined,
-                  first: true,
-                },
-              })
-              footer.append({
-                kind: "system",
-                text: `new session ${state.sessionID}`,
-                phase: "final",
-                source: "system",
-              })
-              await state.demo?.start()
-            } catch (error) {
-              footer.event({
-                type: "stream.patch",
-                patch: {
-                  phase: "idle",
-                  status: "failed to start new session",
-                },
-              })
-              const commit = {
-                kind: "error",
-                text: errorMessage(error),
-                phase: "start",
-                source: "system",
-                messageID: SessionMessage.ID.create(),
-              } as const
-              rememberLocal(commit)
-              footer.append(commit)
-            }
+      onNewSession: startNewSession,
+      onDeleteSession: async () => {
+        // Delete the current session, then start a fresh one in its place.
+        const sessionID = state.sessionID
+        try {
+          await state.sdk.session.remove({ sessionID }, formRequestOptions(state.location))
+        } catch (error) {
+          const commit = {
+            kind: "error" as const,
+            text: `failed to delete session: ${errorMessage(error)}`,
+            phase: "start" as const,
+            source: "system" as const,
+            messageID: SessionMessage.ID.create(),
           }
-        : undefined,
+          rememberLocal(commit)
+          footer.append(commit)
+          return
+        }
+        footer.append({
+          kind: "system",
+          text: `deleted session ${sessionID}`,
+          phase: "final",
+          source: "system",
+        })
+        await startNewSession?.()
+      },
       run: async (prompt, signal, admitted) => {
         if (state.demo && (await state.demo.prompt(prompt, signal))) {
           return

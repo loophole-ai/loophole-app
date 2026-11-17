@@ -163,10 +163,7 @@ const make = Effect.gen(function* () {
     executable.includes(`${path.sep}Cellar${path.sep}${name}${path.sep}`),
   )
   // WinGet extracts portable packages into a directory named after the package identifier.
-<<<<<<< HEAD
   const installedWinget = /[\\/]winget[\\/]packages[\\/]loophole-ai\.loophole_/i.test(executable)
-=======
-  const installedWinget = /[\\/]winget[\\/]packages[\\/]anomaly\.opencode_/i.test(executable)
   // Volta packages (tools/image/packages) and mise's npm backend (installs/npm-<name>) keep their own record of the
   // installed version, so updating the copy in place would leave it stale. npm globals under a Volta or mise Node
   // (tools/image/node, installs/node) are ordinary npm installs.
@@ -196,7 +193,6 @@ const make = Effect.gen(function* () {
       ? path.join(npmBin, "npm")
       : undefined
   const npm = prefixNpm ?? "npm"
->>>>>>> origin/dev
 
   const readPolicy = Effect.fnUntraced(function* () {
     const values = yield* Effect.forEach(["config.json", "loophole.json", "loophole.jsonc"], (name) =>
@@ -490,11 +486,8 @@ const make = Effect.gen(function* () {
         npm,
         "install",
         "--global",
-<<<<<<< HEAD
-=======
         ...npmPrefixArgs,
         `--allow-scripts=${packageName}`,
->>>>>>> origin/dev
         ...((OPENCODE_ARTIFACT === "cli" && !installedPackage?.endsWith("/cli-node")) ||
         (installedPackage && packageName !== installedPackage)
           ? ["--force"]
