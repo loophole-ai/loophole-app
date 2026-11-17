@@ -171,7 +171,7 @@ export function NewSessionWordmark(props: {
     <div
       data-component="new-session-wordmark"
       aria-hidden="true"
-      class="pointer-events-none mx-auto w-full max-w-[720px] text-v2-text-text-muted"
+      class="pointer-events-none mx-auto w-full max-w-[720px] text-v2-text-text-faint"
     >
       <div
         ref={(el) => {
