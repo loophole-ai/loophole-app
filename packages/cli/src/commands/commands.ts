@@ -379,6 +379,74 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
         json: Flag.Boolean("json").pipe(Flag.withDescription("Output statistics as JSON"), Flag.withDefault(false)),
       },
     }),
+    Spec.make("commit", {
+      description: "Commit staged changes with a model-written message (conventional commits)",
+      globalFlags: ServerFlags,
+      params: {
+        message: Flag.String("message").pipe(
+          Flag.withAlias("m"),
+          Flag.withDescription("Use this commit message instead of generating one"),
+          Flag.optional,
+        ),
+        model: Flag.String("model").pipe(
+          Flag.withDescription("Model to generate the message with, e.g. anthropic/claude-sonnet-4-5 (default: the server's default model)"),
+          Flag.optional,
+        ),
+        yes: Flag.Boolean("yes").pipe(
+          Flag.withAlias("y"),
+          Flag.withDescription("Commit without asking for confirmation"),
+          Flag.withDefault(false),
+        ),
+        dryRun: Flag.Boolean("dry-run").pipe(
+          Flag.withDescription("Print the generated commit message without committing"),
+          Flag.withDefault(false),
+        ),
+      },
+    }),
+    Spec.make("doctor", {
+      description: "Check Loophole and its environment for problems",
+      globalFlags: ServerFlags,
+      params: {
+        json: Flag.Boolean("json").pipe(
+          Flag.withDescription("Output the report as JSON"),
+          Flag.withDefault(false),
+        ),
+      },
+    }),
+    Spec.make("export-zip", {
+      description: "Export a session as a .zip archive (transcript.md, session.json, diagnostics)",
+      globalFlags: ServerFlags,
+      params: {
+        session: Flag.String("session").pipe(
+          Flag.withAlias("s"),
+          Flag.withDescription("Session ID to export (picked interactively when omitted)"),
+          Flag.optional,
+        ),
+        output: Flag.String("output").pipe(
+          Flag.withAlias("o"),
+          Flag.withDescription("Path of the .zip to write (default: ./loophole-<session-id>.zip)"),
+          Flag.optional,
+        ),
+        sanitize: Flag.Boolean("sanitize").pipe(
+          Flag.withDescription("Redact sensitive transcript and file data"),
+          Flag.withDefault(false),
+        ),
+      },
+    }),
+    Spec.make("import-sessions", {
+      description: "Import sessions from export files, directories, or URLs",
+      globalFlags: ServerFlags,
+      params: {
+        sources: Argument.String("source").pipe(
+          Argument.withDescription("Export files, directories, or http(s) URLs to import"),
+          Argument.variadic({ min: 1 }),
+        ),
+        directory: Flag.String("directory").pipe(
+          Flag.withDescription("Directory the imported sessions belong to (default: the current directory)"),
+          Flag.optional,
+        ),
+      },
+    }),
     Spec.make("mini", {
       description: "Start the minimal interactive interface",
       globalFlags: ServerFlags,

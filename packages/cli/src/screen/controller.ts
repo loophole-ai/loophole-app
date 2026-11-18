@@ -85,6 +85,11 @@ const BUILTIN_COMMANDS: readonly SlashCommand[] = [
   { name: "title", description: "Alias of /rename" },
   { name: "timeline", description: "Show the recent user messages of this session" },
   { name: "fork", description: "Fork this session" },
+  { name: "todo", description: "Show the latest todo list reported by the model" },
+  { name: "todos", description: "Alias of /todo" },
+  { name: "handoff", description: "Fork this session and hand it to another agent", argumentHint: "[agent]" },
+  { name: "plan-review", description: "Critique your next message as a plan instead of implementing it" },
+  { name: "goal", description: "Set a standing goal for every message (clear with /goal clear)", argumentHint: "[text|clear]" },
   { name: "compact", description: "Summarize the session context to free tokens" },
   { name: "undo", description: "Undo the last user message" },
   { name: "redo", description: "Clear the revert point (redo)" },
@@ -152,6 +157,7 @@ const COMMAND_ALIASES: Readonly<Record<string, string>> = {
   "?": "help",
   quit: "exit",
   q: "exit",
+  todos: "todo",
 }
 
 const EXIT_WORDS = ["exit", "quit", ":q"]
@@ -276,6 +282,30 @@ function toolOutput(content: ReadonlyArray<{ type: string; text?: string; name?:
     .join("\n")
 }
 
+type TodoItem = { content: string; status: string }
+
+/** Parse the `todos` array of a todowrite tool call; unknown items are dropped rather than guessed. */
+function parseTodos(value: unknown): TodoItem[] {
+  if (!Array.isArray(value)) return []
+  const statuses = new Set(["pending", "in_progress", "completed", "cancelled"])
+  return value.flatMap((item) => {
+    if (typeof item !== "object" || item === null) return []
+    const content = (item as { content?: unknown }).content
+    if (typeof content !== "string" || !content) return []
+    const status = (item as { status?: unknown }).status
+    return [{ content, status: typeof status === "string" && statuses.has(status) ? status : "pending" }]
+  })
+}
+
+function todoMarker(status: string): string {
+  switch (status) {
+    case "completed": return "[x]"
+    case "in_progress": return "[>]"
+    case "cancelled": return "[-]"
+    default: return "[ ]"
+  }
+}
+
 /** Compact counts for /stats: 1.2m, 320k, 42. */
 function formatCount(value: number): string {
   if (value >= 1_000_000_000) return `${trimStatDecimal(value / 1_000_000_000)}b`
@@ -375,6 +405,8 @@ export class ScreenController {
   private readonly texts = new Map<string, { handle: StreamHandle; text: string }>()
   private readonly reasonings = new Map<string, { handle: StreamHandle; text: string }>()
   private readonly rawInputs = new Map<string, string>()
+  /** Tool call id → tool name, so session.tool.* events that omit the name can still be attributed. */
+  private readonly toolNames = new Map<string, string>()
   /** The streaming compaction summary, shown the way OpenCode renders it. */
   private compaction: { handle: StreamHandle; text: string } | undefined
   private lastAssistant = ""
@@ -399,6 +431,12 @@ export class ScreenController {
   private readonly explicitModel: ModelRef | undefined
   /** A staged /undo revert must be committed before the next prompt is admitted. */
   private pendingRevert = false
+  /** The newest todo list the model wrote with todowrite; /todo prints it. Restored from history on resume. */
+  private latestTodos: ReadonlyArray<{ content: string; status: string }> = []
+  /** /goal: attached to every outgoing prompt until cleared. */
+  private goal: string | undefined
+  /** /plan-review: the next outgoing prompt is wrapped as a plan to critique, then the flag clears. */
+  private planReview = false
 
   constructor(private readonly options: ScreenControllerOptions) {
     this.api = options.client
@@ -549,7 +587,21 @@ export class ScreenController {
       this.screen.addStatus("There is no session yet. Try /new.", "warning")
       return
     }
-    this.screen.addUser(text)
+    // /plan-review and /goal wrap the outgoing text; mention ranges must shift with the prefix.
+    let outgoing = text
+    let prefixLength = 0
+    if (this.planReview) {
+      this.planReview = false
+      const head =
+        "Critique the plan below instead of implementing it. Find gaps, risks, wrong assumptions and cheaper alternatives, then propose a concrete revised plan. Do not write any code or change any files until I approve.\n\n<plan>\n"
+      outgoing = `${head}${text}\n</plan>`
+      prefixLength = head.length
+    } else if (this.goal) {
+      const head = `Goal: ${this.goal}\n\n`
+      outgoing = `${head}${text}`
+      prefixLength = head.length
+    }
+    this.screen.addUser(outgoing)
     try {
       // A staged rewind is only a preview until the next prompt is sent: commit it first, or the
       // new message lands before the boundary the server still has staged.
@@ -557,10 +609,13 @@ export class ScreenController {
         this.pendingRevert = false
         await this.api.session.revert.commit({ sessionID: this.sessionID }).catch(() => {})
       }
-      const files = this.fileMentions(text)
+      const files = this.fileMentions(text).map((file) => ({
+        ...file,
+        mention: { ...file.mention, start: file.mention.start + prefixLength, end: file.mention.end + prefixLength },
+      }))
       await this.api.session.prompt({
         sessionID: this.sessionID,
-        text,
+        text: outgoing,
         delivery: "steer",
         ...(files.length > 0 ? { files } : {}),
       })
@@ -714,6 +769,14 @@ export class ScreenController {
           return await this.exportTranscript(args)
         case "fork":
           return await this.forkSession()
+        case "todo":
+          return this.showTodos()
+        case "handoff":
+          return await this.handoff(args)
+        case "plan-review":
+          return this.togglePlanReview()
+        case "goal":
+          return this.manageGoal(args)
         case "timeline":
           return await this.showTimeline()
         case "usage":
@@ -876,6 +939,73 @@ export class ScreenController {
     await this.switchTo(session.id, session.title ?? "", session)
     await this.refreshServerCommands()
     this.screen.addStatus("Forked the session.")
+  }
+
+  /** Fork this session and switch to another agent; without an argument, ask. */
+  private async handoff(args: string): Promise<void> {
+    const sessionID = this.sessionID
+    if (!sessionID) return this.screen.addStatus("There is no session to hand off.", "warning")
+    const agent = args.trim()
+    // switchTo resets session-scoped state; a handoff keeps the standing goal.
+    const goal = this.goal
+    const forked = await this.api.session.fork({ sessionID })
+    await this.switchTo(forked.id, forked.title ?? "Handoff", forked)
+    this.goal = goal
+    await this.refreshServerCommands()
+    if (agent) {
+      const response = await this.api.agent.list({ location: { directory: this.directory } })
+      const agents = response.data.filter((item) => item.mode !== "subagent" && !item.hidden)
+      if (!agents.some((item) => item.id === agent)) {
+        return this.screen.addStatus(
+          `Forked the session, but "${agent}" is not a known agent. Options: ${agents.map((item) => item.id).join(", ")}.`,
+          "warning",
+        )
+      }
+      await this.api.session.switchAgent({ sessionID: forked.id, agent })
+      this.currentAgent = agent
+      this.refreshIdentity()
+      await this.refreshServerCommands()
+      return this.screen.addStatus(`Handed off to ${agent} in a forked session.`)
+    }
+    this.screen.addStatus("Forked the session — pick the agent to hand it to.")
+    await this.pickAgent("")
+  }
+
+  private showTodos(): void {
+    if (this.latestTodos.length === 0) {
+      return this.screen.addStatus("No todos yet. Ask the model to plan with the todowrite tool.")
+    }
+    const done = this.latestTodos.filter((todo) => todo.status === "completed").length
+    const rows = this.latestTodos.map((todo) => `${todoMarker(todo.status)} ${todo.content}`)
+    this.screen.addStatus(`Todos (${String(done)}/${String(this.latestTodos.length)} done)\n${rows.join("\n")}`)
+  }
+
+  /** /plan-review arms a one-shot wrapper: the next message is reviewed, never executed. Goal stays set. */
+  private togglePlanReview(): void {
+    this.planReview = !this.planReview
+    this.screen.addStatus(
+      this.planReview
+        ? "Plan review armed: your next message is treated as a plan to critique, not a task to implement."
+        : "Plan review disarmed.",
+    )
+  }
+
+  private manageGoal(args: string): void {
+    const text = args.trim()
+    if (!text) {
+      this.screen.addStatus(
+        this.goal
+          ? `Goal\n${this.goal}\n\n/goal clear to drop it.`
+          : "No goal set. Use /goal <what you want done> to attach one to every message.",
+      )
+      return
+    }
+    if (["clear", "off", "none"].includes(text.toLowerCase())) {
+      this.goal = undefined
+      return this.screen.addStatus("Goal cleared.")
+    }
+    this.goal = text
+    this.screen.addStatus(`Goal set: ${text}\nEvery message is prefixed with this goal until /goal clear.`)
   }
 
   private async showTimeline(): Promise<void> {
@@ -1691,9 +1821,14 @@ export class ScreenController {
     this.tokensOut = 0
     this.pendingRevert = false
     this.lastAssistant = ""
+    // Session-scoped state does not leak across forks or /new; the fork restores todos from history.
+    this.goal = undefined
+    this.planReview = false
+    this.latestTodos = []
     this.texts.clear()
     this.reasonings.clear()
     this.rawInputs.clear()
+    this.toolNames.clear()
     this.screen.clearTranscript()
     this.screen.setBusy(false)
     this.screen.setUsage(0, 0)
@@ -1764,6 +1899,7 @@ export class ScreenController {
     this.texts.clear()
     this.reasonings.clear()
     this.rawInputs.clear()
+    this.toolNames.clear()
     this.screen.clearTranscript()
     this.transcriptEmpty = messages.length === 0
 
@@ -1824,6 +1960,10 @@ export class ScreenController {
 
   private replayTool(part: Extract<SessionMessageInfo, { type: "assistant" }>["content"][number] & { type: "tool" }): void {
     const card = this.screen.tool(part.id, part.name)
+    // Replaying history restores the newest todo list so /todo works after a resume too.
+    if (part.name === "todowrite" && part.state.status === "completed") {
+      this.latestTodos = parseTodos((part.state.input as { todos?: unknown }).todos)
+    }
     const state = part.state
     if (state.status === "streaming") return
     card.setInput(state.input)
@@ -2288,6 +2428,7 @@ export class ScreenController {
         return
       }
       case "session.tool.input.started":
+        this.toolNames.set(event.data.id, event.data.name)
         this.screen.tool(event.data.id, event.data.name)
         return
       case "session.tool.input.delta": {
@@ -2307,6 +2448,10 @@ export class ScreenController {
         return
       }
       case "session.tool.called": {
+        // todowrite is how models report progress; the latest input is the exact list to show /todo.
+        if (this.toolNames.get(event.data.id) === "todowrite") {
+          this.latestTodos = parseTodos((event.data.input as { todos?: unknown }).todos)
+        }
         const card = this.screen.tool(event.data.id, "tool")
         card.setInput(event.data.input)
         card.setRunning()
@@ -2315,12 +2460,14 @@ export class ScreenController {
       case "session.tool.progress":
         return this.screen.tool(event.data.id, "tool").setProgress(event.data.metadata)
       case "session.tool.success":
+        this.toolNames.delete(event.data.id)
         return this.screen.tool(event.data.id, "tool").setResult({
           output: toolOutput(event.data.content),
           isError: false,
           metadata: event.data.metadata,
         })
       case "session.tool.failed": {
+        this.toolNames.delete(event.data.id)
         const detail = toolOutput(event.data.content)
         return this.screen.tool(event.data.id, "tool").setResult({
           output: detail ? `${event.data.error.message}\n${detail}` : event.data.error.message,
