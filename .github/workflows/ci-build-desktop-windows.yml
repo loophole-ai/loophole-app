@@ -35,7 +35,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Desktop version (empty = 1.1.11)"
+        description: "Desktop version (empty = 1.1.12)"
         required: false
         default: ""
       cli_version:
@@ -79,7 +79,7 @@ jobs:
           cli="${{ inputs.cli_version }}"
           if [ -z "$desktop" ]; then
             # Pinned desktop version; bump when cutting a new desktop release.
-            desktop="1.1.11"
+            desktop="1.1.12"
           fi
           if [ -z "$cli" ]; then
             # Pinned bundled CLI version; bump when cutting a new CLI.
