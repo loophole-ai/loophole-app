@@ -3,7 +3,7 @@
   "name": "@loophole-ai/cli",
   "version": "1.1.6",
   "type": "module",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/loophole-ai/loophole-app.git",

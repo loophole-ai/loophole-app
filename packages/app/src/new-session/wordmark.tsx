@@ -272,7 +272,7 @@ function WordmarkLodger(props: {
             )}
           </For>
         </svg>
-        <Logo class="wordmark-shimmer absolute inset-0 size-full" />
+        <Logo class="wordmark-shimmer absolute inset-0 size-full opacity-50" />
       </div>
       <svg
         ref={svg}
