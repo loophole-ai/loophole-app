@@ -5,6 +5,30 @@ All notable changes to the Loophole CLI and desktop app.
 Format: a `## v<version>` section per release; release notes are generated from
 the section matching the version being published, so add one when cutting a release.
 
+## v1.1.9 — 2026-11-18
+
+### Highlights
+
+- **`loophole commit`**: Write a conventional-commit message for the staged diff with the server model and commit with one command. Pass `--message` to skip model generation, `--dry-run` to preview, `--yes` to skip confirmation, `--model provider/model` to pick the model.
+- **`loophole doctor`**: Check Loophole and its environment in one pass — runtime, git, global paths, database, config, and server reachability. Machine-readable with `--json`.
+- **`loophole export-zip <session>`**: Export a session as a `.zip` containing `transcript.md`, `session.json` and diagnostics — share it, attach it to an issue, or back it up.
+- **`loophole import-sessions <source...>`**: Import session exports in bulk from files, directories, or URLs.
+
+### CLI
+
+#### Improvements
+
+- Screen TUI: new `/todo` command shows the newest todo list written by the model (restored when resuming a session).
+- Screen TUI: new `/handoff [agent]` command forks the current session and switches to another agent, preserving the standing goal.
+- Screen TUI: new `/plan-review` command treats your next message as a plan to critique instead of implementing it.
+- Screen TUI: new `/goal <text>` command attaches a standing objective to every message until cleared with `/goal clear`.
+
+### Core
+
+#### Bug fixes
+
+- Session exports with a UTF-8 or UTF-16 byte-order mark (common on Windows) now import correctly.
+
 ## v2.3.0 — 2026-11-13
 
 ### Highlights
