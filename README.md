@@ -10,9 +10,9 @@ The open-source AI coding agent for the terminal and desktop.
 
 <div align="center">
 
-<img src="https://img.shields.io/github/license/loophole-ai/loophole-app?style=for-the-badge" alt="License" />
-<img src="https://img.shields.io/npm/v/@loophole-ai/cli?style=for-the-badge" alt="npm" />
-<img src="https://img.shields.io/github/stars/loophole-ai/loophole-app?style=for-the-badge" alt="Stars" />
+<img src="https://img.shields.io/github/license/loophole-ai/loophole-app?style=for-the-badge&v=2" alt="License" />
+<img src="https://img.shields.io/npm/v/@loophole-ai/cli?style=for-the-badge&v=2" alt="npm" />
+<img src="https://img.shields.io/github/stars/loophole-ai/loophole-app?style=for-the-badge&v=2" alt="Stars" />
 
 </div>
 
