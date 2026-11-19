@@ -436,11 +436,13 @@ describe("ProcessTerminal dimensions", () => {
 			if (previousColumnsDescriptor) {
 				Object.defineProperty(process.stdout, "columns", previousColumnsDescriptor);
 			} else {
+				// oxlint-disable-next-line no-restricted-globals -- genuine reflection to restore the stdout descriptors
 				Reflect.deleteProperty(process.stdout, "columns");
 			}
 			if (previousRowsDescriptor) {
 				Object.defineProperty(process.stdout, "rows", previousRowsDescriptor);
 			} else {
+				// oxlint-disable-next-line no-restricted-globals -- genuine reflection to restore the stdout descriptors
 				Reflect.deleteProperty(process.stdout, "rows");
 			}
 			if (previousColumns === undefined) {
