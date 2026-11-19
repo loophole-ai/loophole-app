@@ -1,114 +1,80 @@
 <p align="center">
-  <a href="https://github.com/loophole-ai/loophole-app">
-    <picture>
-      <source srcset=".github/assets/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
-      <source srcset=".github/assets/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
-      <img src=".github/assets/logo-ornate-light.svg" alt="OpenCode logo">
-    </picture>
-  </a>
+  <img src=".github/assets/logo.png" width="80" alt="Loophole" />
 </p>
-<p align="center">The open source AI coding agent.</p>
-<p align="center">
-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
-  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
-  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
-</p>
+
+<h1 align="center">Loophole</h1>
 
 <p align="center">
-  <a href="README.md">English</a> |
-  <a href="README.zh.md">简体中文</a> |
-  <a href="README.zht.md">繁體中文</a> |
-  <a href="README.ko.md">한국어</a> |
-  <a href="README.de.md">Deutsch</a> |
-  <a href="README.es.md">Español</a> |
-  <a href="README.fr.md">Français</a> |
-  <a href="README.it.md">Italiano</a> |
-  <a href="README.da.md">Dansk</a> |
-  <a href="README.ja.md">日本語</a> |
-  <a href="README.pl.md">Polski</a> |
-  <a href="README.ru.md">Русский</a> |
-  <a href="README.bs.md">Bosanski</a> |
-  <a href="README.ar.md">العربية</a> |
-  <a href="README.no.md">Norsk</a> |
-  <a href="README.br.md">Português (Brasil)</a> |
-  <a href="README.th.md">ไทย</a> |
-  <a href="README.tr.md">Türkçe</a> |
-  <a href="README.uk.md">Українська</a> |
-  <a href="README.bn.md">বাংলা</a> |
-  <a href="README.gr.md">Ελληνικά</a> |
-  <a href="README.vi.md">Tiếng Việt</a>
+The open-source AI coding agent for the terminal and desktop.
 </p>
 
-[![OpenCode Terminal UI](services/site/public/v1/docs/assets/lander/screenshot.png)](https://opencode.ai)
+<div align="center">
 
----
+<img src="https://img.shields.io/github/license/loophole-ai/loophole-app?style=for-the-badge" alt="License" />
+<img src="https://img.shields.io/npm/v/@loophole-ai/cli?style=for-the-badge" alt="npm" />
+<img src="https://img.shields.io/github/stars/loophole-ai/loophole-app?style=for-the-badge" alt="Stars" />
 
-### Installation
+</div>
+
+<div align="center">
+
+<table>
+<tbody>
+<td align="center"><a href="https://www.loopholeeditor.in"><strong>Loophole Desktop</strong></a></td>
+<td align="center"><a href="https://github.com/loophole-ai/loophole-app"><strong>GitHub</strong></a></td>
+<td align="center"><a href="./CONTRIBUTING.md"><strong>Contributing</strong></a></td>
+<td align="center"><a href="https://github.com/loophole-ai/loophole-app/issues"><strong>Issues</strong></a></td>
+<td align="center"><a href="https://github.com/loophole-ai/loophole-app/discussions"><strong>Discussions</strong></a></td>
+</tbody>
+</table>
+
+</div>
+
+<br/>
+
+Loophole is an open-source AI coding agent for the terminal and desktop, forked from [OpenCode](https://github.com/anomalyco/opencode). It reads, edits, and runs your code, works in any terminal, connects to any OpenAI-compatible provider, and ships as a native desktop app with the same engine.
+
+All AI requests go directly from your machine to your chosen provider. No servers, no telemetry, no intermediate layer. Bring your own API key, or run local models.
+
+## Features
+
+- **CLI agent.** Boot it in a directory and it can read, edit, and create files; run shell commands; work with git; and answer questions about your codebase. It behaves like a pair programmer who is good with tools, not a chatbot stuck on answers.
+- **Desktop app.** A native desktop build bundles the same engine behind a UI — the CLI you would normally interact with in the terminal, plus a chat UI, model picker, todo view, and rich tool output.
+- **Tool-driven, not prompt-driven.** The agent operates through real tools: file read/write/edit, terminal, search, git, web fetch, and MCP servers you configure.
+- **Multi-step, multi-agent.** Subagents for parallel research and execution, with background execution and resumable sessions.
+- **Any provider, any model.** Anthropic, OpenAI, Google, DeepSeek, xAI, Mistral, Groq, OpenRouter, and local runners (Ollama, vLLM, LM Studio) via OpenAI-compatible endpoints.
+- **Auto mode.** Auto-approve mode lets the agent run autonomously — and approve each action on its own merits when you want to review.
+- **Checkpoints and rewinds.** Built-in session fork/rewind to step back onto earlier branches.
+- **Terminal-native.** Works in any terminal emulator. No plugins, no proprietary IPC.
+
+## Install
 
 ```bash
-# YOLO
-curl -fsSL https://opencode.ai/v2/install | bash
+# CLI (npm)
+npm i -g @loophole-ai/cli
 
-# Package managers
-npm i -g @opencode/cli@latest      # or bun/pnpm/yarn
-brew install anomalyco/tap/opencode-v2 # macOS and Linux (recommended, always up to date)
-brew install opencode              # macOS and Linux (official brew formula, updated less)
-sudo pacman -S opencode            # Arch Linux (Stable)
-paru -S opencode-beta              # Arch Linux (Latest from AUR)
-mise use -g opencode               # Any OS
-nix run github:anomalyco/opencode  # Nix
+# Desktop: see the releases page for installers
+https://github.com/loophole-ai/desktop
 ```
 
-> [!TIP]
-> Remove versions older than 0.1.x before installing.
+The CLI supports Tab-complete agents, slash commands (`/todo`, `/handoff`, `/commit`, `/doctor`, and others), streaming output, and offline-capable sessions.
 
-Prebuilt binaries and desktop builds, when published, are available from the [releases page](https://github.com/loophole-ai/loophole-app/releases).
+## Scope
 
-### Desktop App (BETA)
+- **CLI** — terminal-based AI agent (`loophole-cli` / `lhc` / `loophole`, depending on install method)
+- **Desktop** — native desktop app bundling the CLI engine (`loophole` binary + UI)
+- **IDE** — a full AI-native editor built on Void/VS Code, at [loophole-ai/loophole-ide](https://github.com/loophole-ai/loophole-ide)
 
-| Platform              | Download                           |
-| --------------------- | ---------------------------------- |
-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
-| Windows               | `opencode-desktop-win-x64.exe`     |
-| Linux                 | `.deb`, `.rpm`, or `.AppImage`     |
+## Upstream
 
-```bash
-# macOS (Homebrew)
-brew install --cask opencode-desktop
-```
+Loophole is a fork of [OpenCode](https://github.com/anomalyco/opencode) (MIT License). Upstream is developed by a large community; changes land upstream first where possible. Divergences are documented in the changelogs.
 
-#### Installation Directory
+## Contributing
 
-The install script installs OpenCode to `$HOME/.opencode/bin`.
+We welcome contributions. Please read [CONTRIBUTING.md](./CONTRIBUTING.md) before submitting a pull request. For security issues, see [SECURITY.md](./SECURITY.md).
 
-### Agents
+## License
 
-Loophole includes two built-in agents you can switch between with the `Tab` key.
+Loophole is licensed under the [MIT License](./LICENSE). Upstream OpenCode is MIT licensed; attribution is preserved in [LICENSE-opencode.md](./LICENSE-opencode.md) and [NOTICE.md](./NOTICE.md).
 
-- **build** - Default, full-access agent for development work
-- **plan** - Read-only agent for analysis and code exploration
-  - Denies file edits by default
-  - Asks permission before running bash commands
-  - Ideal for exploring unfamiliar codebases or planning changes
-
-Also included is a **general** subagent for complex searches and multistep tasks.
-This is used internally and can be invoked using `@general` in messages.
-
-Learn more about [agents](https://opencode.ai/docs/agents).
-
-### Documentation
-
-For more info on how to configure OpenCode, [**head over to our docs**](https://opencode.ai/docs).
-
-### Contributing
-
-If you're interested in contributing to Loophole, please read our [contributing docs](./CONTRIBUTING.md) before submitting a pull request.
-
-### License
-
-If you are working on a project that's related to OpenCode and is using "opencode" as part of its name, for example "opencode-dashboard" or "opencode-mobile", please add a note to your README to clarify that it is not built by the OpenCode team and is not affiliated with us in any way.
-
----
-
-**Join our community** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+Copyright (c) 2026 Loophole AI

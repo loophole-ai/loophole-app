@@ -1,45 +1,47 @@
 # Source layout
 
-Loophole's CLI and desktop app are a **fork of upstream opencode**, not a patch stack.
+Loophole's CLI and desktop app are a **fork of upstream opencode**.
 
-The source lives as real commits on the **`loophole`** branch of this repository
-(`loophole-ai/loophole-app`), based on upstream `anomalyco/opencode`.
+The source lives as real commits on the **`code`** branch of this repository,
+based on upstream `anomalyco/opencode` (MIT).
 
 ## Branches
 
 | Branch | Contents |
 |---|---|
-| `loophole` | **The product.** Upstream history + Loophole commits (rebrand, licensing, desktop channels, TUI screens, home composer, tool cards, CLI naming). This is what builds run on. |
-| `main` | Build automation only: workflows, `get_repo.sh`, `prepare_src.sh`, `build.sh`, `assets/`. Also on `loophole`. |
+| `code` | **The product.** What you clone. Upstream history + Loophole commits (rebrand, MIT licensing, desktop channels, TUI screens, home composer, tool cards, CLI naming). |
+| `main` | Identical to `code`. Kept in sync as a backup until the default branch is flipped to `code`. |
+| `release-tooling` | Former build-automation history and release pins (archived). |
+| `loophole` | Desktop release line. |
+| `loophole-sync` | Pre-sync CLI release line (archived). |
+| `loophole-sync-fixed` | The CLI release line. Identical to `main`/`code`. |
 
-## Build flow
+## Build
 
+The desktop DMG/installer builds are built by the forge repo (`loophole-ai/forge`,
+`build.yml` and `desktop.yml`), which checks out this repository at a given
+ref and runs `packages/cli/script/build.ts` (or `prepare.ts` for the app).
+See `services/`, `packages/cli/script/build.ts` and `packages/desktop/` for
+what builds, what it bundles, and how bundles are laid out.
+
+```bash
+bun install
+bun run --cwd packages/cli script/build.ts
 ```
-bash ./get_repo.sh        # check out the loophole branch into ./opencode
-bash ./prepare_src.sh     # verify the tree + overlay assets/ (no patching)
-bash ./build.sh           # bun install + build CLI / desktop
-```
-
-`get_repo.sh` takes the branch from `LOOPHOLE_SRC_BRANCH` (default `loophole`) and the
-repository from `LOOPHOLE_SRC_URL`.
 
 ## Syncing upstream
 
 ```bash
 git fetch https://github.com/anomalyco/opencode.git dev
-git checkout loophole
-git merge FETCH_HEAD          # resolve conflicts in the files we touched
+git checkout code
+git merge FETCH_HEAD
 ```
 
-Then bump `upstream/opencode.json` to the merged upstream commit.
+## Licenses
 
-## Retired: patches/
+This repository is dual-licensed from two MIT-licensed projects:
 
-`patches/` and `dev/patch.sh` are kept for history only. The patch stack was applied once
-onto upstream `9e2f9311a` and committed, so no build applies patches any more. Do not add
-new patches — commit to the `loophole` branch instead.
+- **Loophole work** — Copyright (c) 2026 Loophole AI, MIT License (see [LICENSE](./LICENSE))
+- **Upstream opencode** — upstream MIT License (see [LICENSE-opencode.md](./LICENSE-opencode.md))
 
-## assets/
-
-Binary assets (icons, logos, installer artwork) that cannot live in the source branch are
-mirrored over the tree by `prepare_src.sh`, honouring `assets/deletes.txt`.
+See [NOTICE.md](./NOTICE.md) for attribution details.
