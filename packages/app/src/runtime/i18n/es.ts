@@ -155,7 +155,7 @@ export const dict = {
   "settings.about.otherContributor.other": "{{count}} más",
   "settings.about.firstPublished": "Publicado por primera vez en Misuri, EE. UU.",
   "settings.about.firstIllustrated": "Ilustrado por primera vez en Londres, Inglaterra",
-  "settings.about.website": "www.Loophole.ai",
+  "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, el agente de programación de código abierto",
   "settings.about.trademark": "Loophole es una marca registrada de Anomaly Innovations, Inc.",
   "settings.about.typeset": "Compuesto con Inter e IBM Plex Mono",

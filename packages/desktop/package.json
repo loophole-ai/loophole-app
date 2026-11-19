@@ -7,7 +7,7 @@
   "homepage": "https://github.com/loophole-ai/loophole-app",
   "author": {
     "name": "Loophole",
-    "email": "hello@loophole.ai"
+    "email": "hi@loopholeeditor.in"
   },
   "scripts": {
     "typecheck": "bun check --no-script -b",

@@ -40,7 +40,7 @@ Server mode is opt-in only. When enabled, set `OPENCODE_SERVER_PASSWORD` to requ
 
 If you discover a security vulnerability in Loophole, please report it privately by:
 
-1. Sending an email to: security@loophole.ai
+1. Sending an email to: hi@loopholeeditor.in
 2. Including details about the vulnerability
 3. Providing steps to reproduce (if applicable)
 4. Waiting for confirmation before publicly disclosing
@@ -63,4 +63,4 @@ We appreciate responsible security disclosures and will work with researchers to
 
 ## Escalation
 
-If you do not receive an acknowledgement of your report within 6 business days, you may send a follow-up email to security@loophole.ai.
+If you do not receive an acknowledgement of your report within 6 business days, you may send a follow-up email to hi@loopholeeditor.in.

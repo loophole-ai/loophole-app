@@ -117,7 +117,7 @@ export function renderStats(stats: SessionStatsInfo, options: RenderOptions) {
           "",
           style("no activity in this range", "2", options.color),
           "",
-          style("loophole.ai", "2", options.color),
+          style("loopholeeditor.in", "2", options.color),
         ]
       : [
           heading,
@@ -128,7 +128,7 @@ export function renderStats(stats: SessionStatsInfo, options: RenderOptions) {
           `${metricCount(stats.prompts, "prompt", options.color)} · ${metricCount(stats.steps, "step", options.color)} · ${metricCount(totalTokens, "token", options.color)}`,
           `${toolSummary} · ${metricCount(stats.activeDays, "active day", options.color)} · best streak ${style(stats.streak.toString(), primary, options.color)} day${stats.streak === 1 ? "" : "s"}`,
           "",
-          style("loophole.ai", "2", options.color),
+          style("loopholeeditor.in", "2", options.color),
         ]
 
   if (options.cost) lines.push(...(lines.length > 0 ? [""] : []), ...renderCost(stats))

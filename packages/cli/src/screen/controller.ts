@@ -1565,7 +1565,7 @@ export class ScreenController {
         )
       }
     }
-    lines.push("", muted("loophole.ai"))
+    lines.push("", muted("loopholeeditor.in"))
     this.screen.addReport(lines.join("\n"))
   }
 

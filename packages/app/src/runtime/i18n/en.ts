@@ -955,7 +955,7 @@ export const dict = {
   "settings.about.otherContributor.other": "{{count}} others",
   "settings.about.firstPublished": "First published in Missouri, USA",
   "settings.about.firstIllustrated": "First illustrated in London, England",
-  "settings.about.website": "www.Loophole.ai",
+  "settings.about.website": "www.loopholeeditor.in",
   "settings.about.description": "Loophole, the open source coding agent",
   "settings.about.trademark": "Loophole is a registered trademark of Anomaly Innovations, Inc.",
   "settings.about.typeset": "Typeset in Inter and IBM Plex Mono",

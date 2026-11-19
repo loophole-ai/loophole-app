@@ -131,7 +131,7 @@ export function StatsPoster(props: { stats: SessionStatsInfo }) {
         </For>
       </box>
       <box width="100%" flexDirection="row" justifyContent="flex-end">
-        <text fg={theme.text.base}>loophole.ai</text>
+        <text fg={theme.text.base}>loopholeeditor.in</text>
       </box>
     </box>
   )
