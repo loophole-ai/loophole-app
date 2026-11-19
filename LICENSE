@@ -1,111 +1,20 @@
-Loophole Proprietary License
+MIT License
 
-Copyright (c) 2026 Loophole AI. All rights reserved.
+Copyright (c) 2026 Loophole AI
 
-READ THIS LICENSE CAREFULLY BEFORE USING THE SOFTWARE. BY INSTALLING,
-COPYING, OR USING THE SOFTWARE IN ANY WAY, YOU AGREE TO THE TERMS BELOW.
-IF YOU DO NOT AGREE, DO NOT USE THE SOFTWARE.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-1. DEFINITIONS
-   "Software" means the Loophole application and all accompanying files as
-   distributed by Loophole AI, including (as applicable) the Loophole CLI,
-   the Loophole desktop application and the Loophole IDE, together with
-   their documentation but excluding third-party components identified in
-   Section 4. "You" means the person or entity accessing or using the
-   Software. "Licensor" means Loophole AI.
-
-2. LICENSE GRANT
-   Subject to the terms and conditions of this License, Licensor grants you
-   a non-exclusive, non-transferable, non-sublicensable, revocable license
-   to install and use the Software solely for your personal or internal
-   business purposes ("Permitted Use"), as well as to make a reasonable
-   number of copies of the Software solely as necessary to install and use
-   it for Permitted Use.
-
-3. RESTRICTIONS
-   Except as expressly permitted in this License, you may not, and may not
-   permit any third party to:
-   1. copy, publish, distribute, transmit, lease, rent, sublicense, transfer,
-      display, or otherwise make the Software (in whole or in part), or
-      any of its source code, available to any third party;
-   2. modify, create derivative works of, decompile, reverse engineer,
-      disassemble, or attempt to extract the source code of the Software,
-      except to the extent such restriction is prohibited by applicable
-      law;
-   3. remove, obscure, or alter any copyright, trademark, or other
-      proprietary notices;
-   4. circumvent any technical protection measures applied to the Software;
-   5. use the Software in violation of any applicable law, third-party
-      rights, or the terms of any upstream services you connect to through
-      it; or
-   6. use the Software to build a competing product or service based on
-      the Software.
-
-4. OPEN-SOURCE AND THIRD-PARTY COMPONENTS
-   The Software includes third-party open-source components under their own
-   licenses. Nothing in this License changes the license of any component
-   whose license is retained with the Software; every such component
-   remains subject to the terms of its respective license, which you accept
-   by using the Software. In particular, portions of the Software derived
-   from OpenCode (https://github.com/anomalyco/opencode) are distributed
-   under the MIT License; the original MIT license text is retained in
-   LICENSE-opencode.md, and all copyright notices are preserved in
-   NOTICE.md.
-
-5. OWNERSHIP
-   The Software is licensed, not sold. ALL RIGHTS RESERVED to Licensor and
-   its licensors in and to the Software. Any feedback or suggestions you
-   provide about the Software may be used by Licensor without restriction
-   or obligation of any kind.
-
-6. NO OTHER RIGHTS
-   Nothing in this License grants you any right, title, or interest in or
-   to the Software, or any intellectual property therein or related
-   thereto, except the limited license expressly set forth herein. All
-   rights not expressly granted are reserved.
-
-7. TERMINATION
-   This License terminates automatically without notice if you breach any
-   term of it. Upon termination, you must immediately destroy all copies of
-   the Software in your possession or control. Sections 3-11 survive
-   termination.
-
-8. LIMITED WARRANTY
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS,
-   IMPLIED, OR STATUTORY, INCLUDING WITHOUT LIMITATION THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
-   You assume the entire risk as to quality and performance.
-
-9. LIMITATION OF LIABILITY
-   TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL
-   LOOPHOLE AI, ITS AFFILIATES, ITS SUPPLIERS, OR ANY THIRD PARTY BE
-   LIABLE FOR ANY DAMAGES (INCLUDING, WITHOUT LIMITATION, INCIDENTAL,
-   SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, LOST PROFITS, OR LOSS OF
-   DATA) ARISING OUT OF OR IN CONNECTION WITH THIS LICENSE OR YOUR USE
-   OF THE SOFTWARE, WHETHER ARISING IN CONTRACT, TORT (INCLUDING
-   NEGLIGENCE), STRICT LIABILITY, OR OTHERWISE, AND WHETHER OR NOT
-   ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. If liability cannot be
-   excluded, total liability is limited to the amounts paid by you for the
-   Software in the twelve (12) months preceding the event giving rise to
-   the claim.
-
-10. EXPORT CONTROLS
-   The Software is subject to applicable export control laws. You agree to
-   comply with all such laws and not export or re-export the Software to
-   any country, person, or entity restricted by such laws.
-
-11. GOVERNING LAW
-   This License is governed by the laws of the jurisdiction in which the
-   Licensor is established, without regard to its conflict-of-law rules.
-   The United Nations Convention on Contracts for the International Sale
-   of Goods does not apply.
-
-12. MISCELLANEOUS
-   This License is the entire agreement between you and Licensor concerning
-   the Software. If any provision is held unenforceable, the remaining
-   provisions remain in full force. You may not assign this License
-   without Licensor's prior written consent; Licensor may assign its
-   rights and obligations. Notices under this License are delivered to
-   the contact information included in the Software.
-
-# END OF LICENSE
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
