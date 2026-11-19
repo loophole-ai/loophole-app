@@ -32,7 +32,7 @@ The open-source AI coding agent for the terminal and desktop.
 
 <br/>
 
-Loophole is an open-source AI coding agent for the terminal and desktop, forked from [OpenCode](https://github.com/anomalyco/opencode). It reads, edits, and runs your code, works in any terminal, connects to any OpenAI-compatible provider, and ships as a native desktop app with the same engine.
+Loophole is an open-source AI coding agent for the terminal and desktop. It reads, edits, and runs your code, works in any terminal, connects to any OpenAI-compatible provider, and ships as a native desktop app with the same engine.
 
 All AI requests go directly from your machine to your chosen provider. No servers, no telemetry, no intermediate layer. Bring your own API key, or run local models.
 
