@@ -20,6 +20,8 @@ export const BUILTIN_COMMANDS: readonly AdapterCommand[] = [
 	{ name: "sessions", description: "Switch to another session" },
 	{ name: "rename", description: "Rename the current session", argumentHint: "<title>" },
 	{ name: "compact", description: "Summarize the session context to free tokens" },
+	{ name: "undo", description: "Undo the last user message" },
+	{ name: "checkpoint", description: "Alias of /undo" },
 	{ name: "redo", description: "Clear the revert point (redo)" },
 	{ name: "clear", description: "Clear the transcript view" },
 	{ name: "reload", description: "Reload configuration" },

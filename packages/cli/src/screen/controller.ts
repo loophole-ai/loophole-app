@@ -92,6 +92,7 @@ const BUILTIN_COMMANDS: readonly SlashCommand[] = [
   { name: "goal", description: "Set a standing goal for every message (clear with /goal clear)", argumentHint: "[text|clear]" },
   { name: "compact", description: "Summarize the session context to free tokens" },
   { name: "undo", description: "Undo the last user message" },
+  { name: "checkpoint", description: "Alias of /undo" },
   { name: "redo", description: "Clear the revert point (redo)" },
   { name: "copy", description: "Copy the last assistant message" },
   { name: "export", description: "Export the session transcript (add `copy` to copy it)" },
@@ -757,6 +758,7 @@ export class ScreenController {
           return
         }
         case "undo":
+        case "checkpoint":
           return await this.undo()
         case "redo":
           if (!sessionID) return this.screen.addStatus("There is no session.", "warning")

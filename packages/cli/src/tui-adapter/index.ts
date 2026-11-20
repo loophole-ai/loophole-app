@@ -433,6 +433,18 @@ export class TuiAdapter {
 				return this.api.session.compact({ sessionID }).then(() => {
 					return "compaction requested"
 				})
+			case "undo":
+			case "checkpoint": {
+				if (!sessionID) return "no session to undo"
+				const response = await this.api.message.list({ sessionID, limit: 50, order: "desc" })
+				const lastUser = response.data.find((message) => message.type === "user" && message.text.trim().length > 0)
+				if (!lastUser || lastUser.type !== "user") return "Nothing to undo."
+				await this.api.session.interrupt({ sessionID }).catch(() => {})
+				await this.api.session.wait({ sessionID }).catch(() => {})
+				await this.api.session.revert.stage({ sessionID, messageID: lastUser.id })
+				this.editor.setText(lastUser.text)
+				return "Undid the last message. Edit and send it again."
+			}
 			case "redo":
 				if (!sessionID) return "no session to redo"
 				return this.api.session.revert.clear({ sessionID }).then(() => "revert point cleared (redo)")
