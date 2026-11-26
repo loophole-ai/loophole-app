@@ -23,7 +23,7 @@ export async function prepare(file: string, info: Info, timeout: number) {
     baseUrl: info.url,
     headers: headers({
       url: info.url,
-      auth: info.password === undefined ? undefined : { type: "basic", username: "opencode", password: info.password },
+      auth: info.password === undefined ? undefined : { type: "basic", username: "loophole", password: info.password },
     }),
   })
   const handoff = await client.experimental.persistentPty
