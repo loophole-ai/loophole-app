@@ -52,6 +52,7 @@ export interface ScreenControllerOptions {
   readonly sessionID?: string
   /** Approve permission requests without asking (like `run --auto`). */
   readonly auto?: boolean
+  readonly permissionMode?: "normal" | "accept-edits" | "smart" | "bypass"
   /** Sent as the first prompt once the screen is up. */
   readonly initialMessage?: string
   /** A model chosen on the command line; it wins over the remembered preference. */
@@ -117,6 +118,7 @@ const BUILTIN_COMMANDS: readonly SlashCommand[] = [
   { name: "diff", description: "Show the files this session changed" },
   { name: "stats", description: "Show usage: tokens, cost, activity, models and tools", argumentHint: "[days|all|cost|models|tools]" },
   { name: "plugins", description: "List loaded plugins" },
+  { name: "hooks", description: "Show loaded plugin hooks" },
   { name: "settings", description: "Show the configuration files in use" },
   { name: "themes", description: "Switch the screen theme" },
   { name: "theme", description: "Alias of /themes" },
@@ -391,11 +393,56 @@ function renderStatActivity(
   return lines
 }
 
+const EDIT_ACTIONS = new Set(["edit", "write", "patch", "notebook_edit"])
+const SAFE_SHELL = [
+  /^(ls|pwd|echo|cat|head|tail|wc|which|whoami|date|uname|env|printenv|type|file|stat|du|df)(\s|$)/,
+  /^(git\s+(status|diff|log|show|branch|tag|remote|rev-parse|describe|ls-files|ls-tree|blame|shortlog)(\s|$))/,
+  /^(git\s+--version)(\s|$)/,
+  /^(node|npm|pnpm|bun|yarn)\s+(-v|--version)(\s|$)/,
+  /^(rg|grep|find|fd|tree)(\s|$)/,
+]
+const RISKY_SHELL = [
+  /\brm\b/,
+  /\bsudo\b/,
+  /\b(curl|wget)\b[^\n|]*\|\s*(sh|bash|zsh|fish)\b/,
+  /\b(npm|pnpm|yarn|bun)\s+(install|add|remove|uninstall|update|upgrade)\b/,
+  /\bgit\s+(push|commit|reset|clean|checkout|switch|restore|merge|rebase|cherry-pick|revert|tag\s+-d|branch\s+-D)\b/,
+  /\b(kubectl|terraform|aws|gcloud|az)\b[^\n]*(delete|destroy|apply|rm)\b/,
+  /\b(dd|mkfs|shutdown|reboot|poweroff)\b/,
+]
+
+function isWithinDir(dir: string, target: string) {
+  const base = dir.replace(/[\\/]+$/, "")
+  const normalized = target.replace(/\//g, "\\").replace(/[\\/]+$/, "")
+  const baseNorm = base.replace(/\//g, "\\")
+  return normalized.toLowerCase() === baseNorm.toLowerCase() || normalized.toLowerCase().startsWith(baseNorm.toLowerCase() + "\\")
+}
+
+function autoApprovePermissionRequest(
+  request: PendingPermission,
+  mode: "normal" | "accept-edits" | "smart" | "bypass",
+  directory: string,
+) {
+  if (mode === "bypass") return true
+  if ((mode === "accept-edits" || mode === "smart") && EDIT_ACTIONS.has(request.action)) {
+    if (request.resources.every((r) => isWithinDir(directory, r))) return true
+  }
+  if (mode === "smart") {
+    if (request.action === "read") return true
+    if (request.action === "shell") {
+      const cmd = String(request.metadata?.command ?? request.resources[0] ?? "")
+      if (cmd && !RISKY_SHELL.some((r) => r.test(cmd)) && SAFE_SHELL.some((r) => r.test(cmd))) return true
+    }
+  }
+  return false
+}
+
 export class ScreenController {
   private readonly api: OpenCodeClient
   /** Mutable so /cd and /worktrees can move the session to another directory. */
   private directory: string
   private auto: boolean
+  private permissionMode: "normal" | "accept-edits" | "smart" | "bypass"
   private readonly screen: Screen
   private sessionID: string | undefined
   /** The live title of the active session; kept in sync with /rename and session events. */
@@ -442,7 +489,8 @@ export class ScreenController {
   constructor(private readonly options: ScreenControllerOptions) {
     this.api = options.client
     this.directory = options.directory
-    this.auto = options.auto ?? false
+    this.permissionMode = options.auto ? "bypass" : (options.permissionMode ?? "normal")
+    this.auto = this.permissionMode === "bypass"
     this.sessionID = options.sessionID
     this.explicitModel = options.model
     this.screen = new Screen({
@@ -803,6 +851,8 @@ export class ScreenController {
           return await this.showStats(args)
         case "plugins":
           return await this.showPlugins()
+        case "hooks":
+          return await this.showHooks()
         case "settings":
           return await this.showSettingsMenu()
         case "themes":
@@ -851,23 +901,23 @@ export class ScreenController {
 
   private async pickSession(all = false): Promise<void> {
     const response = all
-      ? await this.api.session.list({ order: "desc", limit: 30 })
-      : await this.api.session.list({ directory: this.directory, order: "desc", limit: 30 })
+      ? await this.api.session.list({ order: "desc", limit: 50 })
+      : await this.api.session.list({ directory: this.directory, order: "desc", limit: 50 })
     const sessions: SessionInfo[] = response.data
     if (sessions.length === 0) return this.screen.addStatus("There are no sessions yet.")
     const id = await this.screen.pickFilterable(
       all ? "Open a session" : "Switch session",
-      sessions.map((session) => ({
-        value: session.id,
-        label:
-          session.id === this.sessionID && this.sessionTitle ? this.sessionTitle : session.title || session.id,
-        description:
-          session.location.directory === this.directory
-            ? session.tokens
-              ? `${String(Math.round(session.tokens.input / 1000))}k in`
-              : undefined
-            : session.location.directory,
-      })),
+      sessions.map((session) => {
+        const when = new Date(session.time.updated).toLocaleString()
+        const where = session.location.directory === this.directory ? "" : session.location.directory
+        const tokens = session.tokens ? `${Math.round(session.tokens.input / 1000)}k in` : ""
+        return {
+          value: session.id,
+          label:
+            session.id === this.sessionID && this.sessionTitle ? this.sessionTitle : session.title || session.id,
+          description: [when, tokens, where].filter(Boolean).join(" · "),
+        }
+      }),
       0,
       "type to search sessions · ↑/↓ select · enter open · esc back",
     )
@@ -1616,6 +1666,19 @@ export class ScreenController {
     this.screen.addStatus(`Plugins\n${rows.join("\n")}`)
   }
 
+  private async showHooks(): Promise<void> {
+    const response = await this.api.plugin.list({ location: { directory: this.directory } })
+    const active = response.data.filter((plugin) => plugin.state.status === "active")
+    const rows = [
+      "Hook domains: aisdk, session, permission, shell, tool",
+      `Active plugins: ${String(active.length)}`,
+      ...active.map((plugin) => `  ${plugin.id ?? this.pluginSource(plugin.source)}`),
+      "",
+      "Use the plugin system to register hooks; core exposes PluginHooks.list() for introspection.",
+    ]
+    this.screen.addStatus(`Hooks\n${rows.join("\n")}`)
+  }
+
   private pluginSource(source: { type: string; target?: string; path?: string }): string {
     if (source.type === "package") return source.target ?? "package"
     if (source.type === "local") return source.path ?? "local"
@@ -1648,8 +1711,8 @@ export class ScreenController {
         },
         {
           value: "auto",
-          label: "Auto-approve",
-          description: this.auto ? "on — permission prompts are skipped" : "off — ask before running tools",
+          label: "Permission mode",
+          description: `${this.permissionMode} (enter to cycle)`,
         },
         {
           value: "directory",
@@ -1702,11 +1765,15 @@ export class ScreenController {
         case "theme":
           await this.pickTheme()
           break
-        case "auto":
-          this.auto = !this.auto
+        case "auto": {
+          const modes: Array<"normal" | "accept-edits" | "smart" | "bypass"> = ["normal", "accept-edits", "smart", "bypass"]
+          const next = modes[(modes.indexOf(this.permissionMode) + 1) % modes.length]
+          this.permissionMode = next
+          this.auto = next === "bypass"
           this.screen.setAuto(this.auto)
-          this.screen.addStatus(`Auto-approve ${this.auto ? "on" : "off"}.`)
+          this.screen.addStatus(`Permission mode: ${next}`)
           break
+        }
         case "directory":
           await this.changeDirectory("")
           break
@@ -2502,7 +2569,8 @@ export class ScreenController {
   }
 
   private async answerPermission(request: PendingPermission): Promise<void> {
-    const decision: PermissionDecision = this.auto ? { decision: "once" } : await this.screen.askPermission(request)
+    const allow = autoApprovePermissionRequest(request, this.permissionMode, this.directory)
+    const decision: PermissionDecision = allow ? { decision: "once" } : await this.screen.askPermission(request)
     await this.api.permission
       .reply({
         sessionID: request.sessionID,

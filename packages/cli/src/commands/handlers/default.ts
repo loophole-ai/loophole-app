@@ -61,6 +61,46 @@ export default Runtime.handler(Commands, (input) =>
       process.stdin.isTTY === true &&
       process.stdout.isTTY === true &&
       uiMode() !== "mini"
+    if (input.print) {
+      const { mergeInput, runNonInteractive } = yield* Effect.promise(() => import("../../run/run"))
+      const { readStdin, readStdinIfReady } = yield* Effect.promise(() => import("../../util/io"))
+      const argument = Option.getOrUndefined(input.prompt)
+      const piped = yield* Effect.promise(() =>
+        process.stdin.isTTY ? Promise.resolve(undefined) : argument ? readStdinIfReady(1000) : readStdin(),
+      )
+      const message = mergeInput(argument, piped)
+      if (!message?.trim()) {
+        process.stderr.write("\x1b[91m\x1b[1mError: \x1b[0mYou must provide a message (--prompt or stdin)\n")
+        process.exit(1)
+      }
+      yield* Effect.callback<void>((resume) => {
+        const controller = new AbortController()
+        const done = runNonInteractive(
+          {
+            server,
+            message: [message],
+            continue: input.continue,
+            session: Option.getOrUndefined(input.session),
+            fork: input.fork,
+            model: Option.getOrUndefined(input.model),
+            agent: Option.getOrUndefined(input.agent),
+            format: "default",
+            file: [],
+            thinking: false,
+            auto: input.auto || input.yolo || input.dangerouslySkipPermissions,
+            print: true,
+            permissionMode: Option.getOrUndefined(input.permissionMode) as any,
+          },
+          controller.signal,
+        ).then(() => resume(Effect.void))
+        return Effect.promise(() => {
+          controller.abort()
+          return done
+        })
+      })
+      return
+    }
+
     // The plain interface cannot auto-accept permissions yet; the pi-tui screen and the full TUI
     // (Drive mode) still honor the flags.
     if (!drive && !usePi && (input.auto || input.yolo || input.dangerouslySkipPermissions)) {

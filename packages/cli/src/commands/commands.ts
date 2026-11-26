@@ -35,8 +35,12 @@ const ServerParams = {
 }
 
 const PermissionParams = {
+  permissionMode: Flag.Literals("permission-mode", ["normal", "accept-edits", "smart", "bypass"]).pipe(
+    Flag.withDescription("Permission mode: normal, accept-edits, smart, or bypass"),
+    Flag.optional,
+  ),
   auto: Flag.Boolean("auto").pipe(
-    Flag.withDescription("Auto-approve permissions that are not explicitly denied"),
+    Flag.withDescription("Auto-approve permissions that are not explicitly denied (alias for --permission-mode bypass)"),
     Flag.withDefault(false),
   ),
   yolo: Flag.Boolean("yolo").pipe(Flag.withDefault(false), Flag.withHidden),
@@ -84,6 +88,15 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
     ),
     agent: Flag.String("agent").pipe(Flag.withDescription("Agent to use"), Flag.optional),
     prompt: Flag.String("prompt").pipe(Flag.withDescription("Prompt to use"), Flag.optional),
+    print: Flag.Boolean("print").pipe(
+      Flag.withAlias("p"),
+      Flag.withDescription("Run non-interactively and print only the final assistant response to stdout"),
+      Flag.withDefault(false),
+    ),
+    sandbox: Flag.Boolean("sandbox").pipe(
+      Flag.withDescription("Run shell commands in an OS sandbox when supported"),
+      Flag.withDefault(false),
+    ),
   },
   commands: [
     Spec.make("upgrade", {
@@ -532,6 +545,15 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
           Flag.withDefault(false),
         ),
         thinking: Flag.Boolean("thinking").pipe(Flag.withDescription("Show thinking blocks"), Flag.withDefault(false)),
+        print: Flag.Boolean("print").pipe(
+          Flag.withAlias("p"),
+          Flag.withDescription("Run non-interactively and print only the final assistant response to stdout"),
+          Flag.withDefault(false),
+        ),
+        sandbox: Flag.Boolean("sandbox").pipe(
+          Flag.withDescription("Run shell commands in an OS sandbox when supported"),
+          Flag.withDefault(false),
+        ),
         ...PermissionParams,
       },
     }),

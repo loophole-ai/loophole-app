@@ -39,12 +39,19 @@ const eventProviderID = (event: unknown) => {
   return typeof model.providerID === "string" ? model.providerID : undefined
 }
 
+export interface HookInfo {
+  readonly domain: string
+  readonly name: string
+  readonly providerID?: string
+}
+
 export interface Interface {
   readonly has: <Domain extends keyof Domains>(
     domain: Domain,
     name: keyof Domains[Domain] & keyof Failures[Domain],
     providerID?: string,
   ) => Effect.Effect<boolean>
+  readonly list: () => Effect.Effect<ReadonlyArray<HookInfo>>
   readonly register: <Domain extends keyof Domains, Name extends keyof Domains[Domain] & keyof Failures[Domain]>(
     domain: Domain,
     name: Name,
@@ -101,7 +108,16 @@ const layer = Layer.effect(
         ),
       )
 
-    return Service.of({ has, register, trigger })
+    const list: Interface["list"] = () =>
+      Effect.sync(() =>
+        Array.from(callbacks.entries()).flatMap(([id, entries]) => {
+          const [domain, ...rest] = id.split(".")
+          const name = rest.join(".")
+          return entries.map((entry) => ({ domain, name, providerID: entry.options?.providerID }))
+        }),
+      )
+
+    return Service.of({ has, list, register, trigger })
   }),
 )
 

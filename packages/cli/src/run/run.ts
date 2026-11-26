@@ -28,6 +28,9 @@ export type RunCommandInput = {
   archived?: boolean
   thinking?: boolean
   auto?: boolean
+  print?: boolean
+  permissionMode?: "normal" | "accept-edits" | "smart" | "bypass"
+  sandbox?: boolean
 }
 
 type FilePart = { text: string } | { attachment: { uri: string; name: string } }
@@ -135,6 +138,7 @@ async function execute(input: RunCommandInput, prepared: Prepared, endpoint: End
     model: target.model,
     thinking: input.thinking ?? false,
     format: input.format,
+    print: input.print ?? false,
     auto: input.auto ?? false,
     standalone: input.server.standalone ?? false,
     signal,
