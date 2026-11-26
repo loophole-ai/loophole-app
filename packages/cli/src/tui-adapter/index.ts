@@ -399,7 +399,7 @@ export class TuiAdapter {
 		this.requestRender()
 	}
 
-	private dispatchImpl(name: string, args: string): string | Promise<string | void> {
+	private async dispatchImpl(name: string, args: string): Promise<string | void> {
 		const sessionID = this.sessionID
 		switch (name) {
 			case "help":
