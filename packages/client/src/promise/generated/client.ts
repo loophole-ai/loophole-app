@@ -727,6 +727,7 @@ export function make(options: ClientOptions) {
               title: input["title"],
               metadata: input["metadata"],
               permissions: input["permissions"],
+              permissionMode: input["permissionMode"],
               archived: input["archived"],
             },
             successStatus: 204,

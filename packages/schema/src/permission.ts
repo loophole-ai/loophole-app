@@ -53,6 +53,11 @@ const Replied = ephemeral({
 })
 export const Event = { Asked, Replied, Definitions: inventory(Asked, Replied) }
 
+export const ModeKind = Schema.Literals(["normal", "accept-edits", "smart", "bypass"]).annotate({
+  identifier: "Permission.ModeKind",
+})
+export type ModeKind = typeof ModeKind.Type
+
 export const Effect = Schema.Literals(["allow", "deny", "ask"]).annotate({ identifier: "Permission.Effect" })
 export type Effect = typeof Effect.Type
 

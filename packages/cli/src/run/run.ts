@@ -128,6 +128,12 @@ async function execute(input: RunCommandInput, prepared: Prepared, endpoint: End
     await client.session.update({ sessionID: target.session.id, title, archived })
   }
 
+  // Apply --permission-mode to the session so core raises asks the reply path can vet; a flagless
+  // run clears any stale mode from an earlier screen so it keeps rules-only (legacy) behavior.
+  await client.session
+    .update({ sessionID: target.session.id, permissionMode: input.permissionMode ?? null })
+    .catch(() => {})
+
   await runNonInteractivePrompt({
     client,
     sessionID: target.session.id,
@@ -139,6 +145,7 @@ async function execute(input: RunCommandInput, prepared: Prepared, endpoint: End
     thinking: input.thinking ?? false,
     format: input.format,
     print: input.print ?? false,
+    permissionMode: input.permissionMode,
     auto: input.auto ?? false,
     standalone: input.server.standalone ?? false,
     signal,

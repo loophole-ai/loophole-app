@@ -195,6 +195,7 @@ export type SessionUpdateInput = {
   readonly title?: string | undefined
   readonly metadata?: Session.Metadata | undefined
   readonly permissions?: Permission.Ruleset | undefined
+  readonly permissionMode?: Permission.ModeKind | null | undefined
   readonly archived?: boolean | undefined
 }
 export type SessionUpdateOutput = void

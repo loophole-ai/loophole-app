@@ -56,6 +56,7 @@ export async function runInteractive(input: RunCommandInput) {
       directory: target.location.directory,
       sessionID: target.session.id,
       auto: input.auto ?? false,
+      permissionMode: input.permissionMode,
       initialMessage: message || undefined,
       // Only an explicit `--model` overrides the model remembered from last launch.
       model: explicit ? target.model : undefined,

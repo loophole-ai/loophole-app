@@ -548,9 +548,16 @@ export class ScreenController {
       const session = await this.api.session.create({ location: { directory: this.directory } })
       this.sessionID = session.id
       await this.applyInfo(session)
+      await this.syncPermissionMode()
     } catch (error) {
       this.screen.addStatus(`Failed to create a session: ${String(error)}`, "error")
     }
+  }
+
+  /** Pushes the screen's permission mode so core raises asks this UI can vet instead of auto-allowing. */
+  private async syncPermissionMode(): Promise<void> {
+    if (!this.sessionID) return
+    await this.api.session.update({ sessionID: this.sessionID, permissionMode: this.permissionMode }).catch(() => {})
   }
 
   private async interrupt(): Promise<void> {
@@ -1772,6 +1779,7 @@ export class ScreenController {
           this.auto = next === "bypass"
           this.screen.setAuto(this.auto)
           this.screen.addStatus(`Permission mode: ${next}`)
+          await this.syncPermissionMode()
           break
         }
         case "directory":
@@ -1915,6 +1923,8 @@ export class ScreenController {
   private async loadSession(known?: SessionInfo): Promise<void> {
     const sessionID = this.sessionID
     if (!sessionID) return
+    // Re-apply on attach and after a reconnect; the server keeps the mode in memory.
+    await this.syncPermissionMode()
     try {
       const info = known ?? (await this.api.session.get({ sessionID }))
       await this.applyInfo(info)

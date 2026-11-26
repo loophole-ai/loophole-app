@@ -23,6 +23,7 @@ export default Runtime.handler(Commands, (input) =>
     const requestedDirectory = Option.getOrUndefined(input.directory)
     const requestedServer = Option.getOrUndefined(input.server)
     if (requestedDirectory !== undefined) process.chdir(requestedDirectory)
+    if (input.sandbox) process.env.OPENCODE_SANDBOX = "1"
     const preflight = UpdatePreflight.make()
     yield* Effect.addFinalizer(() => Effect.promise(() => preflight.close()))
     const serviceStarts = yield* Queue.unbounded<{
@@ -239,6 +240,7 @@ export default Runtime.handler(Commands, (input) =>
           format: "default",
           file: [],
           auto: input.auto || input.yolo || input.dangerouslySkipPermissions,
+          permissionMode: Option.getOrUndefined(input.permissionMode) as any,
         }),
       )
       return

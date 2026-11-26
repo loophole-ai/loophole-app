@@ -3468,6 +3468,7 @@ export type SessionUpdateInput = {
   readonly permissions?:
     | ReadonlyArray<{ readonly action: string; readonly resource: string; readonly effect: "allow" | "deny" | "ask" }>
     | undefined
+  readonly permissionMode?: ("normal" | "accept-edits" | "smart" | "bypass") | null | undefined
   readonly archived?: boolean | undefined
 }
 

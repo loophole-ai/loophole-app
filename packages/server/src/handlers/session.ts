@@ -1,4 +1,5 @@
 import { Instance } from "@opencode/core/instance/service"
+import { Permission } from "@opencode/core/permission"
 import { Session } from "@opencode/core/session"
 import { SessionStats } from "@opencode/core/session/stats"
 import { SessionTitle } from "@opencode/core/session/title"
@@ -255,6 +256,14 @@ export const SessionHandler = HttpApiBuilder.group(Api, "server.session", (handl
             yield* session
               .setPermissions({ sessionID: ctx.params.sessionID, permissions: ctx.payload.permissions })
               .pipe(Effect.catchTag("Session.NotFoundError", missingSession))
+          // A null mode clears a stale one so flagless runs keep rules-only evaluation.
+          if (ctx.payload.permissionMode !== undefined)
+            yield* Permission.Service.use((permission) =>
+              permission.setMode({
+                sessionID: ctx.params.sessionID,
+                mode: ctx.payload.permissionMode ?? undefined,
+              }),
+            ).pipe(instances.provide(info), locationErrors, Effect.catchTag("Session.NotFoundError", missingSession))
           if (ctx.payload.archived !== undefined)
             yield* (ctx.payload.archived ? session.archive : session.unarchive)(ctx.params.sessionID).pipe(
               Effect.catchTag("Session.NotFoundError", missingSession),

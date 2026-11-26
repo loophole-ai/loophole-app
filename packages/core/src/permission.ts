@@ -57,7 +57,7 @@ export interface AskResult {
 
 export { Event } from "@opencode/schema/permission"
 
-export type ModeKind = "normal" | "accept-edits" | "smart" | "bypass"
+export type ModeKind = Permission.ModeKind
 
 /**
  * Runtime permission mode. Configured deny rules still win. `accept-edits` auto-allows file edit
@@ -67,6 +67,29 @@ export type ModeKind = "normal" | "accept-edits" | "smart" | "bypass"
 export const Mode = Context.Reference<ModeKind>("@opencode/Permission/Mode", {
   defaultValue: () => "normal",
 })
+
+/**
+ * Session-scoped runtime permission mode pushed by clients (`--permission-mode`, the screen's
+ * Settings). Kept in process memory: clients re-apply it whenever they attach to a session, and a
+ * headless run clears it when no flag was given, so without one evaluation is rules-only, which is
+ * the legacy allow-by-default behavior.
+ */
+const sessionModes = new Map<SessionSchema.ID, ModeKind>()
+
+/**
+ * With a mode active, promote a default-wildcard allow to ask so the client can vet it: `normal`
+ * asks for mutating work, `accept-edits`/`smart` still ask for shell (smart allows safe commands
+ * below), and `bypass` never asks. Explicit allow rules win because their action is not `*`.
+ */
+function promotesToAsk(mode: ModeKind, action: string) {
+  if (mode === "bypass") return false
+  if (mode === "normal") return action === "edit" || action === "shell"
+  return action === "shell"
+}
+
+function defaultAllow(rule: Permission.Rule) {
+  return rule.action === "*" && rule.resource === "*" && rule.effect === "allow"
+}
 
 /**
  * Rules that settle a request which would otherwise ask, for work nobody is present to answer, such as a schedule's
@@ -167,6 +190,14 @@ export interface Interface {
   /** True only when the rules already allow the request; never asks the user. */
   readonly allows: (input: AssertInput) => Effect.Effect<boolean, SessionErrors.NotFoundError>
   readonly reply: (input: ReplyInput) => Effect.Effect<void, NotFoundError>
+  /**
+   * Applies a client-selected permission mode for the session. Omitting the mode clears it and
+   * restores rules-only evaluation.
+   */
+  readonly setMode: (input: {
+    sessionID: SessionSchema.ID
+    mode?: ModeKind
+  }) => Effect.Effect<void, SessionErrors.NotFoundError>
   readonly get: (id: ID) => Effect.Effect<Request | undefined>
   readonly forSession: (sessionID: SessionSchema.ID) => Effect.Effect<ReadonlyArray<Request>>
   readonly list: () => Effect.Effect<ReadonlyArray<Request>>
@@ -253,8 +284,18 @@ const layer = Layer.effect(
       const rules = yield* configured(input.sessionID, input.agent)
       if (denied(input, rules)) return { effect: "deny" as const, rules }
       const all = [...rules, ...(yield* savedRules())]
-      const effects = input.resources.map((resource) => evaluate(input.action, resource, all).effect)
-      const effect: Permission.Effect = effects.includes("ask") ? "ask" : "allow"
+      const winners = input.resources.map((resource) => evaluate(input.action, resource, all))
+      let effect: Permission.Effect = winners.some((winner) => winner.effect === "ask") ? "ask" : "allow"
+      // An active session mode asks for work that only the default wildcard allow permits, so the
+      // client can vet it (normal: edits and shell, accept-edits/smart: shell).
+      const sessionMode = sessionModes.get(input.sessionID)
+      if (
+        effect === "allow" &&
+        sessionMode !== undefined &&
+        promotesToAsk(sessionMode, input.action) &&
+        winners.every(defaultAllow)
+      )
+        effect = "ask"
       const event = yield* hooks.trigger("permission", "evaluate", {
         sessionID: input.sessionID,
         agent: input.agent,
@@ -265,7 +306,7 @@ const layer = Layer.effect(
         effect,
       })
       if (event.effect === "ask") {
-        const mode = yield* Mode
+        const mode = sessionMode ?? (yield* Mode)
         if (mode !== "normal" && modeAllows(input, mode, location.directory)) {
           return { effect: "allow" as const, rules: all }
         }
@@ -439,6 +480,16 @@ const layer = Layer.effect(
       ),
     )
 
+    const setMode = Effect.fn("Permission.setMode")(function* (input: {
+      sessionID: SessionSchema.ID
+      mode?: ModeKind
+    }) {
+      const session = yield* sessions.get(input.sessionID)
+      if (!session) return yield* new SessionErrors.NotFoundError({ sessionID: input.sessionID })
+      if (input.mode === undefined) sessionModes.delete(input.sessionID)
+      else sessionModes.set(input.sessionID, input.mode)
+    })
+
     const list = Effect.fn("Permission.list")(function* () {
       return Array.from(pending.values(), (item) => item.request)
     })
@@ -451,7 +502,7 @@ const layer = Layer.effect(
       return Array.from(pending.values(), (item) => item.request).filter((request) => request.sessionID === sessionID)
     })
 
-    return Service.of({ ask, assert, assertNotDenied, allows, reply, get, forSession, list, nested, close })
+    return Service.of({ ask, assert, assertNotDenied, allows, reply, setMode, get, forSession, list, nested, close })
   }),
 )
 
