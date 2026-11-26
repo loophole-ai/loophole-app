@@ -5,11 +5,11 @@
 
 // registered in app.ts next to LLMMessageChannel; consumed by LoopholeCliService (renderer)
 
-import { execFile, spawn, spawnSync, type ChildProcess } from 'child_process';
+import { execFile, spawnSync } from 'child_process';
 import { chmodSync, existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'fs';
 import { homedir } from 'os';
-import { createServer, request, type IncomingMessage } from 'http';
-import { randomBytes } from 'crypto';
+import { request, type IncomingMessage } from 'http';
+import { pathToFileURL } from 'url';
 import * as path from 'path';
 import { gunzipSync } from 'zlib';
 import { WebSocket } from 'ws';
@@ -37,35 +37,81 @@ const HEALTH_PROBE_TIMEOUT_MS = 8000;
 const HEALTH_FAILURES_BEFORE_RESTART = 3;
 const MAX_RECOVERIES = 3;
 const RECOVERY_WINDOW_MS = 60_000;
-// How long to wait for the Location plugins after the server starts answering.
-// Past this the CLI is reported connected anyway (callers retry 503s themselves).
-const PLUGIN_WARMUP_MS = 45_000;
-
+/**
+* Connection to the shared background service. The service is owned by no one: the
+* desktop app, the CLI and the editor all find the same one through its registration
+* file, so closing the editor never stops it.
+*/
 class LoopholeCliHandle {
-	readonly process: ChildProcess | null;
 	readonly port: number;
+	readonly username: string;
 	readonly password: string;
 	readonly dispose: () => void;
 	readonly onEvent: Emitter<unknown>;
 
-	constructor(opts: { process: ChildProcess | null; port: number; password: string; dispose: () => void; onEvent: Emitter<unknown> }) {
-		this.process = opts.process;
+	constructor(opts: { port: number; username: string; password: string; dispose: () => void; onEvent: Emitter<unknown> }) {
 		this.port = opts.port;
+		this.username = opts.username;
 		this.password = opts.password;
 		this.dispose = opts.dispose;
 		this.onEvent = opts.onEvent;
 	}
 }
 
-function freePort(): Promise<number> {
-	return new Promise((resolve, reject) => {
-		const server = createServer();
-		server.on('error', reject);
-		server.listen(0, '127.0.0.1', () => {
-			const address = server.address();
-			server.close(() => resolve(typeof address === 'object' && address ? address.port : 0));
-		});
-	});
+// What the editor uses of `@opencode/client/service`, the module the desktop app starts its server with.
+interface OpencodeServiceModule {
+	ensure(options: {
+		command?: ReadonlyArray<string>;
+		env?: Readonly<Record<string, string>>;
+		version?: string | ((version: string) => boolean);
+		onStart?: (reason: 'missing' | 'version-mismatch', previousVersion?: string) => void;
+	}): Promise<{ url: string; auth?: { type: 'basic'; username: string; password: string } }>;
+}
+
+let opencodeService: Promise<OpencodeServiceModule> | undefined;
+
+/**
+* Where the built `@opencode/client` lives: LOOPHOLE_CLIENT_DIR, then next to the packaged
+* editor, then the monorepo checkout this editor sits in (`packages/client/dist`, from `bun run build`).
+*/
+function resolveClientService(): string {
+	const resources = (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
+	const dirs = [
+		process.env.LOOPHOLE_CLIENT_DIR,
+		resources ? path.join(resources, 'opencode-client') : undefined,
+		path.resolve(process.env.VSCODE_CWD ?? process.cwd(), '..', 'packages', 'client', 'dist'),
+	].filter((dir): dir is string => !!dir);
+	const files = dirs.map((dir) => path.join(dir, 'promise', 'service.js'));
+	return files.find((file) => existsSync(file)) ?? files[files.length - 1];
+}
+
+function loadOpencodeService(): Promise<OpencodeServiceModule> {
+	return opencodeService ??= (async () => {
+		const file = resolveClientService();
+		if (!existsSync(file)) {
+			throw new Error(`@opencode/client is not built (looked for ${file}). Run "bun run build" in packages/client, or set LOOPHOLE_CLIENT_DIR.`);
+		}
+		return await import(pathToFileURL(file).href) as OpencodeServiceModule;
+	})().catch((e) => { opencodeService = undefined; throw e; });
+}
+
+function parseVersion(text: string): [number, number, number] | undefined {
+	const match = /(\d+)\.(\d+)\.(\d+)/.exec(text);
+	return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : undefined;
+}
+
+/**
+* The editor and the desktop app may ship different CLI builds. Asking for an exact version would make each
+* replace the other's service, so a running service is accepted when it is at least as new as ours.
+* An unreadable version is accepted too: never fight over it.
+*/
+function atLeast(running: string, bundled: [number, number, number]): boolean {
+	const have = parseVersion(running);
+	if (!have) return true;
+	for (let i = 0; i < 3; i++) {
+		if (have[i] !== bundled[i]) return have[i] > bundled[i];
+	}
+	return true;
 }
 
 /**
@@ -260,14 +306,12 @@ export class LoopholeCliChannel implements IServerChannel {
 			port: this.handle?.port,
 			error: this.statusError,
 			binaryPath: resolveBinary(undefined, false),
-			pid: this.handle?.process?.pid,
 		};
 	}
 
 	private async _isHealthy(): Promise<boolean> {
 		const handle = this.handle;
 		if (!handle || this.state !== 'connected') return false;
-		if (handle.process && handle.process.exitCode !== null) return false;
 		try {
 			// Any answered request proves the server is up; 404/401 still means the port is ours.
 			const status = await this._httpGet(handle.port, handle.password, '/api/session/active', HEALTH_PROBE_TIMEOUT_MS);
@@ -303,8 +347,7 @@ export class LoopholeCliChannel implements IServerChannel {
 				this._healthFailures = 0;
 			} else if (this.state === 'connected') {
 				this._healthFailures++;
-				const exited = !!this.handle?.process && this.handle.process.exitCode !== null;
-				if (exited || this._healthFailures >= HEALTH_FAILURES_BEFORE_RESTART) {
+				if (this._healthFailures >= HEALTH_FAILURES_BEFORE_RESTART) {
 					this._healthFailures = 0;
 					this._teardown('error');
 					this.statusError = 'Loophole CLI stopped responding; restarting it.';
@@ -479,21 +522,18 @@ export class LoopholeCliChannel implements IServerChannel {
 		this.state = next;
 		if (handle) {
 			try { handle.dispose(); } catch { /* best effort */ }
-			if (handle.process && !handle.process.killed) {
-				handle.process.kill();
-			}
 		}
 		if (next !== 'error') this.statusError = undefined;
 	}
 
 	private _basicAuth(password: string): string {
-		return 'Basic ' + Buffer.from(`loophole:${password}`, 'utf8').toString('base64');
+		return 'Basic ' + Buffer.from(`${this.handle?.username ?? 'loophole'}:${password}`, 'utf8').toString('base64');
 	}
 
 	/** Public helper for main-process callers (e.g. llmMessage/loopholeCliChat.ts). */
-	connectionInfo(): { port: number; password: string } | null {
+	connectionInfo(): { port: number; username: string; password: string; directory: string | undefined } | null {
 		if (!this.handle || this.state !== 'connected') return null;
-		return { port: this.handle.port, password: this.handle.password };
+		return { port: this.handle.port, username: this.handle.username, password: this.handle.password, directory: this.cwd };
 	}
 
 	/**
@@ -516,6 +556,11 @@ export class LoopholeCliChannel implements IServerChannel {
 		return parsed as T;
 	}
 
+	/** The shared service serves every folder; each request says which one it is about. */
+	private _folderHeader(): Record<string, string> {
+		return this.cwd ? { 'x-opencode-directory': encodeURIComponent(this.cwd) } : {};
+	}
+
 	private _httpJson(port: number, password: string, method: string, urlPath: string, body?: unknown): Promise<unknown> {
 		return new Promise((resolve, reject) => {
 			const payload = body === undefined ? undefined : JSON.stringify(body);
@@ -526,6 +571,7 @@ export class LoopholeCliChannel implements IServerChannel {
 				method,
 				headers: {
 					Authorization: this._basicAuth(password),
+					...this._folderHeader(),
 					...(payload !== undefined ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) } : {}),
 				},
 				timeout: 30000,
@@ -563,7 +609,7 @@ export class LoopholeCliChannel implements IServerChannel {
 				port,
 				path: urlPath,
 				method: 'GET',
-				headers: { Authorization: this._basicAuth(password) },
+				headers: { Authorization: this._basicAuth(password), ...this._folderHeader() },
 				timeout: timeoutMs,
 			}, (res: IncomingMessage) => resolve(res.statusCode ?? 0));
 			req.on('error', reject);
@@ -572,166 +618,85 @@ export class LoopholeCliChannel implements IServerChannel {
 		});
 	}
 
-	private async _waitReady(port: number, password: string, proc: ChildProcess, deadlineMs: number): Promise<void> {
-		const start = Date.now();
-		while (Date.now() - start < deadlineMs) {
-			if (proc.exitCode !== null) {
-				throw new Error(
-					proc.exitCode === 0
-						? 'The resolved binary is not the Loophole CLI: it exited immediately. Install the Loophole CLI, or point LOOPHOLE_CLI_BIN at it.'
-						: `Loophole CLI exited with code ${proc.exitCode}`,
-				)
-			}
-			try {
-				// any answered request proves the server is up; 401 means auth works, 404 means the port is ours but route changed
-				const status = await this._httpGet(port, password, '/api/session/active');
-				if (status >= 200 && status < 500) {
-					await this._waitForPlugins(port, password, proc, Math.max(0, deadlineMs - (Date.now() - start)));
-					return;
-				}
-			} catch { /* not up yet */ }
-			await new Promise((resolve) => setTimeout(resolve, 250));
-		}
-		throw new Error('Loophole CLI did not become ready in time');
-	}
-
-	/**
-	 * Wait until the CLI's plugin-gated endpoints answer.
-	 *
-	 * The HTTP server comes up well before the Location plugins finish activating.
-	 * Until then `/api/provider` and `/api/model` answer 503 ("did not finish
-	 * activating"), each request holding for ~5s. Reporting "connected" at that
-	 * point is what made the first model list / session call fail and forced a
-	 * manual "Reconnect" / "Check again". Staying in `starting` until a plugin-gated
-	 * read succeeds makes `connected` mean the CLI is actually usable.
-	 */
-	private async _waitForPlugins(port: number, password: string, proc: ChildProcess, remainingMs: number): Promise<void> {
-		const start = Date.now();
-		const budget = Math.min(remainingMs, PLUGIN_WARMUP_MS);
-		while (Date.now() - start < budget) {
-			if (proc.exitCode !== null) return; // the caller reports the exit
-			try {
-				const status = await this._httpGet(port, password, '/api/provider', 8000);
-				// 503 = still activating. Anything else answered, so the plugins are up.
-				if (status !== 503 && status < 500) return;
-			} catch { /* request timed out or dropped; keep waiting */ }
-			await new Promise((resolve) => setTimeout(resolve, 250));
-		}
-		console.warn(`[LoopholeCli] plugins still activating after ${Math.round((Date.now() - start) / 1000)}s; continuing`);
-	}
-
-	// Normalised form used only to compare two folders (case-insensitive on Windows).
-	private _folderKey(folder: string): string {
-		const resolved = path.resolve(folder);
-		return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
-	}
-
-	// True when the CLI already runs in `requested`. No requested folder means "don't care".
-	private _runsIn(requested: string | undefined): boolean {
-		if (requested === undefined) return true;
-		return this.cwd !== undefined && this._folderKey(this.cwd) === this._folderKey(requested);
-	}
+	private _starting: Promise<LoopholeCliStatus> | null = null;
 
 	private async _callConnect(params: LoopholeCliConnectParams = {}): Promise<LoopholeCliStatus> {
-		// The editor's open folder; ignored when it no longer exists on disk.
-		const requestedCwd = params.workspacePath && existsSync(params.workspacePath) ? params.workspacePath : undefined;
-		if (this.state === 'connected' && this.handle && this._runsIn(requestedCwd)) {
+		// The editor's open folder; ignored when it no longer exists on disk. The service is shared and
+		// serves every folder, so a folder change only updates the header and never restarts anything.
+		if (params.workspacePath && existsSync(params.workspacePath)) this.cwd = params.workspacePath;
+		if (this.state === 'connected' && this.handle) {
 			const status = await this._callStatus();
 			if (this.state === 'connected') return status;
 			// Health check failed and tore down the stale connection; fall through to reconnect.
 		}
-		if (this.state === 'starting') {
-			// Another caller is already spawning the CLI; wait for that attempt instead of failing.
-			const deadline = Date.now() + 120_000;
-			while (this.state === 'starting' && Date.now() < deadline) {
-				await new Promise((resolve) => setTimeout(resolve, 200));
-			}
-			// Still starting: report it. If it came up in the folder we want and is healthy, done.
-			// Otherwise fall through and restart it for this folder / recover from a dead process.
-			if (this.state === 'starting') return this._callStatusSync();
-			if (this._runsIn(requestedCwd)) {
-				const status = await this._callStatus();
-				if (this.state === 'connected') return status;
-			}
-		}
+		// Another caller is already connecting; share that attempt instead of starting a second one.
+		if (this._starting) return this._starting;
+		const attempt = this._start(params).finally(() => { this._starting = null; });
+		this._starting = attempt;
+		return attempt;
+	}
+
+	private async _start(params: LoopholeCliConnectParams): Promise<LoopholeCliStatus> {
 		this._teardown('starting');
 		this.state = 'starting';
-
+		// Never fall back to process.cwd(): for the packaged editor that is the install folder.
+		this.cwd = this.cwd ?? homedir();
 		this._lastConnect = { binaryPath: params.binaryPath, env: params.env };
+
 		const binary = resolveBinary(params.binaryPath);
-		// Resolve before spawning: a missing binary otherwise surfaces as the
-		// cryptic "exited with code -4058" (libuv ENOENT), which tells the user
-		// nothing about what is actually wrong.
+		// Resolve before starting anything: a missing binary otherwise surfaces as a cryptic spawn error.
 		if (!existsSync(binary)) {
 			this._teardown('error');
 			this.statusError = `Loophole CLI not found at "${binary}". Install @loophole-ai/cli, or point LOOPHOLE_CLI_BIN at the binary.`;
 			console.warn(`[LoopholeCli] ${this.statusError}`);
 			return this._callStatus();
 		}
-		const password = randomBytes(24).toString('base64url');
-		const port = await freePort();
-		// Never fall back to process.cwd(): for the packaged editor that is the install folder.
-		const cwd = requestedCwd ?? homedir();
-		this.cwd = cwd;
-		// The server refuses to boot without a password (ServerProcess.run fails
-		// with "Missing server password"), and every request is Basic-authenticated
-		// against it, so the same secret has to be handed to the child.
-		const env: NodeJS.ProcessEnv = { ...process.env, ...params.env, OPENCODE_SERVER_PASSWORD: password };
-		if (!env.OPENCODE_DB) {
+
+		const env: Record<string, string> = {};
+		for (const [key, value] of Object.entries(params.env ?? {})) {
+			if (typeof value === 'string') env[key] = value;
+		}
+		if (!env.OPENCODE_DB && !process.env.OPENCODE_DB) {
 			const database = this._resolveDatabase();
 			if (database) env.OPENCODE_DB = database;
 		}
 
-		console.log(`[LoopholeCli] spawning ${binary} serve --port ${port} in ${cwd}`);
-
-		const proc = spawn(binary, ['serve', '--port', String(port), '--hostname', '127.0.0.1'], {
-			cwd,
-			env,
-			windowsHide: true,
-			stdio: ['ignore', 'pipe', 'pipe'],
-		});
-		proc.stdout?.on('data', (chunk) => console.log(`[LoopholeCli] ${String(chunk).trim()}`));
-		proc.stderr?.on('data', (chunk) => console.warn(`[LoopholeCli] ${String(chunk).trim()}`));
-		proc.on('error', (err) => {
-			if (this.handle?.process === proc) {
-				this._teardown('error');
-				this.statusError = `failed to spawn ${binary}: ${err.message}`;
-				console.warn(`[LoopholeCli] spawn failed: ${err.message}`);
-			}
-		});
-		proc.on('exit', (code) => {
-			if (this.handle?.process === proc) {
-				// A crash after a good start is restarted here. A failed start is already
-				// handled by _callConnect's own error path, so it must not spawn a second one.
-				const wasConnected = this.state === 'connected';
-				this._teardown('error');
-				this.statusError = `Loophole CLI exited with code ${code}`;
-				if (wasConnected) this._autoRecover(`it exited with code ${code}`);
-			}
-		});
-
-		const onEvent = this._onEvent;
-		this.handle = new LoopholeCliHandle({
-			process: proc,
-			port,
-			password,
-			dispose: () => { /* process killed in teardown; nothing else held */ },
-			onEvent,
-		});
-
 		try {
-			await this._waitReady(port, password, proc, 120_000);
+			// The CLI names its registration file after the channel it was built with (a shipped binary is
+			// "prod", one built from source is "local"), and ensure() watches the file for the channel set
+			// here. If they differ it waits for a file that is never written, so pin it like the desktop does.
+			process.env.OPENCODE_CHANNEL = process.env.LOOPHOLE_SERVICE_CHANNEL ?? 'prod';
+			const service = await loadOpencodeService();
+			const bundled = parseVersion(await this._callVersion());
+			// Same call the desktop app makes: reuse a healthy compatible service, otherwise start one.
+			const endpoint = await service.ensure({
+				command: [binary, 'serve', '--service'],
+				env,
+				version: bundled ? (running) => atLeast(running, bundled) : undefined,
+				onStart: (reason, previous) => console.log(`[LoopholeCli] starting background service (${reason}${previous ? `, was ${previous}` : ''})`),
+			});
+			const port = Number(new URL(endpoint.url).port);
+			this.handle = new LoopholeCliHandle({
+				port,
+				username: endpoint.auth?.username ?? 'loophole',
+				password: endpoint.auth?.password ?? '',
+				dispose: () => { /* the service outlives the editor; nothing to release */ },
+				onEvent: this._onEvent,
+			});
 			this.state = 'connected';
 			this._healthFailures = 0;
-			console.log(`[LoopholeCli] connected on port ${port}`);
+			console.log(`[LoopholeCli] connected to the background service on port ${port}`);
 		} catch (e) {
 			this._teardown('error');
-			this.statusError = e instanceof Error ? e.message : String(e);
-			console.warn(`[LoopholeCli] failed to start: ${this.statusError}`);
+			const message = e instanceof Error ? e.message : String(e);
+			// ensure() only times out like this when the CLI wrote no registration file for the channel we watch.
+			this.statusError = /timed out/i.test(message)
+				? `${message}. If this CLI was not built for the "${process.env.OPENCODE_CHANNEL}" channel, set LOOPHOLE_SERVICE_CHANNEL to the channel it was built for.`
+				: message;
+			console.warn(`[LoopholeCli] failed to connect: ${this.statusError}`);
 		}
 		return this._callStatus();
 	}
-
 	// ---- Phase 1: providers / models from the server (server owns config) ----
 
 	/**

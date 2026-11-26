@@ -556,7 +556,11 @@ export const sendLoopholeCliChat = async ({ messages, separateSystemMessage, mod
 	const consumeStream = async () => {
 		try {
 			const response = await fetch(`http://127.0.0.1:${connection.port}/api/event`, {
-				headers: { Authorization: 'Basic ' + Buffer.from(`loophole:${connection.password}`, 'utf8').toString('base64') },
+				headers: {
+					Authorization: 'Basic ' + Buffer.from(`${connection.username}:${connection.password}`, 'utf8').toString('base64'),
+					// The service is shared across folders; say which one this stream is about.
+					...(connection.directory ? { 'x-opencode-directory': encodeURIComponent(connection.directory) } : {}),
+				},
 				signal: eventController.signal,
 			});
 			if (!response.ok || !response.body) {
