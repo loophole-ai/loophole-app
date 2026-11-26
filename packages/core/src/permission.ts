@@ -1,5 +1,6 @@
 export * as Permission from "./permission.js"
 
+import path from "node:path"
 import { makeLocationNode } from "@opencode/util/effect/app-node"
 import { Context, Deferred, Effect, Layer, Schema, Scope } from "effect"
 import { Permission } from "@opencode/schema/permission"
@@ -56,6 +57,17 @@ export interface AskResult {
 
 export { Event } from "@opencode/schema/permission"
 
+export type ModeKind = "normal" | "accept-edits" | "smart" | "bypass"
+
+/**
+ * Runtime permission mode. Configured deny rules still win. `accept-edits` auto-allows file edit
+ * actions in the workspace, `smart` also auto-allows clearly safe shell commands, and `bypass`
+ * auto-allows everything not denied.
+ */
+export const Mode = Context.Reference<ModeKind>("@opencode/Permission/Mode", {
+  defaultValue: () => "normal",
+})
+
 /**
  * Rules that settle a request which would otherwise ask, for work nobody is present to answer, such as a schedule's
  * check. A request they do not allow is denied. Configured denies still win, as they are evaluated first.
@@ -105,6 +117,45 @@ export function evaluate(action: string, resource: string, ...rulesets: Permissi
 
 export function merge(...rulesets: Permission.Ruleset[]): Permission.Ruleset {
   return rulesets.flat()
+}
+
+const EDIT_ACTIONS = new Set(["edit", "write", "patch", "notebook_edit"])
+const SAFE_SHELL = [
+  /^(ls|pwd|echo|cat|head|tail|wc|which|whoami|date|uname|env|printenv|type|file|stat|du|df)(\s|$)/,
+  /^(git\s+(status|diff|log|show|branch|tag|remote|rev-parse|describe|ls-files|ls-tree|blame|shortlog)(\s|$))/,
+  /^(git\s+--version)(\s|$)/,
+  /^(node|npm|pnpm|bun|yarn)\s+(-v|--version)(\s|$)/,
+  /^(rg|grep|find|fd|tree)(\s|$)/,
+]
+const RISKY_SHELL = [
+  /\brm\b/,
+  /\bsudo\b/,
+  /\b(curl|wget)\b[^\n|]*\|\s*(sh|bash|zsh|fish)\b/,
+  /\b(npm|pnpm|yarn|bun)\s+(install|add|remove|uninstall|update|upgrade)\b/,
+  /\bgit\s+(push|commit|reset|clean|checkout|switch|restore|merge|rebase|cherry-pick|revert|tag\s+-d|branch\s+-D)\b/,
+  /\b(kubectl|terraform|aws|gcloud|az)\b[^\n]*(delete|destroy|apply|rm)\b/,
+  /\b(dd|mkfs|shutdown|reboot|poweroff)\b/,
+]
+
+function isWithin(dir: string, target: string) {
+  const base = path.resolve(dir)
+  const resolved = path.resolve(dir, target)
+  return resolved === base || resolved.startsWith(base + path.sep)
+}
+
+function modeAllows(input: AssertInput, mode: ModeKind, directory: string) {
+  if (mode === "bypass") return true
+  if (mode === "accept-edits" || mode === "smart") {
+    if (EDIT_ACTIONS.has(input.action) && input.resources.every((r) => isWithin(directory, r))) return true
+  }
+  if (mode === "smart") {
+    if (input.action === "read") return true
+    if (input.action === "shell") {
+      const cmd = String(input.metadata?.command ?? input.resources[0] ?? "")
+      if (cmd && !RISKY_SHELL.some((r) => r.test(cmd)) && SAFE_SHELL.some((r) => r.test(cmd))) return true
+    }
+  }
+  return false
 }
 
 export interface Interface {
@@ -213,6 +264,12 @@ const layer = Layer.effect(
         source: row(input.source),
         effect,
       })
+      if (event.effect === "ask") {
+        const mode = yield* Mode
+        if (mode !== "normal" && modeAllows(input, mode, location.directory)) {
+          return { effect: "allow" as const, rules: all }
+        }
+      }
       const unattended = yield* Unattended
       if (event.effect !== "ask" || unattended === undefined)
         return { effect: event.effect, message: event.message, rules: all }

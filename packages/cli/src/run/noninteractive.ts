@@ -13,6 +13,7 @@ import {
   type SessionMessageInfo,
 } from "@opencode/client/promise"
 import { SessionMessage } from "@opencode/schema/session-message"
+import path from "node:path"
 import { EOL } from "node:os"
 import { toolOutputText, type MiniToolPart } from "@opencode/tui/mini/tool"
 import { UI } from "./ui"
@@ -27,6 +28,8 @@ type Input = {
   model?: ModelRef
   thinking: boolean
   format: "default" | "json"
+  print?: boolean
+  permissionMode?: "normal" | "accept-edits" | "smart" | "bypass"
   auto: boolean
   /** The server is private to this run, so MCP input requests in its location are this run's too. */
   standalone: boolean
@@ -56,6 +59,49 @@ const QUESTION_CANCELLED_FEEDBACK =
 
 const PERMISSION_REJECTED_FEEDBACK =
   "This non-interactive run cannot ask the user for permission, so the request was rejected. Continue without this action."
+
+const EDIT_ACTIONS = new Set(["edit", "write", "patch", "notebook_edit"])
+const SAFE_SHELL = [
+  /^(ls|pwd|echo|cat|head|tail|wc|which|whoami|date|uname|env|printenv|type|file|stat|du|df)(\s|$)/,
+  /^(git\s+(status|diff|log|show|branch|tag|remote|rev-parse|describe|ls-files|ls-tree|blame|shortlog)(\s|$))/,
+  /^(git\s+--version)(\s|$)/,
+  /^(node|npm|pnpm|bun|yarn)\s+(-v|--version)(\s|$)/,
+  /^(rg|grep|find|fd|tree)(\s|$)/,
+]
+const RISKY_SHELL = [
+  /\brm\b/,
+  /\bsudo\b/,
+  /\b(curl|wget)\b[^\n|]*\|\s*(sh|bash|zsh|fish)\b/,
+  /\b(npm|pnpm|yarn|bun)\s+(install|add|remove|uninstall|update|upgrade)\b/,
+  /\bgit\s+(push|commit|reset|clean|checkout|switch|restore|merge|rebase|cherry-pick|revert|tag\s+-d|branch\s+-D)\b/,
+  /\b(kubectl|terraform|aws|gcloud|az)\b[^\n]*(delete|destroy|apply|rm)\b/,
+  /\b(dd|mkfs|shutdown|reboot|poweroff)\b/,
+]
+
+function isWithin(dir: string, target: string) {
+  const base = path.resolve(dir)
+  const resolved = path.resolve(dir, target)
+  return resolved === base || resolved.startsWith(base + path.sep)
+}
+
+function autoApprovePermission(
+  request: PermissionRequest,
+  mode: "normal" | "accept-edits" | "smart" | "bypass",
+  directory: string,
+) {
+  if (mode === "bypass") return true
+  if ((mode === "accept-edits" || mode === "smart") && EDIT_ACTIONS.has(request.action)) {
+    if (request.resources.every((r) => isWithin(directory, r))) return true
+  }
+  if (mode === "smart") {
+    if (request.action === "read") return true
+    if (request.action === "shell") {
+      const cmd = String(request.metadata?.command ?? request.resources[0] ?? "")
+      if (cmd && !RISKY_SHELL.some((r) => r.test(cmd)) && SAFE_SHELL.some((r) => r.test(cmd))) return true
+    }
+  }
+  return false
+}
 
 /**
  * Runs one prompt to completion:
@@ -94,8 +140,10 @@ export async function runNonInteractivePrompt(input: Input) {
     return result
   }
 
+  const permissionMode = input.auto ? "bypass" : (input.permissionMode ?? "normal")
   const replyPermission = async (request: PermissionRequest) => {
-    if (!input.auto)
+    const allow = autoApprovePermission(request, permissionMode, input.location.directory)
+    if (!allow)
       UI.println(
         UI.Style.TEXT_WARNING_BOLD + "!",
         UI.Style.TEXT_NORMAL +
@@ -105,8 +153,8 @@ export async function runNonInteractivePrompt(input: Input) {
       .reply({
         sessionID: request.sessionID,
         requestID: request.id,
-        decision: input.auto ? "once" : "reject",
-        ...(input.auto ? {} : { message: PERMISSION_REJECTED_FEEDBACK }),
+        decision: allow ? "once" : "reject",
+        ...(allow ? {} : { message: PERMISSION_REJECTED_FEEDBACK }),
       })
       .catch(() => {})
   }
@@ -297,7 +345,10 @@ export async function runNonInteractivePrompt(input: Input) {
     state.phase = "settled"
     await render.reconcile(settled.messages)
     const error = finalError(settled, state)
-    if (!error) return
+    if (!error) {
+      render.final(settled.messages)
+      return
+    }
     process.exitCode = 1
     render.error(error)
   } finally {
@@ -359,6 +410,7 @@ function renderer(input: Input) {
   const steps = new Map<string, "started" | "ended">()
   // The session can go idle before the last live events arrive; reconcile prints what they missed.
   const printed = new Map<string, string>()
+  const quiet = input.print === true && input.format === "default"
 
   const emit = (type: string, timestamp: number, data: Record<string, unknown>) => {
     if (input.format !== "json") return false
@@ -384,11 +436,12 @@ function renderer(input: Input) {
     start: number,
     end: number,
   ) => {
-    if (part.kind === "reasoning" && !input.thinking) return
+    if (part.kind === "reasoning" && (!input.thinking || quiet)) return
     const id = key(part.kind, part.messageID, part.ordinal)
     const previous = printed.get(id) ?? ""
     if (printed.has(id) && (previous === part.text || !part.text.startsWith(previous))) return
     printed.set(id, part.text)
+    if (quiet) return
     const value = part.text.slice(previous.length)
     const json = {
       id: part.id,
@@ -417,6 +470,7 @@ function renderer(input: Input) {
     const id = key(messageID, item.id)
     if (printed.has(id)) return
     printed.set(id, "")
+    if (quiet) return
     const time = { start: item.time.ran ?? item.time.created, end: item.time.completed ?? timestamp }
     const state =
       item.state.status === "completed"
@@ -456,16 +510,32 @@ function renderer(input: Input) {
 
   const step = (type: "step-start" | "step-finish", timestamp: number, id: string, messageID: string, rest: object) => {
     steps.set(messageID, type === "step-start" ? "started" : "ended")
+    if (quiet) return true
     const part = { id, sessionID: input.sessionID, messageID, type, ...rest }
     return emit(type === "step-start" ? "step_start" : "step_finish", timestamp, { part })
   }
 
+  const final = (messages: SessionMessageInfo[]) => {
+    if (!quiet) return
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const message = messages[i]
+      if (message.type !== "assistant") continue
+      const parts = message.content.flatMap((item) => (item.type === "text" && item.text ? [item.text] : []))
+      const text = parts.join("\n\n").trim()
+      if (!text) continue
+      process.stdout.write(text + EOL)
+      return
+    }
+  }
+
   return {
+    final,
     error: (error: RunError) => {
       if (!emit("error", Date.now(), { error })) UI.error(error.message)
     },
 
     waiting: (jobs: Job[]) => {
+      if (quiet) return
       const list = jobs.map((job) => ({ id: job.id, kind: job.kind, title: job.title }))
       if (emit("background_wait", Date.now(), { jobs: list })) return
       UI.println(
@@ -478,6 +548,7 @@ function renderer(input: Input) {
     event: async (event: Event) => {
       const time = "created" in event ? event.created : Date.now()
       if (event.type === "session.retry.scheduled") {
+        if (quiet) return
         const retry = {
           messageID: event.data.assistantMessageID,
           attempt: event.data.attempt,

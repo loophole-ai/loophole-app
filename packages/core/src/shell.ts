@@ -38,6 +38,7 @@ import { SessionSchema } from "./session/schema.js"
 import { Config } from "./config.js"
 import { ToolOutput } from "./tool-output.js"
 import { ShellResult } from "./shell/result.js"
+import * as Sandbox from "./sandbox.js"
 
 export class NotFoundError extends Schema.TaggedError<NotFoundError>()("Shell.NotFoundError", {
   id: Shell.ID,
@@ -922,7 +923,7 @@ const layer = () =>
         }
         yield* annotate(info)
 
-        if (runs) {
+        if (runs && process.env.OPENCODE_SANDBOX !== "1") {
           const created = yield* runs
             .create({
               info,
@@ -957,11 +958,20 @@ const layer = () =>
         runFork(
           Effect.scoped(
             Effect.gen(function* () {
+              const sandboxed = process.env.OPENCODE_SANDBOX === "1"
+                ? Sandbox.wrap(invocation.shell, args, invocation.cwd, invocation.env, {
+                    mode: "on",
+                    writable: [location.directory],
+                    denyRead: global.home
+                      ? [path.join(global.home, ".ssh"), path.join(global.home, ".gnupg")]
+                      : [],
+                  })
+                : { command: invocation.shell, args, env: invocation.env }
               const handle = yield* environment.spawner
                 .spawn(
-                  ChildProcess.make(invocation.shell, args, {
+                  ChildProcess.make(sandboxed.command, sandboxed.args, {
                     cwd: invocation.cwd,
-                    env: invocation.env,
+                    env: sandboxed.env,
                     stdin: "ignore",
                     detached: process.platform !== "win32",
                     forceKillAfter: STOP_GRACE,

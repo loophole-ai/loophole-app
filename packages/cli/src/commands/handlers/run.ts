@@ -7,6 +7,7 @@ import { uiMode } from "../../run/ui-mode"
 export default Runtime.handler(Commands.commands.run, (input) =>
   Effect.gen(function* () {
     const { reportRunError, runNonInteractive } = yield* Effect.promise(() => import("../../run/run"))
+    if (input.sandbox) process.env.OPENCODE_SANDBOX = "1"
     // A one-off run uses the background service when it is already up, but never leaves a new one running.
     const server = yield* ServerConnection.resolve({ autostart: false }).pipe(
       Effect.tapError((error) => Effect.logError("run could not resolve its server", { cause: error })),
@@ -16,8 +17,9 @@ export default Runtime.handler(Commands.commands.run, (input) =>
 
     // Use the Loophole screen for plain terminal runs. Attached files still go through the
     // non-interactive path, because the interactive UI cannot attach them yet, and so does
-    // LOOPHOLE_TUI=mini (see run/ui-mode.ts).
+    // LOOPHOLE_TUI=mini (see run/ui-mode.ts). --print/-p forces headless output.
     const useInteractive =
+      !input.print &&
       input.format === "default" &&
       process.stdin.isTTY === true &&
       process.stdout.isTTY === true &&
@@ -43,6 +45,8 @@ export default Runtime.handler(Commands.commands.run, (input) =>
           title: Option.getOrUndefined(input.title),
           thinking: input.thinking,
           auto: input.auto || input.yolo || input.dangerouslySkipPermissions,
+          permissionMode: Option.getOrUndefined(input.permissionMode) as any,
+          sandbox: input.sandbox,
         }),
       )
       return
@@ -68,6 +72,9 @@ export default Runtime.handler(Commands.commands.run, (input) =>
           archived: input.archived,
           thinking: input.thinking,
           auto: input.auto || input.yolo || input.dangerouslySkipPermissions,
+          print: input.print,
+          permissionMode: Option.getOrUndefined(input.permissionMode) as any,
+          sandbox: input.sandbox,
         },
         controller.signal,
       ).then(() => resume(Effect.void))
