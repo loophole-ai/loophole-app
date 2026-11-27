@@ -892,7 +892,7 @@ export const dict = {
   "session.location.moveFailed": "Falha ao mover sessão",
   "server.thisComputer": "Este computador",
   "command.provider.connect.description":
-    "Faça login no Loophole Go, no Loophole Console ou em outro provedor de modelos",
+    "Faça login no OpenCode Go, no OpenCode Console ou em outro provedor de modelos",
   "command.config.reload": "Recarregar configuração",
   "command.config.reload.description":
     "Recarregar agentes, comandos, habilidades, servidores MCP e plugins da sua configuração",
@@ -900,7 +900,7 @@ export const dict = {
   "command.config.reload.done": "Configuração recarregada",
   "command.config.reload.failed": "Não foi possível recarregar a configuração",
   "command.usage.view": "Ver uso",
-  "command.usage.view.description": "Veja sua cota do Loophole Go e os orçamentos do Console",
+  "command.usage.view.description": "Veja sua cota do OpenCode Go e os orçamentos do Console",
   "command.session.branch.choose": "Escolher branch base",
   "session.location.toggle": "Alternar local da sessão",
   "command.commands.search": "Buscar comandos",
@@ -949,11 +949,11 @@ export const dict = {
   "provider.connect.breadcrumb.root": "Conectar",
   "provider.connect.breadcrumb.label": "Etapas de conexão",
   "provider.connect.methods.description": "Escolha como conectar {{provider}}.",
-  "provider.connect.opencode.name": "Loophole Console",
-  "provider.connect.opencode.freeName": "Loophole Free",
+  "provider.connect.opencode.name": "OpenCode",
+  "provider.connect.opencode.freeName": "OpenCode Free",
   "provider.connect.console.retry": "Tentar novamente",
   "provider.connect.console.serviceKeyDescription":
-    "Conecte usando uma chave de API de conta de serviço do Loophole Console.",
+    "Conecte usando uma chave de API de conta de serviço do OpenCode Console.",
   "provider.connect.console.instructions":
     "Continue no navegador. Confirme que o código exibido lá corresponde ao código abaixo.",
   "provider.connect.console.deviceCode": "Código do dispositivo",
@@ -1372,7 +1372,7 @@ export const dict = {
   "settings.extensions.sources.loadFailed": "Não foi possível carregar as fontes de extensões",
   "settings.extensions.console.temporary":
     "Os botões de alternância controlam temporariamente as conexões MCP do projeto atual, não suas preferências do Console. Alterações na configuração do servidor podem reconectá-las.",
-  "settings.extensions.console.replaced": "Substitui o Loophole Console",
+  "settings.extensions.console.replaced": "Substitui o OpenCode Console",
   "settings.extensions.console.connect": "Conectar {{name}} no Console",
   "settings.extensions.console.manage": "Gerenciar {{name}} no Console",
   "project.settings.autoAccept.description": "Aprovar as solicitações de permissão deste projeto sem perguntar",
@@ -1455,8 +1455,8 @@ export const dict = {
   "lab.noControls": "Esta story não tem controles",
   "lab.grid": "Grade",
   "usage.title": "Uso",
-  "usage.section.go": "Loophole Go",
-  "usage.section.console": "Loophole Console",
+  "usage.section.go": "OpenCode Go",
+  "usage.section.console": "OpenCode Console",
   "usage.workspace.fallback": "seu espaço de trabalho",
   "usage.time": "{{date}} às {{time}} ({{zone}})",
   "usage.go.rolling": "Contínuo",
@@ -1520,8 +1520,8 @@ export const dict = {
   "usage.footer.budgetsReset": "Os orçamentos serão redefinidos em {{time}}",
   "usage.footer.creditsOnly": "Os gastos são limitados apenas pelos créditos de {{workspace}}",
   "usage.footer.details": "Ver detalhes",
-  "usage.signedOut.title": "Sem login no Loophole Console",
-  "usage.signedOut.body": "Conecte o Loophole Console para ver os orçamentos e o uso do Go do seu espaço de trabalho.",
+  "usage.signedOut.title": "Sem login no OpenCode Console",
+  "usage.signedOut.body": "Conecte o OpenCode Console para ver os orçamentos e o uso do Go do seu espaço de trabalho.",
   "usage.error": "Não foi possível carregar os limites de uso.",
   "usage.retry": "Tentar novamente",
 }

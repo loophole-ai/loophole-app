@@ -900,7 +900,7 @@ export const dict = {
   "session.location.moveFailed": "Échec du déplacement de la session",
   "server.thisComputer": "Cet ordinateur",
   "command.provider.connect.description":
-    "Connectez-vous à Loophole Go, Loophole Console ou à un autre fournisseur de modèles",
+    "Connectez-vous à OpenCode Go, OpenCode Console ou à un autre fournisseur de modèles",
   "command.config.reload": "Recharger la configuration",
   "command.config.reload.description":
     "Recharger les agents, commandes, compétences, serveurs MCP et plugins depuis votre configuration",
@@ -908,7 +908,7 @@ export const dict = {
   "command.config.reload.done": "Configuration rechargée",
   "command.config.reload.failed": "Impossible de recharger la configuration",
   "command.usage.view": "Voir l’utilisation",
-  "command.usage.view.description": "Consultez votre quota Loophole Go et vos budgets Console",
+  "command.usage.view.description": "Consultez votre quota OpenCode Go et vos budgets Console",
   "command.session.branch.choose": "Choisir la branche de base",
   "session.location.toggle": "Afficher ou masquer l’emplacement de la session",
   "command.commands.search": "Rechercher des commandes",
@@ -957,11 +957,11 @@ export const dict = {
   "provider.connect.breadcrumb.root": "Connexion",
   "provider.connect.breadcrumb.label": "Étapes de connexion",
   "provider.connect.methods.description": "Choisissez comment connecter {{provider}}.",
-  "provider.connect.opencode.name": "Loophole Console",
-  "provider.connect.opencode.freeName": "Loophole Free",
+  "provider.connect.opencode.name": "OpenCode",
+  "provider.connect.opencode.freeName": "OpenCode Free",
   "provider.connect.console.retry": "Réessayer",
   "provider.connect.console.serviceKeyDescription":
-    "Connectez-vous avec une clé API de compte de service d’Loophole Console.",
+    "Connectez-vous avec une clé API de compte de service d’OpenCode Console.",
   "provider.connect.console.instructions":
     "Continuez dans votre navigateur. Vérifiez que le code affiché correspond à celui ci-dessous.",
   "provider.connect.console.deviceCode": "Code de l’appareil",
@@ -1385,7 +1385,7 @@ export const dict = {
   "settings.extensions.sources.loadFailed": "Impossible de charger les sources d’extensions",
   "settings.extensions.console.temporary":
     "Les interrupteurs contrôlent temporairement les connexions MCP du projet actuel, pas vos préférences Console. Une modification de la configuration du serveur peut les reconnecter.",
-  "settings.extensions.console.replaced": "Remplace Loophole Console",
+  "settings.extensions.console.replaced": "Remplace OpenCode Console",
   "settings.extensions.console.connect": "Connecter {{name}} dans Console",
   "settings.extensions.console.manage": "Gérer {{name}} dans Console",
   "project.settings.autoAccept.description": "Approuver les demandes de permission de ce projet sans confirmation",
@@ -1469,8 +1469,8 @@ export const dict = {
   "lab.noControls": "Cette story n’a aucun contrôle",
   "lab.grid": "Grille",
   "usage.title": "Utilisation",
-  "usage.section.go": "Loophole Go",
-  "usage.section.console": "Loophole Console",
+  "usage.section.go": "OpenCode Go",
+  "usage.section.console": "OpenCode Console",
   "usage.workspace.fallback": "votre espace de travail",
   "usage.time": "{{date}} à {{time}} ({{zone}})",
   "usage.go.rolling": "Glissant",
@@ -1535,9 +1535,9 @@ export const dict = {
   "usage.footer.budgetsReset": "Réinitialisation des budgets le {{time}}",
   "usage.footer.creditsOnly": "Les dépenses ne sont limitées que par les crédits de {{workspace}}",
   "usage.footer.details": "Voir les détails",
-  "usage.signedOut.title": "Non connecté à Loophole Console",
+  "usage.signedOut.title": "Non connecté à OpenCode Console",
   "usage.signedOut.body":
-    "Connectez Loophole Console pour voir les budgets de votre espace de travail et votre utilisation de Go.",
+    "Connectez OpenCode Console pour voir les budgets de votre espace de travail et votre utilisation de Go.",
   "usage.error": "Impossible de charger les limites d’utilisation.",
   "usage.retry": "Réessayer",
 }
