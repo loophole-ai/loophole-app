@@ -4,7 +4,6 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { Effect, Schedule, Stream } from "effect"
-import type { Event } from "@opencode/schema/event"
 import { SessionEvent } from "@opencode/schema/session-event"
 import { Global } from "@opencode/util/global"
 import { Bus } from "./bus.js"
@@ -164,7 +163,7 @@ export const start = Effect.fn("Telemetry.start")(function* (
 
   yield* Effect.addFinalizer(() => flush)
 
-  const consumer = (payload: Event.Payload): Effect.Effect<void> =>
+  const consumer = (payload: SessionEvent.Step.Started | SessionEvent.Step.Ended): Effect.Effect<void> =>
     Effect.suspend(() => {
       if (payload.type === "session.step.started") {
         const originKey = `${payload.data.sessionID}:${payload.data.assistantMessageID}`
