@@ -12,7 +12,7 @@ type Entry<Tab> = {
   description?: Label
   section?: Label
   subtab?: "mcps" | "plugins" | "skills" | "lsps"
-  available?: "desktop" | "browser" | "mobile"
+  available?: "desktop" | "linux" | "browser" | "mobile"
 }
 
 export const clientSettings: Entry<SettingsRootTab>[] = [
@@ -51,6 +51,12 @@ export const clientSettings: Entry<SettingsRootTab>[] = [
   },
   {
     tab: "general",
+    label: "settings.general.row.questionSubmitKey.title",
+    target: "settings-question-submit-key",
+    keywords: "question answer enter shift submit send keyboard newline multiline custom",
+  },
+  {
+    tab: "general",
     label: "settings.general.row.pinchZoom.title",
     target: "settings-pinch-zoom",
     available: "desktop",
@@ -61,6 +67,13 @@ export const clientSettings: Entry<SettingsRootTab>[] = [
     target: "settings-spellcheck",
     keywords: "spelling spell check dictionary",
     available: "desktop",
+  },
+  {
+    tab: "general",
+    label: "settings.general.row.smoothScrolling.title",
+    target: "settings-smooth-scrolling",
+    keywords: "scroll wheel mouse animation smooth",
+    available: "linux",
   },
   {
     tab: "general",
@@ -93,6 +106,14 @@ export const clientSettings: Entry<SettingsRootTab>[] = [
   },
   {
     tab: "general",
+    label: "settings.timeline.row.foldUserMessages.title",
+    description: "settings.timeline.row.foldUserMessages.description",
+    target: "settings-fold-user-messages",
+    section: "settings.timeline.title",
+    keywords: "fold collapse long messages prompts read more",
+  },
+  {
+    tab: "general",
     label: "settings.timeline.row.turnDiffs.title",
     description: "settings.timeline.row.turnDiffs.description",
     target: "settings-show-turn-diffs",
@@ -106,20 +127,6 @@ export const clientSettings: Entry<SettingsRootTab>[] = [
   },
   {
     tab: "experimental",
-    label: "settings.experimental.row.newIcons.title",
-    target: "settings-new-icons",
-    description: "settings.experimental.row.newIcons.description",
-    keywords: "icons iconography glyphs redesign",
-  },
-  {
-    tab: "experimental",
-    label: "settings.experimental.row.foldUserMessages.title",
-    target: "settings-fold-user-messages",
-    description: "settings.experimental.row.foldUserMessages.description",
-    keywords: "fold collapse long messages prompts read more",
-  },
-  {
-    tab: "experimental",
     label: "settings.experimental.row.newTimeline.title",
     target: "settings-new-timeline",
     description: "settings.experimental.row.newTimeline.description",
@@ -127,10 +134,24 @@ export const clientSettings: Entry<SettingsRootTab>[] = [
   },
   {
     tab: "experimental",
+    label: "settings.experimental.row.automations.title",
+    target: "settings-automations",
+    description: "settings.experimental.row.automations.description",
+    keywords: "automations schedules timers cron watches events",
+  },
+  {
+    tab: "experimental",
     label: "settings.experimental.row.newQuestionUI.title",
     target: "settings-new-question-ui",
     description: "settings.experimental.row.newQuestionUI.description",
     keywords: "question answers keyboard dock redesign",
+  },
+  {
+    tab: "experimental",
+    label: "settings.experimental.row.tabGroups.title",
+    target: "settings-tab-groups",
+    description: "settings.experimental.row.tabGroups.description",
+    keywords: "tab groups server project colors drag organize search sessions",
   },
   {
     tab: "experimental",

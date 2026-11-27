@@ -8,6 +8,7 @@ import { Effect } from "effect"
 import { AbsolutePath } from "../schema.js"
 import { Skill } from "../skill.js"
 import { Config } from "../config.js"
+import { Global } from "@opencode/util/global"
 import os from "os"
 import reportContent from "./skill/report.md" with { type: "text" }
 
@@ -20,7 +21,9 @@ export const Plugin = define({
   id: "opencode.skill",
   effect: Effect.fn(function* (ctx) {
     const reportContent = yield* reportContentWithDiagnostics(ctx.app)
-    yield* ctx.skill.transform((editor) => {
+    const skills = yield* Skill.Service
+    // Skill.Service rather than ctx.skill, whose editor can't add a skill's files.
+    yield* skills.transform((editor) => {
       editor.add(
         Skill.Info.make({
           id: Skill.ID.make("report"),
@@ -54,6 +57,7 @@ const reportContentWithDiagnostics = Effect.fn("SkillPlugin.reportContentWithDia
     `- Terminal: ${terminal()}`,
     `- Shell: ${shell()}`,
     `- Active plugins: ${plugins.length === 0 ? "None found in config" : plugins.join(", ")}`,
+    `- Log directory: ${Global.Path.log}`,
   ].join("\n")
 })
 
