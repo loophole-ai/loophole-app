@@ -13,7 +13,7 @@ import { useLanguage } from "@/runtime/i18n/language"
 import type { LocalProject } from "@/shell/state/layout"
 import { type ServerConnection, useServers } from "@/runtime/server/registry"
 import { useSettingsServers } from "@/settings/servers/inventory"
-import { useGlobal, useServerCtx } from "@/runtime/server/runtime"
+import { useServerCtx } from "@/runtime/server/runtime"
 import { useSettingsSurface } from "@/settings/surface"
 import { projectSettingsKey, useSettings } from "@/settings/model"
 import { ProjectIcon } from "@/shell/layout/project-icon"
@@ -33,7 +33,7 @@ export const SettingsProjectGeneral: Component<{
   const model = createEditProjectModel(props)
   const servers = useSettingsServers()
   const registry = useServers()
-  const global = useGlobal()
+  const serverCtx = useServerCtx(() => props.server)
   const surface = useSettingsSurface()
 
   return (
@@ -67,7 +67,7 @@ export const SettingsProjectGeneral: Component<{
             project={props.project}
             size="large"
             onClose={() => {
-              global.ensureServerCtx(props.server).projects.hide(props.project)
+              serverCtx()?.projects.hide(props.project)
               surface.back()
             }}
           />
