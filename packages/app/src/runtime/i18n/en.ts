@@ -280,7 +280,7 @@ export const dict = {
   "provider.connect.chatgptUsageLimit.requestCopied": "Request copied. Send it to your workspace admin.",
   "provider.connect.chatgptUsageLimit.requestCopyFailed": "Couldn't copy. Send this to your workspace admin:",
   "provider.connect.chatgptUsageLimit.request":
-    "I've reached the limit for using my ChatGPT plan in OpenCode. Could you increase our workspace's usage limits so I can continue?\n\nGo to admin.openai.com → Workspace → Usage limits. Thank you!",
+    "I've reached the limit for using my ChatGPT plan in Loophole. Could you increase our workspace's usage limits so I can continue?\n\nGo to admin.openai.com → Workspace → Usage limits. Thank you!",
   "provider.connect.console.refreshFailed":
     "Your account is connected, but we couldn't load your models. Try again to refresh them.",
   "provider.connect.console.connected": "Loophole connected",
@@ -1305,7 +1305,7 @@ export const dict = {
   "settings.general.row.spellcheck.description": "Underline misspelled words while typing",
   "settings.general.row.smoothScrolling.title": "Smooth scrolling",
   "settings.general.row.smoothScrolling.description":
-    "Animate mouse-wheel scrolling. Applies after restarting OpenCode",
+    "Animate mouse-wheel scrolling. Applies after restarting Loophole",
 
   "sound.option.none": "None",
   "sound.option.alert01": "Alert 01",
@@ -1539,7 +1539,7 @@ export const dict = {
   "workspace.delete.button": "Delete worktree",
 
   "deepLink.open.title": "Open “{{name}}” as a project?",
-  "deepLink.open.description": "A link asked OpenCode to open this folder.",
+  "deepLink.open.description": "A link asked Loophole to open this folder.",
   "deepLink.open.folder": "Folder",
   "deepLink.open.warning": "Opening a folder runs the plugins and settings inside it. Only open folders you trust.",
   "deepLink.open.button": "Open project",

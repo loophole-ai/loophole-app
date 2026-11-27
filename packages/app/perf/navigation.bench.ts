@@ -127,7 +127,7 @@ export default bench({
   targets: {
     // A target is made before the bench, so its hooks see the setup key as typed here.
     web: web<{}, Setup>({
-      expect: { title: "OpenCode" },
+      expect: { title: "Loophole" },
       viewport: { width: 1440, height: 900 },
       async prepare(ctx) {
         const { url } = ctx

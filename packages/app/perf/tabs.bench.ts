@@ -110,7 +110,7 @@ export default bench({
 
   targets: {
     web: web({
-      expect: { title: "OpenCode" },
+      expect: { title: "Loophole" },
       viewport: { width: 1440, height: 900 },
       async prepare(ctx) {
         const { setupKey: setup, url } = ctx

@@ -47,7 +47,7 @@ export default bench({
 
   targets: {
     web: web({
-      expect: { title: "OpenCode" },
+      expect: { title: "Loophole" },
       viewport: { width: 1366, height: 768 },
       prepare: async (ctx) =>
         mockTimelineSession(cached(ctx), {

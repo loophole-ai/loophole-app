@@ -124,7 +124,7 @@ export default bench({
 
   targets: {
     web: web<{}, Setup>({
-      expect: { title: "OpenCode" },
+      expect: { title: "Loophole" },
       viewport: { width: 1440, height: 900 },
       async prepare(ctx) {
         const server = new URL(ctx.url).origin

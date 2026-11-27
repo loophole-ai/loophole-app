@@ -31,7 +31,7 @@ import { isWorkspaceDirectory } from "@/workspaces/paths"
 import { parseCommentNote, readPromptPresentation } from "@/composer/comment-note"
 import { parseVoiceDelegation } from "./voice-delegation"
 import { inlineQuotes } from "./inline-quotes"
-import { useCommand } from "@/shell/commands/command"
+import { useCommand, type CommandSource } from "@/shell/commands/command"
 import { usePluginScoped } from "@/runtime/plugin/commands"
 import {
   SessionAncestorTrail,
@@ -314,8 +314,8 @@ function MessageTimelineView(
               slash: "rename",
               slashArguments: true,
               disabled: !sessionID() || !!parentID() || title().editing,
-              skip: (event) => pluginScoped(event.target),
-              onSelect: (source, input) => (source === "slash" ? props.title.set(input ?? "") : props.title.edit()),
+              skip: (event: KeyboardEvent) => pluginScoped(event.target),
+              onSelect: (source?: CommandSource, input?: string) => (source === "slash" ? props.title.set(input ?? "") : props.title.edit()),
             },
             {
               id: "session.title.generate",
