@@ -3,7 +3,7 @@ import type { ServerConnection } from "@/runtime/server/registry"
 import { decode64 } from "@/runtime/persistence/base64"
 
 export function authTokenFromCredentials(input: { password: string }) {
-  return btoa(`opencode:${input.password}`)
+  return btoa(`loophole:${input.password}`)
 }
 
 export function authFromToken(token: string | null) {
